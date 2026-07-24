@@ -3,6 +3,7 @@
 Esta área alojará código reutilizável entre o website, a aplicação de gestão e a API.
 
 Estrutura prevista:
+
 - `ui/`: componentes visuais partilhados;
 - `types/`: tipos e contratos TypeScript;
 - `validation/`: esquemas de validação;

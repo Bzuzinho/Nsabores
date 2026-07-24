@@ -1,88 +1,85 @@
 # Configuração do Railway
 
-Este guia descreve a configuração inicial da infraestrutura Nsabores no Railway.
+## Estado
 
-## 1. Criar o projeto
+Os serviços `website`, `management`, `api` e `Postgres` já existem no ambiente
+`production`, com `Wait for CI` ativo nas aplicações. A fundação deve ser
+validada primeiro num ambiente `staging`.
 
-Criar um projeto denominado `Nsabores` e ligá-lo ao repositório GitHub `Bzuzinho/Nsabores`.
+## Build a partir da raiz
 
-## 2. Criar ambientes
-
-Criar os ambientes:
-
-- `staging`
-- `production`
-
-O ambiente de produção não deve ser usado até o staging estar validado.
-
-## 3. Criar PostgreSQL
-
-Adicionar um serviço PostgreSQL gerido pelo Railway.
-
-A variável `DATABASE_URL` deve ser referenciada pelo serviço `api`. Não copiar a credencial para ficheiros versionados.
-
-## 4. Criar serviços de aplicação
-
-Criar três serviços ligados ao mesmo repositório:
+Os três serviços usam a raiz do monorepo, para que o pnpm encontre todos os
+workspaces. Não configurar `apps/*` como Root Directory.
 
 ### website
 
-- Root directory: `apps/website`
-- Domínio previsto: `www.nsabores.pt`
-- Variável pública: `NEXT_PUBLIC_API_URL`
+```text
+Build: pnpm --filter @nsabores/website build
+Start: pnpm --filter @nsabores/website start
+Healthcheck: /api/health
+```
+
+Variável:
+
+- `NEXT_PUBLIC_API_URL`
 
 ### management
 
-- Root directory: `apps/management`
-- Domínio previsto: `app.nsabores.pt`
-- Variável pública: `NEXT_PUBLIC_API_URL`
+```text
+Build: pnpm --filter @nsabores/management build
+Start: pnpm --filter @nsabores/management start
+Healthcheck: /api/health
+```
+
+Variável:
+
+- `NEXT_PUBLIC_API_URL`
 
 ### api
 
-- Root directory: `apps/api`
-- Domínio previsto: `api.nsabores.pt`
-- Variáveis: `DATABASE_URL`, `PORT`, `CORS_ALLOWED_ORIGINS`
+```text
+Build: pnpm --filter @nsabores/api build
+Start: pnpm --filter @nsabores/api start:prod
+Healthcheck: /health
+```
 
-Os comandos concretos de build e start serão definidos quando as aplicações forem geradas.
+Variáveis obrigatórias:
 
-## 5. Token para GitHub Actions
+- `DATABASE_URL`: referência privada ao serviço PostgreSQL;
+- `NODE_ENV`: `production`;
+- `PORT`: porta injetada pelo Railway;
+- `CORS_ORIGINS`: URLs permitidos separados por vírgulas.
 
-Criar um token Railway com o menor âmbito possível e adicioná-lo ao GitHub:
+Os comandos acima e os três health checks foram verificados localmente. Os
+health checks não dependem da base de dados.
 
-1. Repository settings.
-2. Environments.
-3. Criar o environment `staging`.
-4. Adicionar o secret `RAILWAY_TOKEN`.
+## Staging
 
-Nunca colocar o token em `.env`, documentação, issues ou mensagens de commit.
+1. Criar o ambiente `staging`, caso ainda não exista.
+2. Replicar os quatro serviços existentes.
+3. Ligar os três serviços de aplicação a `Bzuzinho/Nsabores`.
+4. Configurar Node.js 22 e os comandos acima.
+5. Referenciar `DATABASE_URL` do Postgres no serviço `api`.
+6. Gerar os domínios Railway e preencher URLs/CORS.
+7. Configurar o secret `RAILWAY_TOKEN` no GitHub Environment `staging`.
+8. Executar manualmente `.github/workflows/deploy-staging.yml`.
 
-## 6. Deploy
+Nunca colocar o token, a URL real da base de dados ou outros segredos no
+repositório.
 
-O workflow `.github/workflows/deploy-staging.yml` é manual e permite escolher um serviço.
+## Migrações
 
-O deploy só deve ser executado depois de:
+O schema inicial não contém entidades nem migrations. Quando existir uma
+migration validada, executá-la de forma controlada:
 
-- as aplicações terem sido geradas;
-- os comandos de build e start funcionarem localmente;
-- os serviços Railway terem os nomes `website`, `management` e `api`;
-- o token estar configurado.
+```bash
+pnpm --filter @nsabores/api prisma:migrate:deploy
+```
 
-## 7. Health checks
+Não executar migrations automaticamente no start, para evitar concorrência
+entre réplicas.
 
-Após a geração das aplicações, configurar:
+## Produção
 
-- website: `/api/health` ou rota equivalente;
-- management: `/api/health` ou rota equivalente;
-- api: `/health`.
-
-Os health checks devem devolver sucesso sem depender de serviços externos, exceto quando existir um endpoint separado para verificar a base de dados.
-
-## 8. Produção
-
-O deploy de produção deve ser configurado apenas após validação do staging. Deve exigir:
-
-- CI concluída com sucesso;
-- branch `main`;
-- environment GitHub `production`;
-- aprovação manual, enquanto o projeto estiver em fase inicial;
-- migrações de base de dados controladas.
+Só promover depois de staging passar CI, health checks e validação manual. O
+deploy de produção deve partir de `main` e manter aprovação manual nesta fase.

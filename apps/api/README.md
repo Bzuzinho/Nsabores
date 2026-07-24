@@ -3,6 +3,7 @@
 Serviço central previsto para `api.nsabores.pt`, alojado no Railway.
 
 Responsabilidades:
+
 - autenticação e autorização;
 - catálogo, stock e preços;
 - clientes, encomendas e pagamentos;

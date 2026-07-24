@@ -2,22 +2,29 @@
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
     "dev": {
+      "dependsOn": ["^build"],
       "cache": false,
+      "env": ["DATABASE_URL", "NODE_ENV", "PORT", "CORS_ORIGINS"],
       "persistent": true
     },
     "build": {
       "dependsOn": ["^build"],
+      "env": ["DATABASE_URL", "NODE_ENV", "PORT", "CORS_ORIGINS"],
       "outputs": [".next/**", "dist/**", "!.next/cache/**"]
     },
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": ["^build", "^lint"]
     },
     "typecheck": {
-      "dependsOn": ["^typecheck"]
+      "dependsOn": ["^build", "^typecheck"]
     },
     "test": {
-      "dependsOn": ["^test"],
-      "outputs": ["coverage/**"]
+      "dependsOn": ["^build", "^test"],
+      "outputs": []
+    },
+    "start": {
+      "cache": false,
+      "persistent": true
     }
   }
 }

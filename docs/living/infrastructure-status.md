@@ -1,72 +1,97 @@
 # Estado vivo da infraestrutura
 
-Última atualização: 2026-07-24
+**Última revisão:** 2026-07-24
 
-Este documento deve refletir o estado real da infraestrutura. Deve ser atualizado sempre que forem criados, alterados ou removidos serviços, ambientes, domínios, segredos ou pipelines.
+**Responsável:** equipa Nsabores
 
 ## GitHub
 
 - Repositório: `Bzuzinho/Nsabores`
 - Branch principal: `main`
 - Integração por pull request: ativa por convenção
-- Workflow de CI: criado em `.github/workflows/ci.yml`
-- Deploy para staging: workflow manual criado em `.github/workflows/deploy-staging.yml`
-- Dependabot: configurado para npm e GitHub Actions
+- CI: instalação congelada, formato, lint, tipos, testes e build
+- Deploy staging: workflow manual por serviço
+- Dependabot: npm e GitHub Actions
+
+## Implementação atual
+
+- website e gestão em Next.js App Router;
+- API NestJS com Prisma preparado para PostgreSQL;
+- packages partilhados `types`, `validation`, `config` e `ui`;
+- Node.js 22, pnpm 11 e Turborepo;
+- CORS limitado à lista separada por vírgulas em `CORS_ORIGINS`;
+- variáveis da API validadas no arranque.
+
+Não existem ainda autenticação, loja, pagamentos, CRM, entidades Prisma ou
+migrations.
 
 ## Railway
 
-Estado atual: **por configurar na conta Railway**.
+Os serviços `website`, `management`, `api` e `Postgres` existem em `production`.
+`Wait for CI` está ativo nos três serviços de aplicação. O primeiro deploy desta
+fundação deve acontecer em `staging`.
 
-Estrutura prevista:
+Todas as aplicações usam a raiz do monorepo como diretório de build.
 
-| Serviço | Diretório | Domínio previsto | Estado |
-|---|---|---|---|
-| website | `apps/website` | `www.nsabores.pt` | por criar |
-| management | `apps/management` | `app.nsabores.pt` | por criar |
-| api | `apps/api` | `api.nsabores.pt` | por criar |
-| PostgreSQL | gerido pelo Railway | privado | por criar |
+| Serviço    | Build                                      | Start                                      | Healthcheck   |
+| ---------- | ------------------------------------------ | ------------------------------------------ | ------------- |
+| website    | `pnpm --filter @nsabores/website build`    | `pnpm --filter @nsabores/website start`    | `/api/health` |
+| management | `pnpm --filter @nsabores/management build` | `pnpm --filter @nsabores/management start` | `/api/health` |
+| api        | `pnpm --filter @nsabores/api build`        | `pnpm --filter @nsabores/api start:prod`   | `/health`     |
 
-Ambientes previstos:
+As três builds, os comandos de start e os health checks HTTP 200 foram
+verificados localmente.
 
-- `staging`
-- `production`
+## Variáveis
 
-## Segredos e variáveis
+Não guardar valores reais no repositório.
 
-Não colocar valores reais neste ficheiro.
-
-### GitHub Environment: staging
+### GitHub Environment `staging`
 
 - `RAILWAY_TOKEN`
 
-### Railway partilhadas
-
-- `DATABASE_URL`
-- `NODE_ENV`
-- `APP_ENV`
-
-### Railway website
+### Website
 
 - `NEXT_PUBLIC_API_URL`
 
-### Railway management
+### Management
 
 - `NEXT_PUBLIC_API_URL`
 
-### Railway API
+### API
 
 - `DATABASE_URL`
+- `NODE_ENV` (`development`, `test` ou `production`)
 - `PORT`
-- `CORS_ALLOWED_ORIGINS`
-- `AUTH_SECRET` — quando a autenticação for implementada
+- `CORS_ORIGINS` (origens separadas por vírgulas)
 
-## Próximas ações
+## Comandos verificados
 
-1. Criar o projeto Nsabores no Railway.
-2. Criar os ambientes `staging` e `production`.
-3. Adicionar PostgreSQL.
-4. Criar os serviços `website`, `management` e `api` ligados ao repositório.
-5. Configurar o token Railway no GitHub Environment `staging`.
-6. Gerar as aplicações mínimas e respetivos health checks.
-7. Validar o primeiro deploy em staging.
-8. Só depois preparar o deploy automático de produção.
+- `pnpm install --frozen-lockfile`
+- `pnpm format:check`
+- `pnpm lint`
+- `pnpm typecheck`
+- `pnpm test`
+- `pnpm build`
+- `pnpm dev`
+- `pnpm --filter @nsabores/api prisma:generate`
+
+## Configuração final de staging
+
+1. Criar ou confirmar o ambiente `staging`.
+2. Replicar os quatro serviços de `production` para `staging`.
+3. Definir a raiz do monorepo como diretório de build nos três serviços.
+4. Aplicar os comandos e healthchecks da tabela.
+5. Referenciar `DATABASE_URL` do Postgres no serviço `api`.
+6. Definir `NODE_ENV=production`, `PORT` e `CORS_ORIGINS` na API.
+7. Definir `NEXT_PUBLIC_API_URL` nos frontends depois de gerar o domínio da API.
+8. Configurar `RAILWAY_TOKEN` no GitHub Environment `staging`.
+9. Validar staging antes de alterar produção.
+
+## Limitações e próximos passos
+
+- `/health` mede o processo da API, não a conectividade com PostgreSQL;
+- a primeira entidade deve introduzir a primeira migration versionada;
+- migrations devem correr com
+  `pnpm --filter @nsabores/api prisma:migrate:deploy`, fora do start concorrente;
+- domínios e valores finais dependem da configuração externa Railway.

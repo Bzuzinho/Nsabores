@@ -3,6 +3,7 @@
 Aplicação pública prevista para `www.nsabores.pt`.
 
 Responsabilidades:
+
 - website institucional;
 - catálogo e loja online;
 - carrinho e checkout;

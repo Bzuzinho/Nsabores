@@ -3,6 +3,7 @@
 Aplicação interna prevista para `app.nsabores.pt`.
 
 Responsabilidades:
+
 - dashboard e indicadores;
 - encomendas, clientes e fornecedores;
 - produtos, stock, lotes e validades;

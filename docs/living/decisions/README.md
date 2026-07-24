@@ -5,6 +5,7 @@ Criar um ficheiro por decisão relevante, numerado sequencialmente:
 `0001-titulo-da-decisao.md`
 
 Cada registo deve indicar:
+
 - contexto;
 - decisão;
 - alternativas consideradas;

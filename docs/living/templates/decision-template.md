@@ -21,11 +21,11 @@ Descrever claramente o que foi decidido.
 
 ### Positivas
 
-- 
+-
 
 ### Negativas ou riscos
 
-- 
+-
 
 ## Referências
 
