@@ -1,7 +1,9 @@
 # 0001 — Fundação executável em monorepo
 
-**Data:** 2026-07-24  
-**Estado:** aceite  
+**Data:** 2026-07-24
+
+**Estado:** aceite
+
 **Responsável:** equipa Nsabores
 
 ## Contexto
