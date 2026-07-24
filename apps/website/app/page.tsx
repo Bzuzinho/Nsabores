@@ -6,7 +6,12 @@ import { NewsletterForm } from '@/components/newsletter-form';
 import { ProductShowcase } from '@/components/product-showcase';
 import { SectionHeading } from '@/components/section-heading';
 import { ValueStrip } from '@/components/value-strip';
-import { experiences, pillars } from '@/data/site';
+import {
+  experiences,
+  pillars,
+  products as fallbackProducts,
+} from '@/data/site';
+import { getCategories, getProducts } from '@/lib/catalog';
 
 export const metadata: Metadata = {
   title: {
@@ -16,7 +21,24 @@ export const metadata: Metadata = {
     'Descubra produtos portugueses selecionados, cabazes, tábuas e experiências Nsabores.',
 };
 
-export default function Home() {
+export default async function Home() {
+  const [catalogResult, categories] = await Promise.all([
+    getProducts(new URLSearchParams({ featured: 'true', limit: '8' }))
+      .then((catalog) => ({ catalog, fallback: false }))
+      .catch(() => ({
+        catalog: {
+          data: fallbackProducts,
+          pagination: {
+            page: 1,
+            limit: 8,
+            total: fallbackProducts.length,
+            totalPages: 1,
+          },
+        },
+        fallback: true,
+      })),
+    getCategories().catch(() => []),
+  ]);
   return (
     <main id="conteudo">
       <Hero />
@@ -41,7 +63,11 @@ export default function Home() {
         <span>Entrega em todo o país</span>
       </aside>
 
-      <ProductShowcase />
+      <ProductShowcase
+        products={catalogResult.catalog.data}
+        categories={categories}
+        fallback={catalogResult.fallback}
+      />
 
       <section className="split-banner" aria-label="Clube, empresas e eventos">
         <article className="feature-panel feature-panel-club">

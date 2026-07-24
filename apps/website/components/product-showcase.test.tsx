@@ -3,13 +3,31 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { ProductShowcase } from './product-showcase';
 import { ShopProvider } from './shop-context';
+import { products } from '@/data/site';
+
+const categories = Array.from(
+  new Map(
+    products.map((product) => [
+      product.category.id,
+      {
+        ...product.category,
+        description: null,
+        imageUrl: null,
+        isActive: true,
+        sortOrder: 0,
+        createdAt: product.createdAt,
+        updatedAt: product.updatedAt,
+      },
+    ]),
+  ).values(),
+);
 
 describe('ProductShowcase', () => {
   it('filters products by category', async () => {
     const user = userEvent.setup();
     render(
       <ShopProvider>
-        <ProductShowcase />
+        <ProductShowcase products={products} categories={categories} />
       </ShopProvider>,
     );
 
@@ -27,7 +45,7 @@ describe('ProductShowcase', () => {
     const user = userEvent.setup();
     render(
       <ShopProvider>
-        <ProductShowcase />
+        <ProductShowcase products={products} categories={categories} />
       </ShopProvider>,
     );
 

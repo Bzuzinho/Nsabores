@@ -1,26 +1,25 @@
 'use client';
 
 import { useState } from 'react';
-import { products, type ProductCategory } from '@/data/site';
+import type { CatalogCategory } from '@nsabores/types';
+import type { Product } from '@/data/site';
 import { ProductCard } from './product-card';
 import { SectionHeading } from './section-heading';
 
-type Filter = 'all' | ProductCategory;
-
-const filters: Array<[Filter, string]> = [
-  ['all', 'Todos'],
-  ['tabuas', 'Tábuas'],
-  ['queijos', 'Queijos'],
-  ['cabazes', 'Cabazes'],
-  ['vinhos', 'Vinhos'],
-];
-
-export function ProductShowcase() {
-  const [filter, setFilter] = useState<Filter>('all');
+export function ProductShowcase({
+  products,
+  categories,
+  fallback = false,
+}: {
+  products: Product[];
+  categories: CatalogCategory[];
+  fallback?: boolean;
+}) {
+  const [filter, setFilter] = useState('all');
   const visibleProducts =
     filter === 'all'
       ? products
-      : products.filter((product) => product.category === filter);
+      : products.filter((product) => product.category.slug === filter);
 
   return (
     <section
@@ -35,19 +34,27 @@ export function ProductShowcase() {
           title="Os mais procurados"
         />
         <div className="filters" aria-label="Filtros de produtos">
-          {filters.map(([value, label]) => (
-            <button
-              className={filter === value ? 'active' : ''}
-              type="button"
-              key={value}
-              aria-pressed={filter === value}
-              onClick={() => setFilter(value)}
-            >
-              {label}
-            </button>
-          ))}
+          {[{ slug: 'all', name: 'Todos' }, ...categories].map(
+            ({ slug, name }) => (
+              <button
+                className={filter === slug ? 'active' : ''}
+                type="button"
+                key={slug}
+                aria-pressed={filter === slug}
+                onClick={() => setFilter(slug)}
+              >
+                {name}
+              </button>
+            ),
+          )}
         </div>
       </div>
+      {fallback && (
+        <p className="catalog-notice" role="status">
+          Catálogo temporariamente indisponível. A mostrar uma seleção de
+          referência.
+        </p>
+      )}
       <div className="product-grid" aria-live="polite">
         {visibleProducts.map((product) => (
           <ProductCard key={product.id} product={product} />

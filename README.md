@@ -59,6 +59,11 @@ A fundação executável do monorepo está implementada:
 - packages partilhados de UI, tipos, validação e configuração;
 - testes reais e CI sobre instalação congelada, formato, lint, tipos, testes e build.
 
+O catálogo funcional acrescenta categorias e produtos persistidos, API pública
+e administrativa, gestão em `/catalogo`, loja em `/loja` e detalhe em
+`/loja/[slug]`. Consultar [a documentação viva](docs/living/catalog.md) para
+endpoints, configuração e limitações.
+
 ## Desenvolvimento
 
 Requer Node.js 22 e pnpm 11.9.0.

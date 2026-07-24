@@ -32,7 +32,7 @@ export function SiteHeader() {
   }, [query]);
 
   const total = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (sum, item) => sum + item.priceCents * item.quantity,
     0,
   );
 
@@ -133,7 +133,7 @@ export function SiteHeader() {
                     onClick={() => setSearchOpen(false)}
                   >
                     <span>{product.name}</span>
-                    <strong>{formatPrice(product.price)}</strong>
+                    <strong>{formatPrice(product.priceCents)}</strong>
                   </Link>
                 ))
               ) : (
@@ -167,11 +167,11 @@ export function SiteHeader() {
           {cartItems.length ? (
             cartItems.map((item) => (
               <article className="cart-item" key={item.id}>
-                <Image src={item.image} alt="" width={72} height={72} />
+                <Image src={item.imageUrl} alt="" width={72} height={72} />
                 <div>
                   <strong>{item.name}</strong>
                   <small>
-                    {item.quantity} × {formatPrice(item.price)}
+                    {item.quantity} × {formatPrice(item.priceCents)}
                   </small>
                 </div>
                 <button type="button" onClick={() => removeFromCart(item.id)}>

@@ -5,3 +5,50 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum StockStatus {
+  IN_STOCK
+  LOW_STOCK
+  OUT_OF_STOCK
+  PREORDER
+}
+
+model Category {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String    @unique
+  description String?
+  imageUrl    String?
+  isActive    Boolean   @default(true)
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+
+  @@index([isActive, sortOrder])
+}
+
+model Product {
+  id                  String      @id @default(uuid()) @db.Uuid
+  name                String
+  slug                String      @unique
+  shortDescription    String
+  description         String?
+  sku                 String      @unique
+  priceCents          Int
+  compareAtPriceCents Int?
+  imageUrl            String
+  gallery             String[]    @default([])
+  isActive            Boolean     @default(true)
+  isFeatured          Boolean     @default(false)
+  stockStatus         StockStatus @default(IN_STOCK)
+  categoryId          String      @db.Uuid
+  category            Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  @@index([categoryId])
+  @@index([isActive, isFeatured])
+  @@index([stockStatus])
+  @@index([createdAt])
+}

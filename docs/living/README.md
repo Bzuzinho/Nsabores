@@ -19,5 +19,6 @@ Esta pasta contém documentação operacional e evolutiva do projeto. Deve ser a
 - `changelog/`: resumo legível das mudanças relevantes.
 - `templates/`: modelos para novos documentos.
 - `website-status.md`: estado funcional e limitações do website público.
+- `catalog.md`: modelo, API e interfaces do catálogo.
 
 A documentação técnica consolidada continuará em `docs/`, enquanto esta área funciona como memória viva do projeto.

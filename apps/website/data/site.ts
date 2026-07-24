@@ -1,62 +1,85 @@
-export type ProductCategory = 'tabuas' | 'queijos' | 'cabazes' | 'vinhos';
+import type { CatalogProduct } from '@nsabores/types';
 
 export interface Product {
-  id: number;
+  id: string;
+  slug: string;
   name: string;
-  category: ProductCategory;
-  categoryLabel: string;
-  price: number;
-  image: string;
-  description: string;
+  category: { id: string; name: string; slug: string };
+  priceCents: number;
+  imageUrl: string;
+  shortDescription: string;
+  description: string | null;
+  gallery: string[];
+  sku: string;
+  compareAtPriceCents: number | null;
+  isActive: boolean;
+  isFeatured: boolean;
+  stockStatus: CatalogProduct['stockStatus'];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export const products: Product[] = [
   {
-    id: 1,
+    id: 'fallback-1',
+    slug: 'tabua-premium',
     name: 'Tábua Premium',
-    category: 'tabuas',
-    categoryLabel: 'Tábuas',
-    price: 34.9,
-    image: '/images/prod1.jpg',
-    description: 'Seleção de queijos, enchidos, compota e frutos secos.',
+    category: { id: 'tabuas', slug: 'tabuas', name: 'Tábuas' },
+    priceCents: 3490,
+    imageUrl: '/images/prod1.jpg',
+    shortDescription: 'Seleção de queijos, enchidos, compota e frutos secos.',
   },
   {
-    id: 2,
+    id: 'fallback-2',
+    slug: 'queijo-serra-da-estrela',
     name: 'Queijo Serra da Estrela',
-    category: 'queijos',
-    categoryLabel: 'Queijos',
-    price: 12.5,
-    image: '/images/prod2.jpg',
-    description: 'Queijo de pasta amanteigada, intenso e tradicional.',
+    category: { id: 'queijos', slug: 'queijos', name: 'Queijos' },
+    priceCents: 1250,
+    imageUrl: '/images/prod2.jpg',
+    shortDescription: 'Queijo de pasta amanteigada, intenso e tradicional.',
   },
   {
-    id: 3,
+    id: 'fallback-3',
+    slug: 'chourico-regional',
     name: 'Chouriço Regional',
-    category: 'queijos',
-    categoryLabel: 'Enchidos',
-    price: 6.9,
-    image: '/images/prod3.jpg',
-    description: 'Enchido português selecionado, ideal para petiscar.',
+    category: { id: 'enchidos', slug: 'enchidos', name: 'Enchidos' },
+    priceCents: 690,
+    imageUrl: '/images/prod3.jpg',
+    shortDescription: 'Enchido português selecionado, ideal para petiscar.',
   },
   {
-    id: 4,
+    id: 'fallback-4',
+    slug: 'cabaz-gourmet',
     name: 'Cabaz Gourmet',
-    category: 'cabazes',
-    categoryLabel: 'Cabazes',
-    price: 49.9,
-    image: '/images/product-hamper-clean.jpg',
-    description: 'Uma oferta completa, elegante e personalizável.',
+    category: { id: 'cabazes', slug: 'cabazes', name: 'Cabazes' },
+    priceCents: 4990,
+    imageUrl: '/images/product-hamper-clean.jpg',
+    shortDescription: 'Uma oferta completa, elegante e personalizável.',
   },
   {
-    id: 5,
+    id: 'fallback-5',
+    slug: 'vinho-tinto-reserva',
     name: 'Vinho Tinto Reserva',
-    category: 'vinhos',
-    categoryLabel: 'Vinhos',
-    price: 14.9,
-    image: '/images/product-wine-clean.jpg',
-    description: 'Um tinto estruturado para acompanhar sabores intensos.',
+    category: { id: 'vinhos', slug: 'vinhos', name: 'Vinhos' },
+    priceCents: 1490,
+    imageUrl: '/images/product-wine-clean.jpg',
+    shortDescription: 'Um tinto estruturado para acompanhar sabores intensos.',
   },
-];
+] as Product[];
+
+for (const product of products) {
+  Object.assign(product, {
+    description: null,
+    gallery: [],
+    sku: product.id.toUpperCase(),
+    compareAtPriceCents: null,
+    isActive: true,
+    isFeatured: true,
+    stockStatus: 'IN_STOCK',
+    createdAt: new Date(0).toISOString(),
+    updatedAt: new Date(0).toISOString(),
+  });
+}
 
 export const experiences = [
   {
@@ -105,8 +128,8 @@ export const pillars = [
   },
 ];
 
-export const formatPrice = (price: number) =>
+export const formatPrice = (priceCents: number) =>
   new Intl.NumberFormat('pt-PT', {
     style: 'currency',
     currency: 'EUR',
-  }).format(price);
+  }).format(priceCents / 100);

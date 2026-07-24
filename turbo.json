@@ -4,12 +4,28 @@
     "dev": {
       "dependsOn": ["^build"],
       "cache": false,
-      "env": ["DATABASE_URL", "NODE_ENV", "PORT", "CORS_ORIGINS"],
+      "env": [
+        "DATABASE_URL",
+        "ADMIN_API_KEY",
+        "API_URL",
+        "NEXT_PUBLIC_API_URL",
+        "NODE_ENV",
+        "PORT",
+        "CORS_ORIGINS"
+      ],
       "persistent": true
     },
     "build": {
       "dependsOn": ["^build"],
-      "env": ["DATABASE_URL", "NODE_ENV", "PORT", "CORS_ORIGINS"],
+      "env": [
+        "DATABASE_URL",
+        "ADMIN_API_KEY",
+        "API_URL",
+        "NEXT_PUBLIC_API_URL",
+        "NODE_ENV",
+        "PORT",
+        "CORS_ORIGINS"
+      ],
       "outputs": [".next/**", "dist/**", "!.next/cache/**"]
     },
     "lint": {

@@ -4,12 +4,9 @@ import { ShopProvider } from '@/components/shop-context';
 import Home from './page';
 
 describe('homepage', () => {
-  it('renders the approved hero and principal sections', () => {
-    render(
-      <ShopProvider>
-        <Home />
-      </ShopProvider>,
-    );
+  it('renders the approved hero and principal sections', async () => {
+    const page = await Home();
+    render(<ShopProvider>{page}</ShopProvider>);
 
     expect(
       screen.getByRole('heading', {

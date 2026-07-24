@@ -21,7 +21,7 @@ interface ShopContextValue {
   cartOpen: boolean;
   closeCart: () => void;
   openCart: () => void;
-  removeFromCart: (productId: number) => void;
+  removeFromCart: (productId: string) => void;
   toast: string;
 }
 
@@ -48,7 +48,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
     window.setTimeout(() => setToast(''), 2600);
   }, []);
 
-  const removeFromCart = useCallback((productId: number) => {
+  const removeFromCart = useCallback((productId: string) => {
     setCartItems((current) => current.filter((item) => item.id !== productId));
   }, []);
 

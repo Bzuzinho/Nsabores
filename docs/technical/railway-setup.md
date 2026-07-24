@@ -1,5 +1,13 @@
 # Configuração do Railway
 
+## Variáveis do catálogo
+
+Configurar sem versionar valores reais:
+
+- API: `DATABASE_URL`, `ADMIN_API_KEY` e `CORS_ORIGINS`;
+- website: `API_URL` e `NEXT_PUBLIC_API_URL`;
+- management: `API_URL` e `ADMIN_API_KEY` para o proxy server-side.
+
 ## Configuração versionada por serviço
 
 Os serviços de aplicação usam a raiz do monorepo. Em Railway, deixar **Root
