@@ -4,12 +4,12 @@ import Link from 'next/link';
 import { CloseIcon } from './icons';
 
 export const navigation = [
-  ['Quem somos', '/sobre'],
-  ['Loja', '/loja'],
+  ['Início', '/'],
+  ['Sobre nós', '/sobre'],
+  ['Produtos', '/loja'],
+  ['Experiências', '/eventos'],
   ['Serviços', '/servicos'],
-  ['Clube Nsabores', '/clube'],
-  ['Eventos', '/eventos'],
-  ['Receitas', '/receitas'],
+  ['Blog', '/receitas'],
   ['Contactos', '/contactos'],
 ] as const;
 

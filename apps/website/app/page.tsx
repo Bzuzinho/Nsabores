@@ -5,6 +5,7 @@ import { Hero } from '@/components/hero';
 import { ProductShowcase } from '@/components/product-showcase';
 import { SectionHeading } from '@/components/section-heading';
 import { ValueStrip } from '@/components/value-strip';
+import { OccasionIcon } from '@/components/occasion-icon';
 import {
   experiences,
   pillars,
@@ -21,14 +22,14 @@ export const metadata: Metadata = {
 };
 
 const occasions = [
-  ['♡', 'Jantar a dois'],
-  ['♙', 'Receber amigos'],
-  ['♕', 'Aniversário'],
-  ['◇', 'Oferecer'],
-  ['♨', 'Churrasco'],
-  ['◒', 'Vinho & queijo'],
-  ['△', 'Natal'],
-  ['◉', 'Páscoa'],
+  ['couple', 'Jantar a dois'],
+  ['friends', 'Receber amigos'],
+  ['birthday', 'Aniversário'],
+  ['gift', 'Oferecer'],
+  ['barbecue', 'Churrasco'],
+  ['wine', 'Vinho & Queijo'],
+  ['christmas', 'Natal'],
+  ['easter', 'Páscoa'],
 ] as const;
 
 export default async function Home() {
@@ -59,7 +60,7 @@ export default async function Home() {
         <div className="occasion-grid">
           {occasions.map(([icon, label]) => (
             <Link href="/loja" key={label}>
-              <span aria-hidden="true">{icon}</span>
+              <OccasionIcon name={icon} />
               <strong>{label}</strong>
             </Link>
           ))}

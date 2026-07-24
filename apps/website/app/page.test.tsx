@@ -20,7 +20,7 @@ describe('homepage', () => {
       }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { name: 'Os mais procurados' }),
+      screen.getByRole('heading', { name: 'Destaques' }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('heading', {

@@ -29,9 +29,9 @@ export function ProductShowcase({
       <div className="showcase-heading">
         <SectionHeading
           align="left"
-          eyebrow="Escolhas do mês"
+          eyebrow=""
           id="products-title"
-          title="Os mais procurados"
+          title="Destaques"
         />
         <div className="filters" aria-label="Filtros de produtos">
           {[{ slug: 'all', name: 'Todos' }, ...categories].map(
@@ -50,7 +50,7 @@ export function ProductShowcase({
         </div>
       </div>
       {fallback && (
-        <p className="catalog-notice" role="status">
+        <p className="catalog-notice sr-only" role="status">
           Catálogo temporariamente indisponível. A mostrar uma seleção de
           referência.
         </p>
