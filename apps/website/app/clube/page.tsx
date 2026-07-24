@@ -13,7 +13,7 @@ export default function ClubPage() {
       eyebrow="Clube Nsabores"
       title="Uma seleção exclusiva à sua porta."
       introduction="Todos os meses, uma história diferente contada através de produtores, regiões e sabores portugueses escolhidos para si."
-      image="/images/club.jpg"
+      image="/images/club-clean.jpg"
       imageAlt="Seleção mensal de produtos portugueses do Clube Nsabores"
       cta={{ href: '/contactos', label: 'Manifestar interesse' }}
     >

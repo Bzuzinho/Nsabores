@@ -14,7 +14,7 @@ export default function AboutPage() {
       eyebrow="Quem somos"
       title="Escolhemos sabores que merecem ser partilhados."
       introduction="A Nsabores nasce da vontade de aproximar bons produtores, produtos com história e pessoas que valorizam cada momento à mesa."
-      image="/images/hero.jpg"
+      image="/images/hero-clean.jpg"
       imageAlt="Seleção de queijos e enchidos portugueses"
       cta={{ href: '/loja', label: 'Conhecer a seleção' }}
     >

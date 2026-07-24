@@ -28,7 +28,7 @@ export default function ServicesPage() {
       eyebrow="Serviços"
       title="Cada ocasião pede uma seleção diferente."
       introduction="Da mesa mais íntima a um encontro de equipa, criamos propostas com produtos portugueses, apresentação cuidada e acompanhamento próximo."
-      image="/images/exp2.jpg"
+      image="/images/experience-friends-clean.jpg"
       imageAlt="Mesa com petiscos portugueses preparada para convívio"
       cta={{ href: '/contactos', label: 'Pedir uma proposta' }}
     >

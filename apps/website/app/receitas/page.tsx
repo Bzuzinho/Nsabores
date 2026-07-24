@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 const recipes = [
   [
     'Como montar uma tábua',
-    '/images/exp1.jpg',
+    '/images/experience-dinner-clean.jpg',
     'Equilíbrio entre texturas, intensidades e acompanhamentos.',
   ],
   [
@@ -21,7 +21,7 @@ const recipes = [
   ],
   [
     'Receber sem complicar',
-    '/images/exp4.jpg',
+    '/images/experience-celebration-clean.jpg',
     'Uma mesa generosa com preparação simples e tempo para conversar.',
   ],
 ] as const;

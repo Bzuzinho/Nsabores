@@ -44,7 +44,7 @@ export const products: Product[] = [
     category: 'cabazes',
     categoryLabel: 'Cabazes',
     price: 49.9,
-    image: '/images/prod4.jpg',
+    image: '/images/product-hamper-clean.jpg',
     description: 'Uma oferta completa, elegante e personalizável.',
   },
   {
@@ -53,7 +53,7 @@ export const products: Product[] = [
     category: 'vinhos',
     categoryLabel: 'Vinhos',
     price: 14.9,
-    image: '/images/prod5.jpg',
+    image: '/images/product-wine-clean.jpg',
     description: 'Um tinto estruturado para acompanhar sabores intensos.',
   },
 ];
@@ -62,25 +62,25 @@ export const experiences = [
   {
     title: 'Jantar a dois',
     description: 'A combinação perfeita para um momento especial.',
-    image: '/images/exp1.jpg',
+    image: '/images/experience-dinner-clean.jpg',
     alt: 'Tábua portuguesa preparada para um jantar a dois',
   },
   {
     title: 'Receber amigos',
     description: 'Tudo o que precisa para uma noite memorável.',
-    image: '/images/exp2.jpg',
+    image: '/images/experience-friends-clean.jpg',
     alt: 'Petiscos portugueses para receber amigos',
   },
   {
     title: 'Cabaz para oferecer',
     description: 'Presentes personalizados que deixam boas memórias.',
-    image: '/images/exp3.jpg',
+    image: '/images/experience-hamper-clean.jpg',
     alt: 'Cabaz gourmet com queijos e produtos portugueses',
   },
   {
     title: 'Festa especial',
     description: 'Sabor e tradição para os grandes momentos.',
-    image: '/images/exp4.jpg',
+    image: '/images/experience-celebration-clean.jpg',
     alt: 'Mesa com enchidos e petiscos para uma festa especial',
   },
 ];

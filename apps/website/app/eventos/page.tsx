@@ -13,7 +13,7 @@ export default function EventsPage() {
       eyebrow="Empresas e eventos"
       title="Soluções feitas à medida."
       introduction="Cabazes empresariais, tábuas, catering e presentes especiais pensados para a dimensão, contexto e identidade de cada evento."
-      image="/images/events.jpg"
+      image="/images/events-clean.jpg"
       imageAlt="Apresentação Nsabores preparada para empresas e eventos"
       cta={{ href: '/contactos', label: 'Contar-nos o seu evento' }}
     >
