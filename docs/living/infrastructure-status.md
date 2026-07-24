@@ -4,94 +4,66 @@
 
 **Responsável:** equipa Nsabores
 
-## GitHub
+## GitHub e pipeline
 
-- Repositório: `Bzuzinho/Nsabores`
-- Branch principal: `main`
-- Integração por pull request: ativa por convenção
-- CI: instalação congelada, formato, lint, tipos, testes e build
-- Deploy staging: workflow manual por serviço
-- Dependabot: npm e GitHub Actions
+- repositório: `Bzuzinho/Nsabores`;
+- branch de deployment temporária: `main`;
+- CI em cada push para `main`: formato, lint, tipos, testes e build;
+- Railway deve manter **Wait for CI** ativo nas três aplicações;
+- workflow manual de staging: valida o commit antes de executar `railway up`;
+- nenhuma credencial é guardada no repositório.
 
-## Implementação atual
+## Aplicações
 
-- website e gestão em Next.js App Router;
-- API NestJS com Prisma preparado para PostgreSQL;
-- packages partilhados `types`, `validation`, `config` e `ui`;
-- Node.js 22, pnpm 11 e Turborepo;
-- CORS limitado à lista separada por vírgulas em `CORS_ORIGINS`;
-- variáveis da API validadas no arranque.
-
-Não existem ainda autenticação, loja, pagamentos, CRM, entidades Prisma ou
-migrations.
+- `website` e `management`: Next.js App Router, bind a `0.0.0.0`;
+- `api`: NestJS, bind a `0.0.0.0`, porta de `PORT`, CORS explícito em staging;
+- Prisma preparado para PostgreSQL, ainda sem entidades ou migrations;
+- Node.js 22, pnpm 11 e Turborepo.
 
 ## Railway
 
-Os serviços `website`, `management`, `api` e `Postgres` existem em `production`.
-`Wait for CI` está ativo nos três serviços de aplicação. O primeiro deploy desta
-fundação deve acontecer em `staging`.
+`production` já contém `website`, `management`, `api` e `Postgres`. A
+configuração versionada para staging é:
 
-Todas as aplicações usam a raiz do monorepo como diretório de build.
+| Serviço      | Config File                | Healthcheck       | Variáveis                                                |
+| ------------ | -------------------------- | ----------------- | -------------------------------------------------------- |
+| `website`    | `/railway/website.json`    | `/api/health`     | `NODE_ENV`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_API_URL` |
+| `management` | `/railway/management.json` | `/api/health`     | `NODE_ENV`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_API_URL` |
+| `api`        | `/railway/api.json`        | `/health`         | `NODE_ENV`, `DATABASE_URL`, `CORS_ORIGINS`               |
+| `Postgres`   | imagem gerida Railway      | estado do serviço | variáveis geridas Railway                                |
 
-| Serviço    | Build                                      | Start                                      | Healthcheck   |
-| ---------- | ------------------------------------------ | ------------------------------------------ | ------------- |
-| website    | `pnpm --filter @nsabores/website build`    | `pnpm --filter @nsabores/website start`    | `/api/health` |
-| management | `pnpm --filter @nsabores/management build` | `pnpm --filter @nsabores/management start` | `/api/health` |
-| api        | `pnpm --filter @nsabores/api build`        | `pnpm --filter @nsabores/api start:prod`   | `/health`     |
+`DATABASE_URL` deve ser a referência `${{Postgres.DATABASE_URL}}`. `PORT` é
+fornecida pelo Railway e não deve ser definida manualmente.
 
-As três builds, os comandos de start e os health checks HTTP 200 foram
-verificados localmente.
+## Estado da validação de staging
 
-## Variáveis
+| Critério                                | Estado em 2026-07-24       |
+| --------------------------------------- | -------------------------- |
+| Configuração por serviço versionada     | concluído                  |
+| Comandos locais e checks do repositório | concluído em 2026-07-24    |
+| Ambiente `staging` e quatro serviços    | requer acesso Railway      |
+| PostgreSQL independente                 | requer confirmação Railway |
+| Wait for CI                             | requer confirmação Railway |
+| Domínios temporários                    | por gerar no Railway       |
+| Três health checks HTTP 200 remotos     | pendente do deployment     |
+| Conectividade API → PostgreSQL          | pendente do deployment     |
 
-Não guardar valores reais no repositório.
+Os valores reais e evidências remotas devem substituir os estados pendentes
+depois da intervenção na conta. Não inventar domínios.
 
-### GitHub Environment `staging`
+Validação local concluída com `pnpm format:check`, `pnpm lint`,
+`pnpm typecheck`, `pnpm test` e `pnpm build`.
 
-- `RAILWAY_TOKEN`
+## Procedimento operacional
 
-### Website
+O procedimento completo, incluindo configuração final, variáveis sem segredos,
+passos de staging, health checks, migrações, rollback e limitações, está em
+[`docs/technical/railway-setup.md`](../technical/railway-setup.md).
 
-- `NEXT_PUBLIC_API_URL`
+## Limitações atuais
 
-### Management
-
-- `NEXT_PUBLIC_API_URL`
-
-### API
-
-- `DATABASE_URL`
-- `NODE_ENV` (`development`, `test` ou `production`)
-- `PORT`
-- `CORS_ORIGINS` (origens separadas por vírgulas)
-
-## Comandos verificados
-
-- `pnpm install --frozen-lockfile`
-- `pnpm format:check`
-- `pnpm lint`
-- `pnpm typecheck`
-- `pnpm test`
-- `pnpm build`
-- `pnpm dev`
-- `pnpm --filter @nsabores/api prisma:generate`
-
-## Configuração final de staging
-
-1. Criar ou confirmar o ambiente `staging`.
-2. Replicar os quatro serviços de `production` para `staging`.
-3. Definir a raiz do monorepo como diretório de build nos três serviços.
-4. Aplicar os comandos e healthchecks da tabela.
-5. Referenciar `DATABASE_URL` do Postgres no serviço `api`.
-6. Definir `NODE_ENV=production`, `PORT` e `CORS_ORIGINS` na API.
-7. Definir `NEXT_PUBLIC_API_URL` nos frontends depois de gerar o domínio da API.
-8. Configurar `RAILWAY_TOKEN` no GitHub Environment `staging`.
-9. Validar staging antes de alterar produção.
-
-## Limitações e próximos passos
-
-- `/health` mede o processo da API, não a conectividade com PostgreSQL;
-- a primeira entidade deve introduzir a primeira migration versionada;
-- migrations devem correr com
-  `pnpm --filter @nsabores/api prisma:migrate:deploy`, fora do start concorrente;
-- domínios e valores finais dependem da configuração externa Railway.
+- os health checks não exercitam PostgreSQL;
+- não existe migration para executar;
+- staging e production usam temporariamente `main`;
+- um rollback de aplicação não desfaz alterações de dados;
+- criação e validação efetiva de staging exigem acesso manual à conta Railway.
