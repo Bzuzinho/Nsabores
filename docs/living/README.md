@@ -1,0 +1,22 @@
+# Documentação Viva
+
+Esta pasta contém documentação operacional e evolutiva do projeto. Deve ser atualizada à medida que o produto, o negócio e as decisões técnicas mudam.
+
+## Regras
+
+1. Atualizar os documentos na mesma Pull Request que altera o comportamento descrito.
+2. Registar decisões importantes em `decisions/`.
+3. Manter requisitos e âmbito em `product/`.
+4. Registar processos de operação em `operations/`.
+5. Nunca guardar credenciais, dados pessoais ou informação confidencial.
+6. Indicar sempre a data da última revisão e o responsável pela alteração.
+
+## Estrutura
+
+- `product/`: visão, requisitos, personas, jornadas e backlog funcional.
+- `decisions/`: registos de decisões de produto e arquitetura.
+- `operations/`: processos de operação, suporte e lançamento.
+- `changelog/`: resumo legível das mudanças relevantes.
+- `templates/`: modelos para novos documentos.
+
+A documentação técnica consolidada continuará em `docs/`, enquanto esta área funciona como memória viva do projeto.
