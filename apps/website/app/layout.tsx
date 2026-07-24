@@ -25,7 +25,7 @@ export const metadata: Metadata = {
       'Mais do que produtos. Criamos experiências com sabores portugueses.',
     images: [
       {
-        url: '/images/hero-clean.jpg',
+        url: '/images/hero-reference-clean.jpg',
         width: 1440,
         height: 900,
         alt: 'Seleção Nsabores de queijos, enchidos e frutos secos',

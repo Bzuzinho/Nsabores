@@ -1,6 +1,5 @@
-import Image from 'next/image';
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { NewsletterForm } from './newsletter-form';
 
 interface EditorialPageProps {
@@ -27,7 +26,14 @@ export function EditorialPage({
 }: EditorialPageProps) {
   return (
     <main id="conteudo">
-      <header className="page-hero">
+      <header
+        className="page-hero"
+        style={
+          {
+            '--page-hero-image': `url("${image}")`,
+          } as CSSProperties
+        }
+      >
         <div className="page-hero-copy">
           <p className="eyebrow">{eyebrow}</p>
           <h1>{title}</h1>
@@ -38,7 +44,7 @@ export function EditorialPage({
             </Link>
           )}
         </div>
-        <Image src={image} alt={imageAlt} width={960} height={720} priority />
+        <span className="sr-only">{imageAlt}</span>
       </header>
       <section className="editorial-content">{children}</section>
       <NewsletterForm />

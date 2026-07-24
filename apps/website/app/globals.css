@@ -2820,8 +2820,17 @@ h3,
 }
 
 .hero {
+  display: flex;
   min-height: 620px;
   padding-top: 70px;
+  background-image:
+    linear-gradient(
+      90deg,
+      rgb(5 7 6 / 93%) 0%,
+      rgb(5 7 6 / 77%) 38%,
+      rgb(5 7 6 / 8%) 72%
+    ),
+    url('/images/hero-reference-clean.jpg');
 }
 
 .hero-content {
@@ -2886,20 +2895,34 @@ h3,
 }
 
 .page-hero {
-  min-height: 560px;
-  padding-top: 74px;
+  display: flex;
+  min-height: 620px;
+  padding-top: 70px;
+  background-image:
+    linear-gradient(
+      90deg,
+      rgb(5 7 6 / 94%) 0%,
+      rgb(5 7 6 / 76%) 39%,
+      rgb(5 7 6 / 8%) 72%
+    ),
+    var(--page-hero-image);
+  background-position: center;
+  background-size: cover;
 }
 
 .page-hero-copy {
-  max-width: 610px;
-  padding: 64px clamp(42px, 5vw, 72px);
+  width: min(1120px, calc(100% - 80px));
+  max-width: none;
+  margin: auto;
+  padding: 62px 58% 62px 0;
+  background: transparent;
 }
 
 .page-hero h1,
 .store-hero h1,
 .contact-intro h1 {
   margin: 12px 0 18px;
-  font-size: clamp(38px, 4.5vw, 58px);
+  font-size: clamp(38px, 4.1vw, 56px);
   font-weight: 400;
   line-height: 1.04;
 }
@@ -2912,7 +2935,7 @@ h3,
 }
 
 .page-hero > img {
-  min-height: 560px;
+  display: none;
 }
 
 .editorial-content {
