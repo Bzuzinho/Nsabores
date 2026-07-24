@@ -52,9 +52,29 @@ scripts/
 
 ## Estado atual
 
-Repositório preparado para a fase de planeamento técnico e implementação inicial.
+A fundação executável do monorepo está implementada:
 
-O desenvolvimento deve começar pela análise da arquitetura, configuração do monorepo, definição do modelo de dados e criação da base técnica do projeto.
+- website e gestão em Next.js com App Router, Tailwind e health checks;
+- API NestJS com validação de ambiente, CORS e Prisma/PostgreSQL;
+- packages partilhados de UI, tipos, validação e configuração;
+- testes reais e CI sobre instalação congelada, formato, lint, tipos, testes e build.
+
+## Desenvolvimento
+
+Requer Node.js 22 e pnpm 11.9.0.
+
+```bash
+pnpm install --frozen-lockfile
+pnpm format:check
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm dev
+```
+
+Copiar `.env.example` para `.env` antes de arrancar a API. O health check da
+API não acede à base de dados.
 
 ## Princípios do projeto
 

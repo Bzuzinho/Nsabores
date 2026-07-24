@@ -23,13 +23,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Enable Corepack
-        run: corepack enable
-
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10.0.0
+          version: 11.9.0
           run_install: false
 
       - name: Set up Node.js
@@ -39,7 +36,7 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Check formatting
         run: pnpm format:check
