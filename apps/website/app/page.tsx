@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
-import { ExperienceCard } from '@/components/experience-card';
 import { Hero } from '@/components/hero';
-import { NewsletterForm } from '@/components/newsletter-form';
 import { ProductShowcase } from '@/components/product-showcase';
 import { SectionHeading } from '@/components/section-heading';
 import { ValueStrip } from '@/components/value-strip';
@@ -20,6 +19,17 @@ export const metadata: Metadata = {
   description:
     'Descubra produtos portugueses selecionados, cabazes, tábuas e experiências Nsabores.',
 };
+
+const occasions = [
+  ['♡', 'Jantar a dois'],
+  ['♙', 'Receber amigos'],
+  ['♕', 'Aniversário'],
+  ['◇', 'Oferecer'],
+  ['♨', 'Churrasco'],
+  ['◒', 'Vinho & queijo'],
+  ['△', 'Natal'],
+  ['◉', 'Páscoa'],
+] as const;
 
 export default async function Home() {
   const [catalogResult, categories] = await Promise.all([
@@ -44,27 +54,20 @@ export default async function Home() {
       <Hero />
       <ValueStrip />
 
-      <section className="section" aria-labelledby="experiencias-title">
-        <SectionHeading
-          eyebrow="Escolha pela ocasião"
-          id="experiencias-title"
-          title="As nossas melhores experiências"
-        />
-        <div className="experience-grid">
-          {experiences.map((experience) => (
-            <ExperienceCard key={experience.title} {...experience} />
+      <section className="occasion-section" aria-labelledby="occasions-title">
+        <h2 id="occasions-title">Comprar por ocasião</h2>
+        <div className="occasion-grid">
+          {occasions.map(([icon, label]) => (
+            <Link href="/loja" key={label}>
+              <span aria-hidden="true">{icon}</span>
+              <strong>{label}</strong>
+            </Link>
           ))}
         </div>
       </section>
 
-      <aside className="brand-band" aria-label="Compromissos Nsabores">
-        <span>Produtos selecionados com paixão</span>
-        <span>Tradição portuguesa, qualidade garantida</span>
-        <span>Entrega em todo o país</span>
-      </aside>
-
       <ProductShowcase
-        products={catalogResult.catalog.data}
+        products={catalogResult.catalog.data.slice(0, 4)}
         categories={categories}
         fallback={catalogResult.fallback}
       />
@@ -82,28 +85,18 @@ export default async function Home() {
             </Link>
           </div>
         </article>
-        <article className="feature-panel feature-panel-events">
-          <div>
-            <p className="eyebrow">Empresas e eventos</p>
-            <h2>Soluções feitas à medida.</h2>
-            <p>Cabazes empresariais, tábuas, catering e presentes especiais.</p>
-            <Link className="button button-outline" href="/contactos">
-              Contacte-nos
-            </Link>
-          </div>
-        </article>
       </section>
 
       <section className="section why-section" aria-labelledby="why-title">
         <SectionHeading
-          eyebrow="Porque escolher a Nsabores?"
           id="why-title"
-          title="O atendimento de uma loja de confiança, com a conveniência do digital."
+          eyebrow=""
+          title="Porquê escolher a Nsabores?"
         />
         <div className="why-grid">
-          {pillars.map((pillar, index) => (
+          {pillars.map((pillar) => (
             <article key={pillar.title}>
-              <span>{String(index + 1).padStart(2, '0')}</span>
+              <span aria-hidden="true">◇</span>
               <h3>{pillar.title}</h3>
               <p>{pillar.description}</p>
             </article>
@@ -111,7 +104,24 @@ export default async function Home() {
         </div>
       </section>
 
-      <NewsletterForm />
+      <section className="instagram-section" aria-labelledby="instagram-title">
+        <h2 id="instagram-title">Siga-nos no Instagram</h2>
+        <div className="instagram-grid">
+          {[...experiences, ...experiences.slice(0, 1)].map(
+            (experience, index) => (
+              <Link href="/contactos" key={`${experience.title}-${index}`}>
+                <Image
+                  src={experience.image}
+                  alt={experience.alt}
+                  width={480}
+                  height={360}
+                  loading="eager"
+                />
+              </Link>
+            ),
+          )}
+        </div>
+      </section>
     </main>
   );
 }

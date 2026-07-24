@@ -60,6 +60,67 @@ a {
   min-width: 0;
   padding: 40px clamp(20px, 4vw, 64px);
 }
+.management-user {
+  margin-top: 40px;
+  display: grid;
+  gap: 4px;
+  color: #dce7de;
+}
+.management-user small {
+  color: #9fb1a3;
+}
+.management-user button {
+  width: fit-content;
+  border: 0;
+  padding: 8px 0;
+  color: white;
+  background: none;
+  text-decoration: underline;
+}
+.management-login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #173421;
+}
+.management-login form,
+.management-login > div {
+  width: min(420px, 100%);
+  border-radius: 6px;
+  padding: 36px;
+  background: white;
+}
+.management-login form {
+  display: grid;
+  gap: 18px;
+}
+.management-login label {
+  display: grid;
+  gap: 7px;
+}
+.management-login input,
+.user-detail select,
+.user-search {
+  min-height: 44px;
+  border: 1px solid #bdc5be;
+  padding: 9px 11px;
+}
+.user-detail {
+  display: grid;
+  max-width: 520px;
+  gap: 22px;
+  padding: 24px;
+  background: white;
+}
+.user-detail label {
+  display: grid;
+  gap: 8px;
+}
+.user-search {
+  width: min(420px, 100%);
+  margin-bottom: 18px;
+}
 .admin-header {
   display: flex;
   justify-content: space-between;

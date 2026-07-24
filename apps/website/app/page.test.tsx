@@ -11,12 +11,12 @@ describe('homepage', () => {
     expect(
       screen.getByRole('heading', {
         level: 1,
-        name: /mais do que produtos.*criamos experiências/i,
+        name: /sabores que.*contam histórias/i,
       }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('heading', {
-        name: 'As nossas melhores experiências',
+        name: 'Comprar por ocasião',
       }),
     ).toBeInTheDocument();
     expect(

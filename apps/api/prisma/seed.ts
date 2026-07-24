@@ -1,5 +1,6 @@
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient, StockStatus } from '@prisma/client';
+import { PrismaClient, StockStatus, UserRole } from '@prisma/client';
+import argon2 from 'argon2';
 
 const databaseUrl =
   process.env.DATABASE_URL ??
@@ -97,6 +98,30 @@ async function main() {
       stockStatus: StockStatus.IN_STOCK,
     };
     await prisma.product.upsert({ where: { sku }, update: data, create: data });
+  }
+
+  const adminEmail = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase();
+  const adminPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD;
+  const adminFirstName = process.env.BOOTSTRAP_ADMIN_FIRST_NAME?.trim();
+  const adminLastName = process.env.BOOTSTRAP_ADMIN_LAST_NAME?.trim();
+  if (adminEmail && adminPassword && adminFirstName && adminLastName) {
+    const existing = await prisma.user.findUnique({
+      where: { email: adminEmail },
+    });
+    if (!existing) {
+      await prisma.user.create({
+        data: {
+          email: adminEmail,
+          passwordHash: await argon2.hash(adminPassword, {
+            type: argon2.argon2id,
+          }),
+          firstName: adminFirstName,
+          lastName: adminLastName,
+          role: UserRole.ADMIN,
+          emailVerifiedAt: new Date(),
+        },
+      });
+    }
   }
 }
 

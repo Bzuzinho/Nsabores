@@ -4,22 +4,23 @@ export function Hero() {
   return (
     <section className="hero" aria-labelledby="hero-title">
       <div className="hero-content">
-        <p className="eyebrow">Sabores que ficam. Momentos que contam.</p>
+        <p className="eyebrow">Mercearia gourmet portuguesa</p>
         <h1 id="hero-title">
-          Mais do que produtos.
+          Sabores que
           <br />
-          Criamos experiências.
+          contam histórias.
         </h1>
+        <p className="hero-script">Experiências que ficam.</p>
         <p className="hero-description">
-          Selecionamos queijos, enchidos e iguarias portuguesas com critério,
-          paixão e atendimento próximo.
+          Selecionamos os melhores produtos tradicionais portugueses e criamos
+          experiências únicas para momentos inesquecíveis.
         </p>
         <div className="hero-actions">
           <Link className="button button-primary" href="/loja">
-            Descobrir a loja
+            Comprar agora
           </Link>
           <Link className="button button-outline" href="/servicos">
-            Conhecer experiências
+            Saber mais
           </Link>
         </div>
       </div>

@@ -40,10 +40,11 @@ export function SiteHeader() {
     <>
       <header className="site-header">
         <Link className="brand" href="/" aria-label="Nsabores, início">
-          <span className="brand-name">Nsabores</span>
-          <span className="brand-tagline">
-            Sabores que ficam, momentos que contam
+          <span className="brand-emblem" aria-hidden="true">
+            ◒
           </span>
+          <span className="brand-name">Nsabores</span>
+          <span className="brand-tagline">Mercearia gourmet</span>
         </Link>
 
         <nav className="desktop-navigation" aria-label="Navegação principal">
@@ -65,8 +66,8 @@ export function SiteHeader() {
           </button>
           <Link
             className="icon-button desktop-action"
-            href="/contactos"
-            aria-label="Conta — funcionalidade ainda indisponível"
+            href="/conta"
+            aria-label="A minha conta"
           >
             <UserIcon />
           </Link>

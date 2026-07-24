@@ -13,6 +13,12 @@ enum StockStatus {
   PREORDER
 }
 
+enum UserRole {
+  CUSTOMER
+  STAFF
+  ADMIN
+}
+
 model Category {
   id          String    @id @default(uuid()) @db.Uuid
   name        String
@@ -51,4 +57,79 @@ model Product {
   @@index([isActive, isFeatured])
   @@index([stockStatus])
   @@index([createdAt])
+}
+
+model User {
+  id                         String           @id @default(uuid()) @db.Uuid
+  email                      String           @unique
+  passwordHash               String
+  firstName                  String
+  lastName                   String
+  phone                      String?
+  role                       UserRole         @default(CUSTOMER)
+  isActive                   Boolean          @default(true)
+  emailVerifiedAt            DateTime?
+  lastLoginAt                DateTime?
+  passwordResetTokenHash     String?          @unique
+  passwordResetExpiresAt     DateTime?
+  emailVerificationTokenHash String?          @unique
+  emailVerificationExpiresAt DateTime?
+  createdAt                  DateTime         @default(now())
+  updatedAt                  DateTime         @updatedAt
+  customerProfile            CustomerProfile?
+  addresses                  Address[]
+  authSessions               AuthSession[]
+
+  @@index([role, isActive])
+}
+
+model CustomerProfile {
+  id                 String    @id @default(uuid()) @db.Uuid
+  userId             String    @unique @db.Uuid
+  taxNumber          String?
+  marketingConsent   Boolean   @default(false)
+  marketingConsentAt DateTime?
+  notes              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Address {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @db.Uuid
+  label             String
+  firstName         String
+  lastName          String
+  company           String?
+  taxNumber         String?
+  line1             String
+  line2             String?
+  postalCode        String
+  city              String
+  countryCode       String   @default("PT") @db.Char(2)
+  phone             String?
+  isDefaultShipping Boolean  @default(false)
+  isDefaultBilling  Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model AuthSession {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @db.Uuid
+  refreshTokenHash String    @unique
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  userAgent        String?
+  ipAddress        String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
 }

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { ShopProvider } from '@/components/shop-context';
 import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
+import { AuthProvider } from '@/components/auth-provider';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -38,12 +39,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="pt-PT">
       <body>
         <ShopProvider>
-          <a className="skip-link" href="#conteudo">
-            Saltar para o conteúdo
-          </a>
-          <SiteHeader />
-          {children}
-          <SiteFooter />
+          <AuthProvider>
+            <a className="skip-link" href="#conteudo">
+              Saltar para o conteúdo
+            </a>
+            <SiteHeader />
+            {children}
+            <SiteFooter />
+          </AuthProvider>
         </ShopProvider>
       </body>
     </html>

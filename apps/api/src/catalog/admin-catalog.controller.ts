@@ -10,7 +10,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CatalogService } from './catalog.service';
-import { AdminApiKeyGuard } from './admin-api-key.guard';
+import { AuthGuard, RolesGuard } from '../auth/auth.guards';
+import { Roles } from '../auth/auth.decorators';
+import { UserRole } from '@prisma/client';
 import {
   CategoryQueryDto,
   CreateCategoryDto,
@@ -20,7 +22,8 @@ import {
   UpdateProductDto,
 } from './dto';
 
-@UseGuards(AdminApiKeyGuard)
+@UseGuards(AuthGuard, RolesGuard)
+@Roles(UserRole.STAFF, UserRole.ADMIN)
 @Controller('v1/admin')
 export class AdminCatalogController {
   constructor(private readonly catalog: CatalogService) {}

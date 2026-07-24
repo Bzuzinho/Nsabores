@@ -20,5 +20,6 @@ Esta pasta contém documentação operacional e evolutiva do projeto. Deve ser a
 - `templates/`: modelos para novos documentos.
 - `website-status.md`: estado funcional e limitações do website público.
 - `catalog.md`: modelo, API e interfaces do catálogo.
+- `authentication.md`: sessões, clientes, roles e bootstrap administrativo.
 
 A documentação técnica consolidada continuará em `docs/`, enquanto esta área funciona como memória viva do projeto.

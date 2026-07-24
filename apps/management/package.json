@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@nsabores/config": "workspace:*",
+    "@nsabores/api-client": "workspace:*",
     "@nsabores/types": "workspace:*",
     "@nsabores/ui": "workspace:*",
     "@nsabores/validation": "workspace:*",

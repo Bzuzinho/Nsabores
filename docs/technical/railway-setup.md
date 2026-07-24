@@ -4,9 +4,20 @@
 
 Configurar sem versionar valores reais:
 
-- API: `DATABASE_URL`, `ADMIN_API_KEY` e `CORS_ORIGINS`;
+- API: `DATABASE_URL`, `CORS_ORIGINS` e variáveis `AUTH_*`;
 - website: `API_URL` e `NEXT_PUBLIC_API_URL`;
-- management: `API_URL` e `ADMIN_API_KEY` para o proxy server-side.
+- management: `NEXT_PUBLIC_API_URL` para o cliente autenticado.
+
+### Autenticação
+
+Configurar na API: `AUTH_ACCESS_TOKEN_SECRET`, `AUTH_ACCESS_TOKEN_TTL`,
+`AUTH_REFRESH_TOKEN_TTL`, `AUTH_COOKIE_DOMAIN=.nsabores.pt`,
+`AUTH_COOKIE_SECURE=true`, `PASSWORD_RESET_TOKEN_TTL`,
+`EMAIL_VERIFICATION_TOKEN_TTL`, `WEBSITE_URL` e `MANAGEMENT_URL`.
+
+Website e management recebem `NEXT_PUBLIC_API_URL`. As variáveis
+`BOOTSTRAP_ADMIN_*` são temporárias: executar a seed uma vez e removê-las.
+`ADMIN_API_KEY` deixou de ser suportada.
 
 ## Configuração versionada por serviço
 

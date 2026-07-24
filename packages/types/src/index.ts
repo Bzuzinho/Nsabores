@@ -54,3 +54,47 @@ export interface Paginated<T> {
     totalPages: number;
   };
 }
+
+export type UserRole = 'CUSTOMER' | 'STAFF' | 'ADMIN';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  role: UserRole;
+  isActive: boolean;
+  emailVerifiedAt: string | null;
+  createdAt: string;
+  customerProfile?: {
+    taxNumber: string | null;
+    marketingConsent: boolean;
+    notes?: string | null;
+  } | null;
+}
+
+export interface Address {
+  id: string;
+  label: string;
+  firstName: string;
+  lastName: string;
+  company: string | null;
+  taxNumber: string | null;
+  line1: string;
+  line2: string | null;
+  postalCode: string;
+  city: string;
+  countryCode: string;
+  phone: string | null;
+  isDefaultShipping: boolean;
+  isDefaultBilling: boolean;
+}
+
+export interface AuthSessionView {
+  id: string;
+  userAgent: string | null;
+  ipAddress: string | null;
+  createdAt: string;
+  expiresAt: string;
+}

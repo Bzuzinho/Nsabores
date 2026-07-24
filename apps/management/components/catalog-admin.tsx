@@ -8,6 +8,7 @@ import type {
 } from '@nsabores/types';
 import Link from 'next/link';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { managementApi } from './management-auth';
 
 type Mode = 'dashboard' | 'products' | 'product-form' | 'categories';
 type Mutate = (
@@ -29,14 +30,7 @@ interface FilterSetters {
 }
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`/api/catalog/${path}`, {
-    ...init,
-    headers: { 'content-type': 'application/json', ...init?.headers },
-  });
-  const payload = (await response.json()) as T & { message?: string };
-  if (!response.ok)
-    throw new Error(payload.message ?? 'Não foi possível concluir a operação.');
-  return payload;
+  return managementApi.request<T>(`/v1/admin/${path}`, init);
 }
 
 export function CatalogAdmin({
