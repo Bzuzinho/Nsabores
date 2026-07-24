@@ -5,6 +5,10 @@
     "jsx": "preserve",
     "lib": ["dom", "dom.iterable", "esnext"],
     "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    },
     "plugins": [{ "name": "next" }]
   },
   "include": [
