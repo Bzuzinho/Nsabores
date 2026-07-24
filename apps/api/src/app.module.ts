@@ -32,6 +32,14 @@ import {
   PublicOperationsController,
 } from './operations/operations.controller';
 import { OperationsService } from './operations/operations.service';
+import {
+  AdminFulfillmentController,
+  CustomerFulfillmentController,
+  PublicTrackingController,
+  ShippingWebhookController,
+} from './fulfillment/fulfillment.controller';
+import { FulfillmentService } from './fulfillment/fulfillment.service';
+import { ShippingProvider } from './fulfillment/shipping.provider';
 
 @Module({
   imports: [
@@ -78,6 +86,14 @@ import { OperationsService } from './operations/operations.service';
         PAYMENT_CANCEL_URL: Joi.string()
           .uri()
           .default('http://localhost:3000/checkout/erro'),
+        SHIPPING_PROVIDER: Joi.string().default('mock'),
+        SHIPPING_API_KEY: Joi.string().allow('').optional(),
+        SHIPPING_API_SECRET: Joi.string().allow('').optional(),
+        SHIPPING_WEBHOOK_SECRET: Joi.string()
+          .min(16)
+          .default('development-shipping-webhook-secret'),
+        SHIPPING_SENDER_NAME: Joi.string().default('Nsabores'),
+        SHIPPING_SENDER_ADDRESS: Joi.string().allow('').optional(),
         NODE_ENV: Joi.string()
           .valid('development', 'test', 'production')
           .default('development'),
@@ -107,6 +123,10 @@ import { OperationsService } from './operations/operations.service';
     PublicOperationsController,
     BusinessOperationsController,
     AdminOperationsController,
+    PublicTrackingController,
+    CustomerFulfillmentController,
+    AdminFulfillmentController,
+    ShippingWebhookController,
   ],
   providers: [
     PrismaService,
@@ -121,6 +141,8 @@ import { OperationsService } from './operations/operations.service';
     PaymentProvider,
     CommerceMailProvider,
     OperationsService,
+    FulfillmentService,
+    ShippingProvider,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
