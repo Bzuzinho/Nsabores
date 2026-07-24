@@ -64,6 +64,11 @@ e administrativa, gestão em `/catalogo`, loja em `/loja` e detalhe em
 `/loja/[slug]`. Consultar [a documentação viva](docs/living/catalog.md) para
 endpoints, configuração e limitações.
 
+O fluxo comercial inclui carrinho persistente, checkout convidado/autenticado,
+entregas configuráveis, encomendas, pagamento mock seguro e operação em
+`/encomendas`. Consultar
+[a documentação de comércio](docs/living/commerce.md).
+
 ## Desenvolvimento
 
 Requer Node.js 22 e pnpm 11.9.0.

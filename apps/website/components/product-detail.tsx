@@ -43,7 +43,7 @@ export function ProductDetail({ product }: { product: Product }) {
         <button
           className="button button-primary"
           disabled={product.stockStatus === 'OUT_OF_STOCK'}
-          onClick={() => addToCart(product)}
+          onClick={() => void addToCart(product).catch(() => undefined)}
         >
           Adicionar ao carrinho
         </button>

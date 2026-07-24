@@ -29,7 +29,7 @@ export function ProductCard({ product }: { product: Product }) {
             className="add-button"
             type="button"
             aria-label={`Adicionar ${product.name} ao carrinho`}
-            onClick={() => addToCart(product)}
+            onClick={() => void addToCart(product).catch(() => undefined)}
           >
             <span aria-hidden="true">+</span>
           </button>

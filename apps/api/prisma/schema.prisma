@@ -19,6 +19,38 @@ enum UserRole {
   ADMIN
 }
 
+enum CartStatus {
+  ACTIVE
+  CONVERTED
+  ABANDONED
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  PROCESSING
+  READY
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  PAID
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum DeliveryMethodType {
+  STANDARD
+  LOCAL_PICKUP
+}
+
 model Category {
   id          String    @id @default(uuid()) @db.Uuid
   name        String
@@ -52,6 +84,8 @@ model Product {
   category            Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
+  cartItems           CartItem[]
+  orderItems          OrderItem[]
 
   @@index([categoryId])
   @@index([isActive, isFeatured])
@@ -79,8 +113,148 @@ model User {
   customerProfile            CustomerProfile?
   addresses                  Address[]
   authSessions               AuthSession[]
+  carts                      Cart[]
+  orders                     Order[]
+  orderStatusChanges         OrderStatusHistory[] @relation("OrderStatusAuthor")
 
   @@index([role, isActive])
+}
+
+model Cart {
+  id        String     @id @default(uuid()) @db.Uuid
+  userId    String?    @db.Uuid
+  sessionId String?    @db.Uuid
+  status    CartStatus @default(ACTIVE)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+
+  @@unique([userId, status])
+  @@unique([sessionId, status])
+  @@index([updatedAt])
+}
+
+model CartItem {
+  id             String   @id @default(uuid()) @db.Uuid
+  cartId         String   @db.Uuid
+  productId      String   @db.Uuid
+  quantity       Int
+  unitPriceCents Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  cart           Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([cartId, productId])
+  @@index([productId])
+}
+
+model DeliveryMethod {
+  id                     String             @id @default(uuid()) @db.Uuid
+  code                   String             @unique
+  name                   String
+  type                   DeliveryMethodType
+  isActive               Boolean            @default(true)
+  priceCents             Int                @default(0)
+  freeShippingAboveCents Int?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  orders                 Order[]
+
+  @@index([isActive])
+}
+
+model Order {
+  id                   String        @id @default(uuid()) @db.Uuid
+  number               String        @unique
+  userId               String?       @db.Uuid
+  email                String
+  customerName         String
+  phone                String
+  status               OrderStatus   @default(PENDING_PAYMENT)
+  paymentStatus        PaymentStatus @default(PENDING)
+  subtotalCents        Int
+  shippingCents        Int
+  discountCents        Int           @default(0)
+  taxCents             Int           @default(0)
+  totalCents           Int
+  currency             String        @default("EUR") @db.Char(3)
+  billingAddress       Json
+  shippingAddress      Json
+  customerNotes        String?
+  internalNotes        String?
+  source               String        @default("WEBSITE")
+  deliveryMethodId     String        @db.Uuid
+  idempotencyKey       String        @unique
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  user                 User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  deliveryMethod       DeliveryMethod @relation(fields: [deliveryMethodId], references: [id], onDelete: Restrict)
+  items                OrderItem[]
+  payments             Payment[]
+  statusHistory        OrderStatusHistory[]
+
+  @@index([userId, createdAt])
+  @@index([status, paymentStatus, createdAt])
+}
+
+model OrderItem {
+  id             String   @id @default(uuid()) @db.Uuid
+  orderId        String   @db.Uuid
+  productId      String?  @db.Uuid
+  productName    String
+  sku            String
+  unitPriceCents Int
+  quantity       Int
+  totalCents     Int
+  imageUrl       String?
+  createdAt      DateTime @default(now())
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product        Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+}
+
+model Payment {
+  id                String        @id @default(uuid()) @db.Uuid
+  orderId           String        @db.Uuid
+  provider          String
+  providerPaymentId String        @unique
+  method            String
+  status            PaymentStatus @default(PENDING)
+  amountCents       Int
+  currency          String        @default("EUR") @db.Char(3)
+  metadata          Json?
+  idempotencyKey    String        @unique
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  order             Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, status])
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(uuid()) @db.Uuid
+  orderId   String      @db.Uuid
+  fromStatus OrderStatus?
+  toStatus  OrderStatus
+  authorId  String?     @db.Uuid
+  note      String?
+  createdAt DateTime    @default(now())
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  author    User?       @relation("OrderStatusAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([orderId, createdAt])
+}
+
+model ProcessedWebhook {
+  id              String   @id @default(uuid()) @db.Uuid
+  provider        String
+  providerEventId String
+  createdAt       DateTime @default(now())
+
+  @@unique([provider, providerEventId])
 }
 
 model CustomerProfile {

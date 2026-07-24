@@ -1,0 +1,106 @@
+import { Transform, Type } from 'class-transformer';
+import {
+  IsBoolean,
+  IsEmail,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsPhoneNumber,
+  IsString,
+  IsUUID,
+  Matches,
+  Max,
+  MaxLength,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+import { OrderStatus, PaymentStatus } from '@prisma/client';
+
+export class CartItemDto {
+  @IsUUID()
+  productId!: string;
+
+  @IsInt()
+  @Min(1)
+  @Max(99)
+  quantity = 1;
+}
+
+export class CartQuantityDto {
+  @IsInt()
+  @Min(1)
+  @Max(99)
+  quantity!: number;
+}
+
+export class AddressSnapshotDto {
+  @IsString() @IsNotEmpty() @MaxLength(100) firstName!: string;
+  @IsString() @IsNotEmpty() @MaxLength(100) lastName!: string;
+  @IsOptional() @IsString() @MaxLength(150) company?: string;
+  @IsOptional() @Matches(/^\d{9}$/) taxNumber?: string;
+  @IsString() @IsNotEmpty() @MaxLength(200) line1!: string;
+  @IsOptional() @IsString() @MaxLength(200) line2?: string;
+  @Matches(/^\d{4}-\d{3}$/) postalCode!: string;
+  @IsString() @IsNotEmpty() @MaxLength(100) city!: string;
+  @Matches(/^PT$/) countryCode = 'PT';
+}
+
+export class CheckoutDto {
+  @IsEmail() email!: string;
+  @IsString() @IsNotEmpty() @MaxLength(150) customerName!: string;
+  @IsPhoneNumber('PT') phone!: string;
+  @ValidateNested()
+  @Type(() => AddressSnapshotDto)
+  shippingAddress!: AddressSnapshotDto;
+  @ValidateNested()
+  @Type(() => AddressSnapshotDto)
+  billingAddress!: AddressSnapshotDto;
+  @IsUUID() deliveryMethodId!: string;
+  @IsBoolean() termsAccepted!: boolean;
+  @IsBoolean() privacyAccepted!: boolean;
+  @IsOptional() @IsBoolean() marketingConsent?: boolean;
+  @IsOptional() @IsString() @MaxLength(1000) customerNotes?: string;
+  @IsString() @IsNotEmpty() @MaxLength(100) idempotencyKey!: string;
+}
+
+export class PaymentStartDto {
+  @IsString() @IsNotEmpty() @MaxLength(100) idempotencyKey!: string;
+}
+
+export class MockWebhookDto {
+  @IsString() @IsNotEmpty() eventId!: string;
+  @IsString() @IsNotEmpty() providerPaymentId!: string;
+  @IsEnum(PaymentStatus) status!: PaymentStatus;
+}
+
+export class OrderQueryDto {
+  @IsOptional() @IsString() @MaxLength(100) search?: string;
+  @IsOptional() @IsEnum(OrderStatus) status?: OrderStatus;
+  @IsOptional() @IsEnum(PaymentStatus) paymentStatus?: PaymentStatus;
+  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) from?: string;
+  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) to?: string;
+  @IsOptional() @Transform(({ value }) => Number(value)) @IsInt() @Min(1) page =
+    1;
+  @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit = 20;
+}
+
+export class OrderStatusDto {
+  @IsEnum(OrderStatus) status!: OrderStatus;
+  @IsOptional() @IsString() @MaxLength(1000) note?: string;
+}
+
+export class InternalNoteDto {
+  @IsString() @IsNotEmpty() @MaxLength(3000) note!: string;
+}
+
+export class DeliveryMethodDto {
+  @IsBoolean() isActive!: boolean;
+  @IsInt() @Min(0) priceCents!: number;
+  @IsOptional() @IsInt() @Min(0) freeShippingAboveCents?: number | null;
+}

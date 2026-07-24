@@ -1,0 +1,42 @@
+CREATE TYPE "CartStatus" AS ENUM ('ACTIVE', 'CONVERTED', 'ABANDONED');
+CREATE TYPE "OrderStatus" AS ENUM ('PENDING_PAYMENT', 'PAID', 'PROCESSING', 'READY', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED');
+CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'AUTHORIZED', 'PAID', 'FAILED', 'CANCELLED', 'REFUNDED', 'PARTIALLY_REFUNDED');
+CREATE TYPE "DeliveryMethodType" AS ENUM ('STANDARD', 'LOCAL_PICKUP');
+
+CREATE TABLE "Cart" ("id" UUID NOT NULL, "userId" UUID, "sessionId" UUID, "status" "CartStatus" NOT NULL DEFAULT 'ACTIVE', "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL, CONSTRAINT "Cart_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "CartItem" ("id" UUID NOT NULL, "cartId" UUID NOT NULL, "productId" UUID NOT NULL, "quantity" INTEGER NOT NULL, "unitPriceCents" INTEGER NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL, CONSTRAINT "CartItem_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "DeliveryMethod" ("id" UUID NOT NULL, "code" TEXT NOT NULL, "name" TEXT NOT NULL, "type" "DeliveryMethodType" NOT NULL, "isActive" BOOLEAN NOT NULL DEFAULT true, "priceCents" INTEGER NOT NULL DEFAULT 0, "freeShippingAboveCents" INTEGER, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL, CONSTRAINT "DeliveryMethod_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "Order" ("id" UUID NOT NULL, "number" TEXT NOT NULL, "userId" UUID, "email" TEXT NOT NULL, "customerName" TEXT NOT NULL, "phone" TEXT NOT NULL, "status" "OrderStatus" NOT NULL DEFAULT 'PENDING_PAYMENT', "paymentStatus" "PaymentStatus" NOT NULL DEFAULT 'PENDING', "subtotalCents" INTEGER NOT NULL, "shippingCents" INTEGER NOT NULL, "discountCents" INTEGER NOT NULL DEFAULT 0, "taxCents" INTEGER NOT NULL DEFAULT 0, "totalCents" INTEGER NOT NULL, "currency" CHAR(3) NOT NULL DEFAULT 'EUR', "billingAddress" JSONB NOT NULL, "shippingAddress" JSONB NOT NULL, "customerNotes" TEXT, "internalNotes" TEXT, "source" TEXT NOT NULL DEFAULT 'WEBSITE', "deliveryMethodId" UUID NOT NULL, "idempotencyKey" TEXT NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL, CONSTRAINT "Order_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "OrderItem" ("id" UUID NOT NULL, "orderId" UUID NOT NULL, "productId" UUID, "productName" TEXT NOT NULL, "sku" TEXT NOT NULL, "unitPriceCents" INTEGER NOT NULL, "quantity" INTEGER NOT NULL, "totalCents" INTEGER NOT NULL, "imageUrl" TEXT, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT "OrderItem_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "Payment" ("id" UUID NOT NULL, "orderId" UUID NOT NULL, "provider" TEXT NOT NULL, "providerPaymentId" TEXT NOT NULL, "method" TEXT NOT NULL, "status" "PaymentStatus" NOT NULL DEFAULT 'PENDING', "amountCents" INTEGER NOT NULL, "currency" CHAR(3) NOT NULL DEFAULT 'EUR', "metadata" JSONB, "idempotencyKey" TEXT NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL, CONSTRAINT "Payment_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "OrderStatusHistory" ("id" UUID NOT NULL, "orderId" UUID NOT NULL, "fromStatus" "OrderStatus", "toStatus" "OrderStatus" NOT NULL, "authorId" UUID, "note" TEXT, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT "OrderStatusHistory_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "ProcessedWebhook" ("id" UUID NOT NULL, "provider" TEXT NOT NULL, "providerEventId" TEXT NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT "ProcessedWebhook_pkey" PRIMARY KEY ("id"));
+
+CREATE UNIQUE INDEX "Cart_userId_status_key" ON "Cart"("userId", "status");
+CREATE UNIQUE INDEX "Cart_sessionId_status_key" ON "Cart"("sessionId", "status");
+CREATE INDEX "Cart_updatedAt_idx" ON "Cart"("updatedAt");
+CREATE UNIQUE INDEX "CartItem_cartId_productId_key" ON "CartItem"("cartId", "productId");
+CREATE INDEX "CartItem_productId_idx" ON "CartItem"("productId");
+CREATE UNIQUE INDEX "DeliveryMethod_code_key" ON "DeliveryMethod"("code");
+CREATE INDEX "DeliveryMethod_isActive_idx" ON "DeliveryMethod"("isActive");
+CREATE UNIQUE INDEX "Order_number_key" ON "Order"("number");
+CREATE UNIQUE INDEX "Order_idempotencyKey_key" ON "Order"("idempotencyKey");
+CREATE INDEX "Order_userId_createdAt_idx" ON "Order"("userId", "createdAt");
+CREATE INDEX "Order_status_paymentStatus_createdAt_idx" ON "Order"("status", "paymentStatus", "createdAt");
+CREATE INDEX "OrderItem_orderId_idx" ON "OrderItem"("orderId");
+CREATE UNIQUE INDEX "Payment_providerPaymentId_key" ON "Payment"("providerPaymentId");
+CREATE UNIQUE INDEX "Payment_idempotencyKey_key" ON "Payment"("idempotencyKey");
+CREATE INDEX "Payment_orderId_status_idx" ON "Payment"("orderId", "status");
+CREATE INDEX "OrderStatusHistory_orderId_createdAt_idx" ON "OrderStatusHistory"("orderId", "createdAt");
+CREATE UNIQUE INDEX "ProcessedWebhook_provider_providerEventId_key" ON "ProcessedWebhook"("provider", "providerEventId");
+
+ALTER TABLE "Cart" ADD CONSTRAINT "Cart_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "CartItem" ADD CONSTRAINT "CartItem_cartId_fkey" FOREIGN KEY ("cartId") REFERENCES "Cart"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "CartItem" ADD CONSTRAINT "CartItem_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Order" ADD CONSTRAINT "Order_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Order" ADD CONSTRAINT "Order_deliveryMethodId_fkey" FOREIGN KEY ("deliveryMethodId") REFERENCES "DeliveryMethod"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Payment" ADD CONSTRAINT "Payment_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "OrderStatusHistory" ADD CONSTRAINT "OrderStatusHistory_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "OrderStatusHistory" ADD CONSTRAINT "OrderStatusHistory_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;

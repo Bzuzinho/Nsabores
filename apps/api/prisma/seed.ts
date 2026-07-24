@@ -1,5 +1,10 @@
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient, StockStatus, UserRole } from '@prisma/client';
+import {
+  DeliveryMethodType,
+  PrismaClient,
+  StockStatus,
+  UserRole,
+} from '@prisma/client';
 import argon2 from 'argon2';
 
 const databaseUrl =
@@ -99,6 +104,40 @@ async function main() {
     };
     await prisma.product.upsert({ where: { sku }, update: data, create: data });
   }
+
+  await prisma.deliveryMethod.upsert({
+    where: { code: 'standard-pt' },
+    update: {
+      name: 'Entrega standard — Portugal Continental',
+      type: DeliveryMethodType.STANDARD,
+      isActive: true,
+      priceCents: 490,
+      freeShippingAboveCents: 5000,
+    },
+    create: {
+      code: 'standard-pt',
+      name: 'Entrega standard — Portugal Continental',
+      type: DeliveryMethodType.STANDARD,
+      priceCents: 490,
+      freeShippingAboveCents: 5000,
+    },
+  });
+  await prisma.deliveryMethod.upsert({
+    where: { code: 'local-pickup' },
+    update: {
+      name: 'Recolha local',
+      type: DeliveryMethodType.LOCAL_PICKUP,
+      isActive: true,
+      priceCents: 0,
+      freeShippingAboveCents: null,
+    },
+    create: {
+      code: 'local-pickup',
+      name: 'Recolha local',
+      type: DeliveryMethodType.LOCAL_PICKUP,
+      priceCents: 0,
+    },
+  });
 
   const adminEmail = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase();
   const adminPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD;

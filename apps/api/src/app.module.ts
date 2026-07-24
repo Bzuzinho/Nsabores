@@ -17,6 +17,15 @@ import { AccountService } from './auth/account.service';
 import { AdminUsersService } from './auth/admin-users.service';
 import { AuthGuard, RolesGuard } from './auth/auth.guards';
 import { MailProvider } from './auth/mail.provider';
+import {
+  AdminOrdersController,
+  CartController,
+  CheckoutController,
+  CustomerOrdersController,
+} from './commerce/commerce.controller';
+import { CommerceService } from './commerce/commerce.service';
+import { PaymentProvider } from './commerce/payment.provider';
+import { CommerceMailProvider } from './commerce/mail.provider';
 
 @Module({
   imports: [
@@ -52,6 +61,17 @@ import { MailProvider } from './auth/mail.provider';
         AUTH_COOKIE_SECURE: Joi.boolean().default(false),
         WEBSITE_URL: Joi.string().uri().default('http://localhost:3000'),
         MANAGEMENT_URL: Joi.string().uri().default('http://localhost:3001'),
+        PAYMENT_PROVIDER: Joi.string().valid('mock', 'stripe').default('mock'),
+        PAYMENT_SECRET_KEY: Joi.string().allow('').optional(),
+        PAYMENT_WEBHOOK_SECRET: Joi.string()
+          .min(16)
+          .default('development-mock-webhook-secret'),
+        PAYMENT_SUCCESS_URL: Joi.string()
+          .uri()
+          .default('http://localhost:3000/checkout/sucesso'),
+        PAYMENT_CANCEL_URL: Joi.string()
+          .uri()
+          .default('http://localhost:3000/checkout/erro'),
         NODE_ENV: Joi.string()
           .valid('development', 'test', 'production')
           .default('development'),
@@ -74,6 +94,10 @@ import { MailProvider } from './auth/mail.provider';
     AuthController,
     AccountController,
     AdminUsersController,
+    CartController,
+    CheckoutController,
+    CustomerOrdersController,
+    AdminOrdersController,
   ],
   providers: [
     PrismaService,
@@ -84,6 +108,9 @@ import { MailProvider } from './auth/mail.provider';
     AuthGuard,
     RolesGuard,
     MailProvider,
+    CommerceService,
+    PaymentProvider,
+    CommerceMailProvider,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })

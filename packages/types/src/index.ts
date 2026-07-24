@@ -98,3 +98,97 @@ export interface AuthSessionView {
   createdAt: string;
   expiresAt: string;
 }
+
+export type OrderStatus =
+  | 'PENDING_PAYMENT'
+  | 'PAID'
+  | 'PROCESSING'
+  | 'READY'
+  | 'SHIPPED'
+  | 'DELIVERED'
+  | 'CANCELLED'
+  | 'REFUNDED';
+export type PaymentStatus =
+  | 'PENDING'
+  | 'AUTHORIZED'
+  | 'PAID'
+  | 'FAILED'
+  | 'CANCELLED'
+  | 'REFUNDED'
+  | 'PARTIALLY_REFUNDED';
+
+export interface Cart {
+  id: string;
+  status: 'ACTIVE' | 'CONVERTED' | 'ABANDONED';
+  items: Array<{
+    id: string;
+    productId: string;
+    quantity: number;
+    unitPriceCents: number;
+    totalCents: number;
+    product: Pick<
+      CatalogProduct,
+      'id' | 'name' | 'slug' | 'sku' | 'imageUrl' | 'stockStatus'
+    >;
+  }>;
+  itemCount: number;
+  subtotalCents: number;
+}
+
+export interface DeliveryMethod {
+  id: string;
+  code: string;
+  name: string;
+  type: 'STANDARD' | 'LOCAL_PICKUP';
+  isActive: boolean;
+  priceCents: number;
+  freeShippingAboveCents: number | null;
+}
+
+export interface CommerceOrder {
+  id: string;
+  number: string;
+  email: string;
+  customerName: string;
+  phone: string;
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  subtotalCents: number;
+  shippingCents: number;
+  discountCents: number;
+  taxCents: number;
+  totalCents: number;
+  currency: string;
+  billingAddress: Record<string, unknown>;
+  shippingAddress: Record<string, unknown>;
+  customerNotes: string | null;
+  internalNotes?: string | null;
+  createdAt: string;
+  deliveryMethod: DeliveryMethod;
+  items: Array<{
+    id: string;
+    productId: string | null;
+    productName: string;
+    sku: string;
+    unitPriceCents: number;
+    quantity: number;
+    totalCents: number;
+    imageUrl: string | null;
+  }>;
+  payments: Array<{
+    id: string;
+    provider: string;
+    method: string;
+    status: PaymentStatus;
+    amountCents: number;
+    currency: string;
+    createdAt: string;
+  }>;
+  statusHistory: Array<{
+    id: string;
+    fromStatus: OrderStatus | null;
+    toStatus: OrderStatus;
+    note: string | null;
+    createdAt: string;
+  }>;
+}

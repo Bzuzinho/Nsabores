@@ -56,6 +56,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const result = await api.post<{ user: AuthUser }>(path, body);
       setUser(result.user);
+      await api.post('/v1/cart/merge').catch(() => undefined);
+      window.dispatchEvent(new Event('nsabores-cart-refresh'));
       return result.user;
     } catch (reason) {
       const message =

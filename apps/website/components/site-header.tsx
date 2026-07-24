@@ -31,10 +31,7 @@ export function SiteHeader() {
     );
   }, [query]);
 
-  const total = cartItems.reduce(
-    (sum, item) => sum + item.priceCents * item.quantity,
-    0,
-  );
+  const total = cartItems.reduce((sum, item) => sum + item.totalCents, 0);
 
   return (
     <>
@@ -168,11 +165,16 @@ export function SiteHeader() {
           {cartItems.length ? (
             cartItems.map((item) => (
               <article className="cart-item" key={item.id}>
-                <Image src={item.imageUrl} alt="" width={72} height={72} />
+                <Image
+                  src={item.product.imageUrl}
+                  alt=""
+                  width={72}
+                  height={72}
+                />
                 <div>
-                  <strong>{item.name}</strong>
+                  <strong>{item.product.name}</strong>
                   <small>
-                    {item.quantity} × {formatPrice(item.priceCents)}
+                    {item.quantity} × {formatPrice(item.unitPriceCents)}
                   </small>
                 </div>
                 <button type="button" onClick={() => removeFromCart(item.id)}>
@@ -194,9 +196,13 @@ export function SiteHeader() {
           <span>Total</span>
           <strong>{formatPrice(total)}</strong>
         </div>
-        <button className="button button-primary" type="button" disabled>
-          Checkout brevemente
-        </button>
+        <Link
+          className="button button-primary"
+          href="/carrinho"
+          onClick={closeCart}
+        >
+          Ver carrinho
+        </Link>
       </aside>
       <button
         className={`page-backdrop cart-backdrop ${
