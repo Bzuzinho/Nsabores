@@ -19,6 +19,13 @@ export function ManagementShell({ children }: { children: ReactNode }) {
           <Link href="/catalogo/produtos">Produtos</Link>
           <Link href="/catalogo/categorias">Categorias</Link>
           <Link href="/encomendas">Encomendas</Link>
+          <Link href="/stock">Stock</Link>
+          <Link href="/stock/inventarios">Inventários</Link>
+          <Link href="/fornecedores">Fornecedores</Link>
+          <Link href="/compras">Compras</Link>
+          <Link href="/revendedores">Revendedores</Link>
+          <Link href="/revendedores/candidaturas">Candidaturas B2B</Link>
+          <Link href="/tabelas-precos">Tabelas de preços</Link>
           {auth.user?.role === 'ADMIN' && (
             <Link href="/utilizadores">Utilizadores</Link>
           )}

@@ -1,5 +1,9 @@
 # Documentação Viva
 
+Consulte [Operações, stock e canal B2B](./operations-b2b.md) para o modelo do
+Sprint 5 e [ADR 0004](./decisions/0004-business-account-separation.md) para a
+separação entre utilizador e conta empresarial.
+
 Esta pasta contém documentação operacional e evolutiva do projeto. Deve ser atualizada à medida que o produto, o negócio e as decisões técnicas mudam.
 
 ## Regras

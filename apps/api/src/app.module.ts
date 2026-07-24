@@ -26,6 +26,12 @@ import {
 import { CommerceService } from './commerce/commerce.service';
 import { PaymentProvider } from './commerce/payment.provider';
 import { CommerceMailProvider } from './commerce/mail.provider';
+import {
+  AdminOperationsController,
+  BusinessOperationsController,
+  PublicOperationsController,
+} from './operations/operations.controller';
+import { OperationsService } from './operations/operations.service';
 
 @Module({
   imports: [
@@ -98,6 +104,9 @@ import { CommerceMailProvider } from './commerce/mail.provider';
     CheckoutController,
     CustomerOrdersController,
     AdminOrdersController,
+    PublicOperationsController,
+    BusinessOperationsController,
+    AdminOperationsController,
   ],
   providers: [
     PrismaService,
@@ -111,6 +120,7 @@ import { CommerceMailProvider } from './commerce/mail.provider';
     CommerceService,
     PaymentProvider,
     CommerceMailProvider,
+    OperationsService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })

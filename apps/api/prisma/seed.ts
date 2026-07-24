@@ -1,6 +1,7 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import {
   DeliveryMethodType,
+  PriceListType,
   PrismaClient,
   StockStatus,
   UserRole,
@@ -102,7 +103,111 @@ async function main() {
       isFeatured: true,
       stockStatus: StockStatus.IN_STOCK,
     };
-    await prisma.product.upsert({ where: { sku }, update: data, create: data });
+    const product = await prisma.product.upsert({
+      where: { sku },
+      update: data,
+      create: data,
+    });
+    await prisma.stockItem.upsert({
+      where: { productId: product.id },
+      update: { trackStock: true },
+      create: {
+        productId: product.id,
+        onHandQuantity: 100,
+        reorderPoint: 15,
+        reorderQuantity: 50,
+      },
+    });
+  }
+
+  const retail = await prisma.priceList.upsert({
+    where: { code: 'RETAIL' },
+    update: { name: 'Preço de venda ao público', isActive: true },
+    create: {
+      code: 'RETAIL',
+      name: 'Preço de venda ao público',
+      type: PriceListType.RETAIL,
+      priority: 100,
+    },
+  });
+  const reseller = await prisma.priceList.upsert({
+    where: { code: 'RESELLER-BASE' },
+    update: { name: 'Revendedores — base', isActive: true },
+    create: {
+      code: 'RESELLER-BASE',
+      name: 'Revendedores — base',
+      type: PriceListType.RESELLER,
+      priority: 50,
+      includesTax: false,
+    },
+  });
+  const seededProducts = await prisma.product.findMany();
+  for (const product of seededProducts) {
+    await prisma.priceListItem.upsert({
+      where: {
+        priceListId_productId: {
+          priceListId: retail.id,
+          productId: product.id,
+        },
+      },
+      update: { priceCents: product.priceCents },
+      create: {
+        priceListId: retail.id,
+        productId: product.id,
+        priceCents: product.priceCents,
+      },
+    });
+    await prisma.priceListItem.upsert({
+      where: {
+        priceListId_productId: {
+          priceListId: reseller.id,
+          productId: product.id,
+        },
+      },
+      update: { priceCents: Math.round(product.priceCents * 0.7) },
+      create: {
+        priceListId: reseller.id,
+        productId: product.id,
+        priceCents: Math.round(product.priceCents * 0.7),
+        minimumQuantity: 6,
+      },
+    });
+  }
+
+  const supplier = await prisma.supplier.upsert({
+    where: { id: '00000000-0000-4000-8000-000000000001' },
+    update: { tradeName: 'Fornecedor de demonstração', isActive: true },
+    create: {
+      id: '00000000-0000-4000-8000-000000000001',
+      tradeName: 'Fornecedor de demonstração',
+      legalName: 'Fornecedor de demonstração, Lda.',
+      email: 'fornecedor@example.invalid',
+      phone: '+351000000000',
+      address: {
+        line1: 'Morada de demonstração',
+        postalCode: '0000-000',
+        city: 'Lisboa',
+        countryCode: 'PT',
+      },
+    },
+  });
+  for (const product of seededProducts) {
+    await prisma.supplierProduct.upsert({
+      where: {
+        supplierId_productId: {
+          supplierId: supplier.id,
+          productId: product.id,
+        },
+      },
+      update: { purchaseCostCents: Math.round(product.priceCents * 0.45) },
+      create: {
+        supplierId: supplier.id,
+        productId: product.id,
+        supplierSku: `SUP-${product.sku}`,
+        purchaseCostCents: Math.round(product.priceCents * 0.45),
+        isPreferred: true,
+      },
+    });
   }
 
   await prisma.deliveryMethod.upsert({

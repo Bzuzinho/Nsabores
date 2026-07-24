@@ -1,5 +1,9 @@
 # Nsabores
 
+O Sprint 5 acrescenta stock quantitativo, fornecedores, compras, inventário e
+contas B2B com tabelas de preços. A arquitetura operacional está descrita em
+[`docs/living/operations-b2b.md`](docs/living/operations-b2b.md).
+
 Plataforma digital da marca **Nsabores**, composta por:
 
 - website institucional;

@@ -16,6 +16,7 @@ import type {
 } from './dto';
 import { CommerceMailProvider } from './mail.provider';
 import { PaymentProvider } from './payment.provider';
+import { OperationsService } from '../operations/operations.service';
 
 const orderInclude = {
   items: true,
@@ -52,6 +53,7 @@ export class CommerceService {
     private readonly prisma: PrismaService,
     private readonly payments: PaymentProvider,
     private readonly mail: CommerceMailProvider,
+    private readonly operations: OperationsService,
   ) {}
 
   async cart(identity: { userId?: string; sessionId?: string }) {
@@ -266,6 +268,22 @@ export class CommerceService {
       });
       return created;
     });
+    try {
+      await this.operations.reserveOrder(order.id);
+    } catch (error) {
+      await this.prisma.$transaction([
+        this.prisma.order.delete({ where: { id: order.id } }),
+        this.prisma.cart.update({
+          where: { id: cart.id },
+          data: {
+            status: CartStatus.ACTIVE,
+            userId: identity.userId,
+            sessionId: identity.userId ? null : identity.sessionId,
+          },
+        }),
+      ]);
+      throw error;
+    }
     this.mail.send('ORDER_RECEIVED', order.email, order.number);
     return order;
   }
@@ -463,6 +481,11 @@ export class CommerceService {
       throw new ConflictException(
         `Transição inválida: ${order.status} → ${status}.`,
       );
+    if (status === OrderStatus.SHIPPED) {
+      await this.operations.fulfillOrder(id);
+    } else if (status === OrderStatus.CANCELLED) {
+      await this.operations.releaseOrder(id);
+    }
     const updated = await this.prisma.order.update({
       where: { id },
       data: {
@@ -577,6 +600,28 @@ export class CommerceService {
         },
       });
     });
+    if (
+      body.status === PaymentStatus.FAILED ||
+      body.status === PaymentStatus.CANCELLED
+    ) {
+      await this.operations.releaseOrder(
+        payment.orderId,
+        'Pagamento falhado ou cancelado.',
+      );
+      await this.prisma.order.update({
+        where: { id: payment.orderId },
+        data: {
+          status: OrderStatus.CANCELLED,
+          statusHistory: {
+            create: {
+              fromStatus: payment.order.status,
+              toStatus: OrderStatus.CANCELLED,
+              note: 'Reserva libertada após falha/cancelamento de pagamento.',
+            },
+          },
+        },
+      });
+    }
     if (paid)
       this.mail.send(
         'PAYMENT_CONFIRMED',

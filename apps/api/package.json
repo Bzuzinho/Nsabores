@@ -12,7 +12,8 @@
     "test": "vitest run",
     "prisma:generate": "prisma generate",
     "prisma:migrate:deploy": "prisma migrate deploy",
-    "prisma:seed": "prisma db seed"
+    "prisma:seed": "prisma db seed",
+    "validate:issue18": "tsx scripts/validate-issue-18.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.3",

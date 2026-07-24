@@ -48,7 +48,7 @@ export class CatalogService {
         ? query.active === undefined
           ? {}
           : { isActive: query.active }
-        : { isActive: true }),
+        : { isActive: true, channel: { in: ['B2C_ONLY', 'BOTH'] } }),
       ...(query.featured === undefined ? {} : { isFeatured: query.featured }),
       ...(query.stockStatus ? { stockStatus: query.stockStatus } : {}),
       ...(!isAdmin
@@ -95,7 +95,12 @@ export class CatalogService {
 
   async getProduct(slug: string) {
     const product = await this.prisma.product.findFirst({
-      where: { slug, isActive: true, category: { isActive: true } },
+      where: {
+        slug,
+        isActive: true,
+        channel: { in: ['B2C_ONLY', 'BOTH'] },
+        category: { isActive: true },
+      },
       include: { category: { select: categorySummary } },
     });
     if (!product) throw new NotFoundException('Produto não encontrado.');

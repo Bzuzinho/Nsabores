@@ -13,7 +13,7 @@ import {
   Min,
   ValidateIf,
 } from 'class-validator';
-import { StockStatus } from '@prisma/client';
+import { ProductChannel, SaleUnit, StockStatus } from '@prisma/client';
 import { PartialType } from '@nestjs/mapped-types';
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -34,6 +34,11 @@ export class ProductQueryDto {
   @IsOptional() @IsEnum(['name', 'price', 'createdAt']) sort = 'createdAt';
   @IsOptional() @IsEnum(['asc', 'desc']) order: 'asc' | 'desc' = 'desc';
   @IsOptional() @IsEnum(StockStatus) stockStatus?: StockStatus;
+  @IsOptional() @IsEnum(ProductChannel) channel?: ProductChannel;
+  @IsOptional() @IsInt() @Min(1) minimumOrderQuantity?: number;
+  @IsOptional() @IsInt() @Min(1) orderMultiple?: number;
+  @IsOptional() @IsInt() @Min(1) caseSize?: number;
+  @IsOptional() @IsEnum(SaleUnit) saleUnit?: SaleUnit;
   @IsOptional()
   @Transform(({ value }) => value === 'true')
   @IsBoolean()
