@@ -15,18 +15,21 @@ Implementado nesta fase:
 - integração com B2C/B2B e `PriceList`;
 - limites globais e por cliente/empresa;
 - stacking por prioridade;
-- percentagem, valor fixo, preço especial e portes grátis;
+- percentagem, valor fixo, preço especial, portes grátis e `QUANTITY_DEAL`;
+- regra explícita “leve X, pague Y” com `quantityBuy`/`quantityPay`;
 - snapshot imutável de descontos em `OrderDiscount`;
 - `CouponRedemption` apenas após pagamento `PAID`;
 - gestão de promoções e cupões no management;
+- editor detalhado de promoções e respetivos alvos;
 - cabazes fixos e configuráveis;
 - grupos de seleção e componentes;
 - personalização de oferta;
 - múltiplas configurações do mesmo produto no carrinho através de `configurationKey`;
 - personalizador no website;
-- gestão inicial de cabazes em `/cabazes`;
+- gestão e editor avançado de cabazes em `/cabazes` e `/cabazes/[id]`;
 - snapshot de composição/personalização na encomenda;
-- reserva de stock sobre componentes reais do cabaz.
+- reserva de stock sobre componentes reais do cabaz;
+- `schema.prisma` alinhado com fulfillment, promoções, cupões, bundles e personalização.
 
 ## Motor de preços
 
@@ -50,7 +53,29 @@ preço base / tabela de preços
 
 A encomenda grava os valores finais em cêntimos. Cada desconto é preservado em `OrderDiscount` para impedir que alterações posteriores à campanha mudem encomendas históricas.
 
-`QUANTITY_DEAL` permanece reservado no enum, mas ainda não executa uma regra X/Y enquanto essa regra não estiver explicitamente configurada.
+## Promoções por quantidade
+
+`QUANTITY_DEAL` usa dois parâmetros explícitos:
+
+```text
+quantityBuy = X
+quantityPay = Y
+```
+
+Exemplo: `quantityBuy=3` e `quantityPay=2` representa “leve 3, pague 2”.
+
+Regras:
+
+- `quantityBuy >= 2`;
+- `quantityPay >= 1`;
+- `quantityPay < quantityBuy`;
+- apenas conjuntos completos recebem desconto;
+- o desconto é calculado em cêntimos inteiros;
+- alvos por produto/categoria/tabela/conta e quantidades mínimas continuam a ser respeitados;
+- prioridade, stacking, limite global, limite por cliente e desconto máximo continuam a ser aplicados;
+- o snapshot regista X, Y e as unidades descontadas.
+
+O cálculo puro está isolado e coberto por testes unitários.
 
 ## Cupões
 
@@ -165,11 +190,29 @@ Rotas:
 
 ```text
 /promocoes
+/promocoes/[id]
 /cupoes
 /cabazes
+/cabazes/[id]
 ```
 
-A gestão de cabazes permite atualmente criar produto principal, modo, regra de preço, componentes e opções básicas de personalização. A edição avançada de grupos e um editor de detalhe dedicado continuam por melhorar.
+Promoções:
+
+- criar, ativar e pausar campanhas;
+- configurar percentagem, valor fixo, preço especial, portes grátis e “leve X, pague Y”;
+- editar canal, prioridade, stacking, datas e limites;
+- configurar alvos por produto/categoria e IDs B2B quando aplicável.
+
+Cabazes:
+
+- criar cabaz fixo/configurável;
+- escolher preço do produto ou soma de componentes;
+- criar/remover grupos;
+- configurar mínimos/máximos por grupo;
+- adicionar/remover componentes;
+- associar componentes a grupos;
+- configurar quantidades, obrigatoriedade, diferenças de preço e estado;
+- editar opções e limites de personalização.
 
 ## Website
 
@@ -183,11 +226,15 @@ O fluxo está em:
 
 O utilizador escolhe componentes, personalização e quantidade; o preço é recalculado pela API antes de permitir adicionar ao carrinho.
 
-## Migrações
+## Prisma e migrations
 
-As migrations da Sprint 7 são deliberadamente explícitas. O `start:prod` não executa migrations automaticamente.
+As migrations continuam explícitas e não são executadas automaticamente em `start:prod`.
 
-Antes de testar as funcionalidades numa base que ainda não recebeu estas migrations:
+O `schema.prisma` passou a representar também as estruturas introduzidas nas Sprints 6 e 7, incluindo fulfillment, RMA/pós-venda, promoções, cupões, cabazes, personalização e `configurationKey`.
+
+A sincronização do schema não substitui a aplicação das migrations numa base que ainda não as recebeu.
+
+Para uma base controlada:
 
 ```bash
 pnpm --filter @nsabores/api prisma:migrate:deploy
@@ -195,12 +242,10 @@ pnpm --filter @nsabores/api prisma:migrate:deploy
 
 ## Próximos passos antes de fechar a Sprint 7
 
-- executar as migrations e seed numa base limpa;
+- confirmar `prisma generate`, typecheck, testes e build com o schema alinhado;
+- executar as migrations numa base controlada e confirmar `prisma migrate status`;
 - smoke test real: promoção → cupão → cabaz configurado → checkout → reserva → expedição;
 - testar duas configurações diferentes do mesmo cabaz no mesmo carrinho;
-- testes automatizados de concorrência/limites de cupão;
-- testes de snapshot e stock de componentes;
-- implementar `QUANTITY_DEAL` X/Y;
-- melhorar edição de grupos no management;
-- sincronizar os modelos SQL das Sprints 6/7 no `schema.prisma` para reduzir drift futuro;
+- ampliar testes automatizados de concorrência/limites de cupão;
+- ampliar testes de snapshot e stock de componentes;
 - validar todos os quality gates antes de encerrar a issue #25.
