@@ -1,14 +1,11 @@
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import {
   BadRequestException,
   ConflictException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
-import {
-  CartStatus,
-  OrderStatus,
-  Prisma,
-} from '@prisma/client';
+import { CartStatus, OrderStatus, Prisma } from '@prisma/client';
 import { CommerceService } from '../commerce/commerce.service';
 import type { CheckoutDto } from '../commerce/dto';
 import { CommerceMailProvider } from '../commerce/mail.provider';
@@ -37,6 +34,14 @@ const promotionalOrderInclude = {
 
 type CartIdentity = { userId?: string; sessionId?: string };
 
+interface ConfiguredCartRow {
+  id: string;
+  productId: string;
+  quantity: number;
+  unitPriceCents: number;
+  configurationKey: string;
+}
+
 @Injectable()
 export class PromotionalCommerceService extends CommerceService {
   constructor(
@@ -59,8 +64,47 @@ export class PromotionalCommerceService extends CommerceService {
     productId: string,
     quantity: number,
   ) {
-    const base = await super.addItem(identity, productId, quantity);
-    return this.promotions.priceCart(base.id, identity.userId);
+    try {
+      const base = await super.cart(identity);
+      const product = await this.promotionalPrisma.product.findFirst({
+        where: {
+          id: productId,
+          isActive: true,
+          stockStatus: { not: 'OUT_OF_STOCK' },
+        },
+      });
+      if (!product) throw new ConflictException('Produto indisponível.');
+      const current = await this.promotionalPrisma.$queryRaw<
+        Array<{ quantity: number }>
+      >`
+        SELECT "quantity"
+        FROM "CartItem"
+        WHERE "cartId" = ${base.id}::uuid
+          AND "productId" = ${productId}::uuid
+          AND "configurationKey" = 'default'
+        LIMIT 1
+      `;
+      const next = (current[0]?.quantity ?? 0) + quantity;
+      if (next > 99) throw new BadRequestException('Quantidade máxima: 99.');
+      await this.promotionalPrisma.$executeRaw`
+        INSERT INTO "CartItem" (
+          "id", "cartId", "productId", "quantity", "unitPriceCents",
+          "configurationKey", "createdAt", "updatedAt"
+        ) VALUES (
+          ${randomUUID()}::uuid, ${base.id}::uuid, ${productId}::uuid, ${next},
+          ${product.priceCents}, 'default', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+        )
+        ON CONFLICT ("cartId", "productId", "configurationKey") DO UPDATE SET
+          "quantity" = EXCLUDED."quantity",
+          "unitPriceCents" = EXCLUDED."unitPriceCents",
+          "updatedAt" = CURRENT_TIMESTAMP
+      `;
+      return this.promotions.priceCart(base.id, identity.userId);
+    } catch (error) {
+      if (!this.isPreConfigurationSchema(error)) throw error;
+      const base = await super.addItem(identity, productId, quantity);
+      return this.promotions.priceCart(base.id, identity.userId);
+    }
   }
 
   override async updateItem(
@@ -68,8 +112,35 @@ export class PromotionalCommerceService extends CommerceService {
     itemId: string,
     quantity: number,
   ) {
-    const base = await super.updateItem(identity, itemId, quantity);
-    return this.promotions.priceCart(base.id, identity.userId);
+    try {
+      const base = await super.cart(identity);
+      const rows = await this.promotionalPrisma.$queryRaw<
+        Array<ConfiguredCartRow & { productPriceCents: number; isActive: boolean; stockStatus: string }>
+      >`
+        SELECT ci."id", ci."productId", ci."quantity", ci."unitPriceCents", ci."configurationKey",
+               p."priceCents" AS "productPriceCents", p."isActive", p."stockStatus"::text AS "stockStatus"
+        FROM "CartItem" ci
+        JOIN "Product" p ON p."id" = ci."productId"
+        WHERE ci."id" = ${itemId}::uuid AND ci."cartId" = ${base.id}::uuid
+        LIMIT 1
+      `;
+      const item = rows[0];
+      if (!item) throw new NotFoundException('Item não encontrado.');
+      if (!item.isActive || item.stockStatus === 'OUT_OF_STOCK')
+        throw new ConflictException('Produto indisponível.');
+      await this.promotionalPrisma.$executeRaw`
+        UPDATE "CartItem"
+        SET "quantity" = ${quantity},
+            "unitPriceCents" = ${item.configurationKey === 'default' ? item.productPriceCents : item.unitPriceCents},
+            "updatedAt" = CURRENT_TIMESTAMP
+        WHERE "id" = ${itemId}::uuid AND "cartId" = ${base.id}::uuid
+      `;
+      return this.promotions.priceCart(base.id, identity.userId);
+    } catch (error) {
+      if (!this.isPreConfigurationSchema(error)) throw error;
+      const base = await super.updateItem(identity, itemId, quantity);
+      return this.promotions.priceCart(base.id, identity.userId);
+    }
   }
 
   override async removeItem(identity: CartIdentity, itemId: string) {
@@ -78,8 +149,133 @@ export class PromotionalCommerceService extends CommerceService {
   }
 
   override async merge(userId: string, sessionId?: string) {
-    const base = await super.merge(userId, sessionId);
-    return this.promotions.priceCart(base.id, userId);
+    if (!sessionId) return this.cart({ userId });
+    try {
+      const account = await super.cart({ userId });
+      const guests = await this.promotionalPrisma.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "Cart"
+        WHERE "sessionId" = ${sessionId}::uuid AND "status" = 'ACTIVE'::"CartStatus"
+        LIMIT 1
+      `;
+      const guest = guests[0];
+      if (!guest || guest.id === account.id)
+        return this.promotions.priceCart(account.id, userId);
+      const items = await this.promotionalPrisma.$queryRaw<ConfiguredCartRow[]>`
+        SELECT "id", "productId", "quantity", "unitPriceCents", "configurationKey"
+        FROM "CartItem"
+        WHERE "cartId" = ${guest.id}::uuid
+        ORDER BY "createdAt" ASC
+      `;
+      await this.promotionalPrisma.$transaction(async (tx) => {
+        for (const item of items) {
+          const destination = await tx.$queryRaw<Array<{ id: string }>>`
+            INSERT INTO "CartItem" (
+              "id", "cartId", "productId", "quantity", "unitPriceCents",
+              "configurationKey", "createdAt", "updatedAt"
+            ) VALUES (
+              ${randomUUID()}::uuid, ${account.id}::uuid, ${item.productId}::uuid,
+              ${item.quantity}, ${item.unitPriceCents}, ${item.configurationKey},
+              CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            )
+            ON CONFLICT ("cartId", "productId", "configurationKey") DO UPDATE SET
+              "quantity" = LEAST(99, "CartItem"."quantity" + EXCLUDED."quantity"),
+              "unitPriceCents" = EXCLUDED."unitPriceCents",
+              "updatedAt" = CURRENT_TIMESTAMP
+            RETURNING "id"
+          `;
+          const destinationId = destination[0]?.id;
+          if (!destinationId || item.configurationKey === 'default') continue;
+          await tx.$executeRaw`
+            DELETE FROM "CartItemBundleSelection" WHERE "cartItemId" = ${destinationId}::uuid
+          `;
+          await tx.$executeRaw`
+            INSERT INTO "CartItemBundleSelection" (
+              "id", "cartItemId", "componentProductId", "groupId", "quantity",
+              "unitPriceDeltaCents", "createdAt"
+            )
+            SELECT gen_random_uuid(), ${destinationId}::uuid, "componentProductId", "groupId",
+                   "quantity", "unitPriceDeltaCents", CURRENT_TIMESTAMP
+            FROM "CartItemBundleSelection"
+            WHERE "cartItemId" = ${item.id}::uuid
+          `;
+          await tx.$executeRaw`
+            DELETE FROM "CartItemPersonalization" WHERE "cartItemId" = ${destinationId}::uuid
+          `;
+          await tx.$executeRaw`
+            INSERT INTO "CartItemPersonalization" (
+              "id", "cartItemId", "data", "extraPriceCents", "createdAt", "updatedAt"
+            )
+            SELECT gen_random_uuid(), ${destinationId}::uuid, "data", "extraPriceCents",
+                   CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            FROM "CartItemPersonalization"
+            WHERE "cartItemId" = ${item.id}::uuid
+          `;
+        }
+        await tx.$executeRaw`
+          INSERT INTO "CartPromotion" (
+            "id", "cartId", "promotionId", "couponId", "code", "createdAt", "updatedAt"
+          )
+          SELECT gen_random_uuid(), ${account.id}::uuid, "promotionId", "couponId", "code",
+                 CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+          FROM "CartPromotion"
+          WHERE "cartId" = ${guest.id}::uuid
+          ON CONFLICT ("cartId") DO NOTHING
+        `;
+        await tx.cart.update({
+          where: { id: guest.id },
+          data: { status: CartStatus.CONVERTED, sessionId: null },
+        });
+      });
+      return this.promotions.priceCart(account.id, userId);
+    } catch (error) {
+      if (!this.isPreConfigurationSchema(error)) throw error;
+      const base = await super.merge(userId, sessionId);
+      return this.promotions.priceCart(base.id, userId);
+    }
+  }
+
+  override async repeatOrder(userId: string, id: string) {
+    try {
+      const order = await super.customerOrder(userId, id);
+      const cart = await super.cart({ userId });
+      let skipped = 0;
+      for (const item of order.items) {
+        if (!item.productId) {
+          skipped++;
+          continue;
+        }
+        const product = await this.promotionalPrisma.product.findFirst({
+          where: {
+            id: item.productId,
+            isActive: true,
+            stockStatus: { not: 'OUT_OF_STOCK' },
+          },
+        });
+        if (!product) {
+          skipped++;
+          continue;
+        }
+        await this.promotionalPrisma.$executeRaw`
+          INSERT INTO "CartItem" (
+            "id", "cartId", "productId", "quantity", "unitPriceCents",
+            "configurationKey", "createdAt", "updatedAt"
+          ) VALUES (
+            ${randomUUID()}::uuid, ${cart.id}::uuid, ${product.id}::uuid,
+            ${Math.min(99, item.quantity)}, ${product.priceCents}, 'default',
+            CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+          )
+          ON CONFLICT ("cartId", "productId", "configurationKey") DO UPDATE SET
+            "quantity" = EXCLUDED."quantity",
+            "unitPriceCents" = EXCLUDED."unitPriceCents",
+            "updatedAt" = CURRENT_TIMESTAMP
+        `;
+      }
+      return { cart: await this.promotions.priceCart(cart.id, userId), skipped };
+    } catch (error) {
+      if (!this.isPreConfigurationSchema(error)) throw error;
+      return super.repeatOrder(userId, id);
+    }
   }
 
   async applyCoupon(identity: CartIdentity, code: string) {
@@ -241,5 +437,12 @@ export class PromotionalCommerceService extends CommerceService {
       order.created.number,
     );
     return { ...order.created, discounts: order.discounts };
+  }
+
+  private isPreConfigurationSchema(error: unknown) {
+    if (typeof error !== 'object' || error === null || !('code' in error))
+      return false;
+    const code = (error as { code?: string }).code;
+    return code === '42703' || code === '42P10';
   }
 }
