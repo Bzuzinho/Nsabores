@@ -1,0 +1,123 @@
+enum ClubPlanStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum ClubBillingInterval {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum ClubSubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  PAUSED
+  CANCEL_AT_PERIOD_END
+  CANCELLED
+  EXPIRED
+}
+
+enum ClubSubscriptionEventType {
+  CREATED
+  TRIAL_STARTED
+  ACTIVATED
+  RENEWED
+  PAYMENT_FAILED
+  PLAN_CHANGED
+  CANCEL_SCHEDULED
+  CANCELLED
+  RESUMED
+  PAUSED
+  EXPIRED
+}
+
+enum ClubChargeStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+model ClubPlan {
+  id              String              @id @default(uuid()) @db.Uuid
+  name            String
+  code            String              @unique
+  description     String              @default("")
+  status          ClubPlanStatus      @default(DRAFT)
+  priceCents      Int
+  currency        String              @default("EUR") @db.Char(3)
+  billingInterval ClubBillingInterval
+  trialDays       Int?
+  benefits        Json                @default("{}")
+  isPublic        Boolean             @default(true)
+  sortOrder       Int                 @default(0)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @default(now()) @updatedAt
+
+  @@index([status, isPublic, sortOrder])
+}
+
+model ClubSubscription {
+  id                      String                 @id @default(uuid()) @db.Uuid
+  userId                  String                 @db.Uuid
+  planId                  String                 @db.Uuid
+  status                  ClubSubscriptionStatus
+  provider                String                 @default("mock")
+  providerCustomerId      String?
+  providerSubscriptionId  String?
+  currentPeriodStart      DateTime
+  currentPeriodEnd        DateTime
+  trialEndsAt             DateTime?
+  cancelAtPeriodEnd       Boolean                @default(false)
+  cancelledAt             DateTime?
+  priceCentsSnapshot      Int
+  currencySnapshot        String                 @default("EUR") @db.Char(3)
+  billingIntervalSnapshot ClubBillingInterval
+  planSnapshot            Json
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @default(now()) @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, currentPeriodEnd])
+}
+
+model ClubSubscriptionEvent {
+  id              String                    @id @default(uuid()) @db.Uuid
+  subscriptionId  String                    @db.Uuid
+  type            ClubSubscriptionEventType
+  fromStatus      ClubSubscriptionStatus?
+  toStatus        ClubSubscriptionStatus?
+  providerEventId String?
+  authorId        String?                   @db.Uuid
+  note            String?
+  payload         Json?
+  createdAt       DateTime                  @default(now())
+
+  @@index([subscriptionId, createdAt])
+}
+
+model ClubSubscriptionCharge {
+  id                String           @id @default(uuid()) @db.Uuid
+  subscriptionId    String           @db.Uuid
+  periodStart       DateTime
+  periodEnd         DateTime
+  amountCents       Int
+  currency          String           @default("EUR") @db.Char(3)
+  status            ClubChargeStatus @default(PENDING)
+  provider          String           @default("mock")
+  providerPaymentId String?
+  idempotencyKey    String           @unique
+  paidAt            DateTime?
+  failedAt          DateTime?
+  metadata          Json?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @default(now()) @updatedAt
+
+  @@index([subscriptionId, periodStart])
+  @@index([status, createdAt])
+}
