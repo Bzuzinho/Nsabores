@@ -44,9 +44,6 @@ jobs:
       - name: Check formatting
         run: pnpm format:check
 
-      - name: Generate Prisma client
-        run: pnpm --filter @nsabores/api prisma:generate
-
       - name: Lint
         run: pnpm lint
 
@@ -58,3 +55,56 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  migrations:
+    name: Clean database migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nsabores
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: nsabores
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d nsabores"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.9.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @nsabores/api prisma:generate
+
+      - name: Apply migration history to clean database
+        run: pnpm --filter @nsabores/api prisma:migrate:deploy
+
+      - name: Verify migration status
+        run: pnpm --filter @nsabores/api exec prisma migrate status
+
+      - name: Seed clean database
+        run: pnpm --filter @nsabores/api prisma:seed
