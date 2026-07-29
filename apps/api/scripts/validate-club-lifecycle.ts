@@ -17,19 +17,23 @@ async function main() {
   const club = new ClubService(prisma, billing);
   const operations = new ClubOperationsService(prisma, billing, club);
   const suffix = randomUUID().slice(0, 8).toUpperCase();
-  const email = `club-smoke-${suffix}@example.invalid`;
-  const user = await prisma.user.create({
-    data: {
-      email,
-      passwordHash: 'not-used-by-smoke-test',
-      firstName: 'Club',
-      lastName: 'Smoke',
-      emailVerifiedAt: new Date(),
-    },
-  });
+  const users = await Promise.all(
+    ['primary', 'trial'].map((kind) =>
+      prisma.user.create({
+        data: {
+          email: `club-smoke-${kind}-${suffix}@example.invalid`,
+          passwordHash: 'not-used-by-smoke-test',
+          firstName: 'Club',
+          lastName: kind === 'primary' ? 'Smoke' : 'Trial',
+          emailVerifiedAt: new Date(),
+        },
+      }),
+    ),
+  );
+  const [user, trialUser] = users;
 
   const createdPlanIds: string[] = [];
-  let subscriptionId: string | undefined;
+  const subscriptionIds: string[] = [];
 
   try {
     const monthly = await club.createPlan({
@@ -54,13 +58,35 @@ async function main() {
       isPublic: true,
       sortOrder: 20,
     });
-    createdPlanIds.push(monthly.id, yearly.id);
+    const trial = await club.createPlan({
+      name: `Clube Trial ${suffix}`,
+      code: `CLUB-TRIAL-${suffix}`,
+      description: 'Plano experimental criado pelo smoke test.',
+      status: 'ACTIVE',
+      priceCents: 990,
+      billingInterval: 'MONTHLY',
+      trialDays: 14,
+      benefits: { discountPercent: 3 },
+      isPublic: false,
+      sortOrder: 30,
+    });
+    createdPlanIds.push(monthly.id, yearly.id, trial.id);
+
+    const trialJoined = (await club.join(trialUser.id, {
+      planCode: trial.code,
+      idempotencyKey: `club-smoke:${suffix}:trial`,
+    })) as Record<string, unknown>;
+    subscriptionIds.push(String(trialJoined.id));
+    assert.equal(trialJoined.status, 'TRIALING');
+    assert.ok(trialJoined.trialEndsAt);
+    assert.equal((trialJoined.charges as unknown[]).length, 0);
 
     const joined = (await club.join(user.id, {
       planCode: monthly.code,
       idempotencyKey: `club-smoke:${suffix}:join`,
     })) as Record<string, unknown>;
-    subscriptionId = String(joined.id);
+    const subscriptionId = String(joined.id);
+    subscriptionIds.push(subscriptionId);
     assert.equal(joined.status, 'ACTIVE');
     assert.equal(joined.planCode, monthly.code);
     assert.equal((joined.charges as unknown[]).length, 1);
@@ -124,7 +150,15 @@ async function main() {
     assert.equal(resumed.status, 'ACTIVE');
     assert.equal(resumed.cancelAtPeriodEnd, false);
 
-    const events = resumed.events as Array<{ type: string }>;
+    await operations.scheduleCancel(subscriptionId, user.id, 'Effective cancellation.');
+    const ended = (await club.renew(
+      subscriptionId,
+      `club-smoke:${suffix}:cancelled`,
+    )) as Record<string, unknown>;
+    assert.equal(ended.status, 'CANCELLED');
+    assert.equal(ended.cancelAtPeriodEnd, true);
+
+    const events = ended.events as Array<{ type: string }>;
     for (const required of [
       'ACTIVATED',
       'PLAN_CHANGED',
@@ -132,19 +166,20 @@ async function main() {
       'RENEWED',
       'CANCEL_SCHEDULED',
       'RESUMED',
+      'CANCELLED',
     ]) {
       assert.ok(events.some((event) => event.type === required), `Missing ${required}`);
     }
 
     console.log('Club lifecycle smoke passed.');
   } finally {
-    if (subscriptionId) {
+    for (const subscriptionId of subscriptionIds) {
       await prisma.$executeRaw`DELETE FROM "ClubSubscription" WHERE "id" = ${subscriptionId}::uuid`;
     }
     for (const planId of createdPlanIds) {
       await prisma.$executeRaw`DELETE FROM "ClubPlan" WHERE "id" = ${planId}::uuid`;
     }
-    await prisma.user.deleteMany({ where: { id: user.id } });
+    await prisma.user.deleteMany({ where: { id: { in: users.map((item) => item.id) } } });
     await prisma.$disconnect();
   }
 }
