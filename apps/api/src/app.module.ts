@@ -82,6 +82,7 @@ import {
   AdminLoyaltyController,
   PublicGiftCardController,
 } from './loyalty/loyalty.controller';
+import { LoyaltyLedgerService } from './loyalty/loyalty-ledger.service';
 import { LoyaltyService } from './loyalty/loyalty.service';
 
 @Module({
@@ -228,6 +229,7 @@ import { LoyaltyService } from './loyalty/loyalty.service';
     ClubService,
     ClubOperationsService,
     LoyaltyService,
+    LoyaltyLedgerService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
