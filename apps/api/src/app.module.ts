@@ -68,7 +68,13 @@ import {
   AdminClubController,
   PublicClubController,
 } from './club/club.controller';
+import {
+  AccountClubOperationsController,
+  AdminClubOperationsController,
+  ClubWebhookController,
+} from './club/club-operations.controller';
 import { ClubBillingProvider } from './club/billing.provider';
+import { ClubOperationsService } from './club/club-operations.service';
 import { ClubPromotionsService } from './club/club-promotions.service';
 import { ClubService } from './club/club.service';
 
@@ -174,6 +180,9 @@ import { ClubService } from './club/club.service';
     PublicClubController,
     AccountClubController,
     AdminClubController,
+    AccountClubOperationsController,
+    AdminClubOperationsController,
+    ClubWebhookController,
   ],
   providers: [
     PrismaService,
@@ -206,6 +215,7 @@ import { ClubService } from './club/club.service';
     BundleInventoryService,
     ClubBillingProvider,
     ClubService,
+    ClubOperationsService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
