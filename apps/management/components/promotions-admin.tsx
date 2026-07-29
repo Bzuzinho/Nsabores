@@ -175,6 +175,7 @@ export function PromotionsAdmin() {
           <h1>Promoções</h1>
           <p>Regras automáticas e campanhas por canal.</p>
         </div>
+        <Link href="/promocoes/nova">Nova promoção</Link>
       </header>
       {error && <p className="admin-error" role="alert">{error}</p>}
       <section className="user-detail">
@@ -301,6 +302,7 @@ export function CouponsAdmin() {
           <article key={coupon.id}>
             <p><strong>{coupon.code}</strong> · {coupon.isActive ? 'Ativo' : 'Inativo'} · {coupon.channel}</p>
             <p>Promoção: {coupon.promotionName ?? coupon.promotionCode ?? coupon.promotionId}</p>
+            <Link href={`/cupoes/${coupon.id}`}>Editar e consultar utilizações</Link>
           </article>
         ))}
       </section>
