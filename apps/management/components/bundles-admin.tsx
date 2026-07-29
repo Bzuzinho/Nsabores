@@ -1,6 +1,7 @@
 'use client';
 
 import type { CatalogProduct, Paginated } from '@nsabores/types';
+import Link from 'next/link';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { managementApi } from './management-auth';
 
@@ -147,7 +148,10 @@ export function BundlesAdmin() {
       <section className="user-detail">
         <h2>Cabazes existentes</h2>
         {!bundles.length && <p>Sem cabazes criados.</p>}
-        {bundles.map((bundle) => <article key={bundle.id}><p><strong>{bundle.productName}</strong> · {bundle.mode} · {bundle.pricingMode} · {bundle.isActive ? 'Ativo' : 'Inativo'}</p></article>)}
+        {bundles.map((bundle) => <article key={bundle.id}>
+          <p><strong>{bundle.productName}</strong> · {bundle.mode} · {bundle.pricingMode} · {bundle.isActive ? 'Ativo' : 'Inativo'}</p>
+          <Link href={`/cabazes/${bundle.id}`}>Editar composição e personalização</Link>
+        </article>)}
       </section>
     </>
   );
