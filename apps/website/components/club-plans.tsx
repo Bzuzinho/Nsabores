@@ -23,7 +23,9 @@ const intervalLabel = {
 } as const;
 
 const money = (cents: number, currency = 'EUR') =>
-  new Intl.NumberFormat('pt-PT', { style: 'currency', currency }).format(cents / 100);
+  new Intl.NumberFormat('pt-PT', { style: 'currency', currency }).format(
+    cents / 100,
+  );
 
 export function ClubPlans({ compact = false }: { compact?: boolean }) {
   const [plans, setPlans] = useState<ClubPlan[]>([]);
@@ -34,22 +36,39 @@ export function ClubPlans({ compact = false }: { compact?: boolean }) {
       .get<ClubPlan[]>('/v1/club/plans')
       .then(setPlans)
       .catch((reason) =>
-        setError(reason instanceof Error ? reason.message : 'Não foi possível carregar os planos.'),
+        setError(
+          reason instanceof Error
+            ? reason.message
+            : 'Não foi possível carregar os planos.',
+        ),
       );
   }, []);
 
   if (error) return <p role="alert">{error}</p>;
-  if (!plans.length) return <p>Os planos do Clube serão disponibilizados em breve.</p>;
+  if (!plans.length)
+    return <p>Os planos do Clube serão disponibilizados em breve.</p>;
 
   return (
     <div className="editorial-grid editorial-grid-three">
       {plans.slice(0, compact ? 3 : undefined).map((plan) => (
         <article key={plan.id}>
-          <p className="eyebrow">{plan.trialDays ? `${plan.trialDays} dias de experiência` : 'Clube Nsabores'}</p>
+          <p className="eyebrow">
+            {plan.trialDays
+              ? `${plan.trialDays} dias de experiência`
+              : 'Clube Nsabores'}
+          </p>
           <h3>{plan.name}</h3>
           <p>{plan.description}</p>
-          <p><strong>{money(plan.priceCents, plan.currency)}</strong> / {intervalLabel[plan.billingInterval]}</p>
-          <Link className="button button-primary" href={`/clube/aderir/${encodeURIComponent(plan.code)}`}>Escolher plano</Link>
+          <p>
+            <strong>{money(plan.priceCents, plan.currency)}</strong> /{' '}
+            {intervalLabel[plan.billingInterval]}
+          </p>
+          <Link
+            className="button button-primary"
+            href={`/clube/aderir/${encodeURIComponent(plan.code)}`}
+          >
+            Escolher plano
+          </Link>
         </article>
       ))}
     </div>
@@ -71,8 +90,14 @@ export function ClubJoin({ code }: { code: string }) {
     });
   }, [code]);
 
-  if (error) return <section className="account-card"><p role="alert">{error}</p></section>;
+  if (error)
+    return (
+      <section className="account-card">
+        <p role="alert">{error}</p>
+      </section>
+    );
   if (!plan) return <section className="account-card">A carregar…</section>;
+  const loadedPlan = plan;
 
   async function join() {
     if (!auth.user) {
@@ -83,12 +108,16 @@ export function ClubJoin({ code }: { code: string }) {
     setError('');
     try {
       await accountApi.post('/v1/account/club/join', {
-        planCode: plan.code,
+        planCode: loadedPlan.code,
         idempotencyKey: crypto.randomUUID(),
       });
       setMessage('Adesão concluída. O Clube já está disponível na sua conta.');
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Não foi possível concluir a adesão.');
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível concluir a adesão.',
+      );
     } finally {
       setBusy(false);
     }
@@ -99,11 +128,32 @@ export function ClubJoin({ code }: { code: string }) {
       <p className="eyebrow">Clube Nsabores</p>
       <h1>{plan.name}</h1>
       <p>{plan.description}</p>
-      <p><strong>{money(plan.priceCents, plan.currency)}</strong> / {intervalLabel[plan.billingInterval]}</p>
-      {plan.trialDays ? <p>Inclui {plan.trialDays} dias de período experimental.</p> : null}
-      {message && <p role="status">{message} <Link href="/conta/clube">Ver subscrição</Link></p>}
+      <p>
+        <strong>{money(plan.priceCents, plan.currency)}</strong> /{' '}
+        {intervalLabel[plan.billingInterval]}
+      </p>
+      {plan.trialDays ? (
+        <p>Inclui {plan.trialDays} dias de período experimental.</p>
+      ) : null}
+      {message && (
+        <p role="status">
+          {message} <Link href="/conta/clube">Ver subscrição</Link>
+        </p>
+      )}
       {error && <p role="alert">{error}</p>}
-      {!message && <button className="button button-primary" disabled={busy} onClick={() => void join()}>{busy ? 'A processar…' : auth.user ? 'Aderir ao Clube' : 'Entrar para aderir'}</button>}
+      {!message && (
+        <button
+          className="button button-primary"
+          disabled={busy}
+          onClick={() => void join()}
+        >
+          {busy
+            ? 'A processar…'
+            : auth.user
+              ? 'Aderir ao Clube'
+              : 'Entrar para aderir'}
+        </button>
+      )}
     </section>
   );
 }

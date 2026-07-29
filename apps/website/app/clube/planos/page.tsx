@@ -12,7 +12,10 @@ export default function ClubPlansPage() {
       <section className="contact-intro">
         <p className="eyebrow">Clube Nsabores</p>
         <h1>Escolha a forma como quer descobrir novos sabores.</h1>
-        <p>Planos configurados no Clube, com preço e periodicidade sempre confirmados no servidor.</p>
+        <p>
+          Planos configurados no Clube, com preço e periodicidade sempre
+          confirmados no servidor.
+        </p>
       </section>
       <ClubPlans />
     </main>

@@ -10,9 +10,7 @@ export class ClubAdminActionDto {
 
 export class ClubWebhookDto {
   @IsString() @MaxLength(160) eventId!: string;
-  @IsIn(['renewal.succeeded', 'payment.failed', 'subscription.cancelled']) type!:
-    | 'renewal.succeeded'
-    | 'payment.failed'
-    | 'subscription.cancelled';
+  @IsIn(['renewal.succeeded', 'payment.failed', 'subscription.cancelled'])
+  type!: 'renewal.succeeded' | 'payment.failed' | 'subscription.cancelled';
   @IsString() subscriptionId!: string;
 }

@@ -5,18 +5,14 @@ export function isClubSchemaUnavailable(error: unknown) {
     meta?: unknown;
     cause?: unknown;
   } | null;
-  const fragments = [
-    record?.code,
-    record?.message,
-    record?.meta,
-    record?.cause,
-  ]
+  const fragments = [record?.code, record?.message, record?.meta, record?.cause]
     .map((value) => {
       if (typeof value === 'string') return value;
+      if (value instanceof Error) return value.message;
       try {
         return value === undefined ? '' : JSON.stringify(value);
       } catch {
-        return String(value ?? '');
+        return '';
       }
     })
     .join(' ');

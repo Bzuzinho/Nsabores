@@ -1,10 +1,21 @@
-import { Body, Controller, Headers, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Headers,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { CurrentUser, Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
 import type { AuthPrincipal } from '../auth/auth.types';
 import { ClubOperationsService } from './club-operations.service';
-import { ChangeClubPlanDto, ClubAdminActionDto, ClubWebhookDto } from './operations.dto';
+import {
+  ChangeClubPlanDto,
+  ClubAdminActionDto,
+  ClubWebhookDto,
+} from './operations.dto';
 
 @UseGuards(AuthGuard)
 @Controller('v1/account/club')
@@ -12,7 +23,10 @@ export class AccountClubOperationsController {
   constructor(private readonly operations: ClubOperationsService) {}
 
   @Post('change-plan')
-  changePlan(@CurrentUser() user: AuthPrincipal, @Body() body: ChangeClubPlanDto) {
+  changePlan(
+    @CurrentUser() user: AuthPrincipal,
+    @Body() body: ChangeClubPlanDto,
+  ) {
     return this.operations.changePlan(user.sub, body.planCode);
   }
 }

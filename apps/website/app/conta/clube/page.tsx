@@ -74,7 +74,11 @@ export default function AccountClubPage() {
     }
   }, []);
 
-  useEffect(() => void reload(), [reload]);
+  useEffect(() => {
+    // Initial API hydration intentionally updates local component state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void reload();
+  }, [reload]);
 
   async function mutate(path: string, body: Record<string, unknown> = {}) {
     setBusy(true);
@@ -93,8 +97,7 @@ export default function AccountClubPage() {
     }
   }
 
-  if (loading)
-    return <section className="account-card">A carregar…</section>;
+  if (loading) return <section className="account-card">A carregar…</section>;
   if (!subscription) {
     return (
       <section className="account-card">
@@ -121,10 +124,7 @@ export default function AccountClubPage() {
         Estado: <strong>{subscription.status}</strong>
       </p>
       <p>
-        {money(
-          subscription.priceCentsSnapshot,
-          subscription.currencySnapshot,
-        )}{' '}
+        {money(subscription.priceCentsSnapshot, subscription.currencySnapshot)}{' '}
         · {subscription.billingIntervalSnapshot}
       </p>
       {subscription.trialEndsAt && (
@@ -136,16 +136,16 @@ export default function AccountClubPage() {
       <p>
         Período atual:{' '}
         {new Date(subscription.currentPeriodStart).toLocaleDateString('pt-PT')}{' '}
-        —{' '}
-        {new Date(subscription.currentPeriodEnd).toLocaleDateString('pt-PT')}.
+        — {new Date(subscription.currentPeriodEnd).toLocaleDateString('pt-PT')}.
       </p>
 
       {alternatePlans.length > 0 && !subscription.cancelAtPeriodEnd && (
         <div>
           <h2>Alterar plano</h2>
           <p>
-            No billing mock, a alteração é imediata e não existe prorrata do período
-            atual. O novo preço fica como referência para a renovação seguinte.
+            No billing mock, a alteração é imediata e não existe prorrata do
+            período atual. O novo preço fica como referência para a renovação
+            seguinte.
           </p>
           <label>
             Novo plano

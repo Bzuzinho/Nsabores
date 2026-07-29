@@ -319,10 +319,7 @@ export class ClubService {
     if (!['ACTIVE', 'PAST_DUE', 'TRIALING'].includes(current.status))
       throw new ConflictException('Subscrição não renovável.');
     const start = current.currentPeriodEnd;
-    const end = this.billing.nextPeriod(
-      start,
-      current.billingIntervalSnapshot,
-    );
+    const end = this.billing.nextPeriod(start, current.billingIntervalSnapshot);
     await this.prisma.$transaction(async (tx) => {
       await this.createPaidCharge(
         tx,
@@ -373,7 +370,9 @@ export class ClubService {
     const owner = userId
       ? Prisma.sql`AND s."userId" = ${userId}::uuid`
       : Prisma.empty;
-    const rows = await this.prisma.$queryRaw<Array<Record<string, unknown>>>(
+    const rows = await this.prisma.$queryRaw<
+      Array<SubscriptionRow & Record<string, unknown>>
+    >(
       Prisma.sql`
         SELECT s.*, p."name" AS "planName", p."code" AS "planCode", p."benefits"
         FROM "ClubSubscription" s
@@ -460,9 +459,7 @@ export class ClubService {
 
   private validatePlan(body: ClubPlanDto) {
     if (!body.name.trim() || !code(body.code))
-      throw new BadRequestException(
-        'Nome e código do plano são obrigatórios.',
-      );
+      throw new BadRequestException('Nome e código do plano são obrigatórios.');
   }
 
   private isUnique(error: unknown) {

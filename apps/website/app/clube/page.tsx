@@ -22,9 +22,10 @@ export default function ClubPage() {
         <p className="eyebrow">Como funciona</p>
         <h2>Escolha o plano. Nós tratamos da próxima descoberta.</h2>
         <p>
-          Cada plano apresenta o preço, a periodicidade e os benefícios aplicáveis.
-          A subscrição pode ser consultada na conta e, quando solicitado, o cancelamento
-          fica agendado para o fim do período já contratado.
+          Cada plano apresenta o preço, a periodicidade e os benefícios
+          aplicáveis. A subscrição pode ser consultada na conta e, quando
+          solicitado, o cancelamento fica agendado para o fim do período já
+          contratado.
         </p>
       </div>
       <ClubPlans compact />
@@ -32,17 +33,26 @@ export default function ClubPage() {
         <article>
           <span>01</span>
           <h3>Curadoria portuguesa</h3>
-          <p>Seleções pensadas em torno de produtores, territórios e momentos de consumo.</p>
+          <p>
+            Seleções pensadas em torno de produtores, territórios e momentos de
+            consumo.
+          </p>
         </article>
         <article>
           <span>02</span>
           <h3>Plano transparente</h3>
-          <p>Preço, periodicidade, trial e benefícios são confirmados antes da adesão.</p>
+          <p>
+            Preço, periodicidade, trial e benefícios são confirmados antes da
+            adesão.
+          </p>
         </article>
         <article>
           <span>03</span>
           <h3>Controlo na sua conta</h3>
-          <p>Consulte períodos e cobranças e agende ou reverta o cancelamento quando permitido.</p>
+          <p>
+            Consulte períodos e cobranças e agende ou reverta o cancelamento
+            quando permitido.
+          </p>
         </article>
       </div>
     </EditorialPage>

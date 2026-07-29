@@ -67,9 +67,7 @@ export function ClubPlanDetail({ id }: { id: string }) {
 
   const reload = useCallback(async () => {
     try {
-      setPlan(
-        await managementApi.get<ClubPlan>(`/v1/admin/club/plans/${id}`),
-      );
+      setPlan(await managementApi.get<ClubPlan>(`/v1/admin/club/plans/${id}`));
     } catch (reason) {
       setError(
         reason instanceof Error
@@ -79,7 +77,11 @@ export function ClubPlanDetail({ id }: { id: string }) {
     }
   }, [id]);
 
-  useEffect(() => void reload(), [reload]);
+  useEffect(() => {
+    // Initial API hydration intentionally updates local component state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void reload();
+  }, [reload]);
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -140,10 +142,12 @@ export function ClubPlanDetail({ id }: { id: string }) {
       <section className="user-detail">
         <form className="auth-form" onSubmit={save}>
           <label>
-            Nome<input name="name" defaultValue={plan.name} required />
+            Nome
+            <input name="name" defaultValue={plan.name} required />
           </label>
           <label>
-            Código<input name="code" defaultValue={plan.code} required />
+            Código
+            <input name="code" defaultValue={plan.code} required />
           </label>
           <label>
             Descrição
@@ -198,7 +202,11 @@ export function ClubPlanDetail({ id }: { id: string }) {
           </label>
           <label>
             Ordem
-            <input name="sortOrder" type="number" defaultValue={plan.sortOrder} />
+            <input
+              name="sortOrder"
+              type="number"
+              defaultValue={plan.sortOrder}
+            />
           </label>
           <label>
             <input
@@ -221,8 +229,9 @@ export function ClubPlanDetail({ id }: { id: string }) {
 }
 
 export function ClubSubscriptionDetail({ id }: { id: string }) {
-  const [subscription, setSubscription] =
-    useState<SubscriptionDetail | null>(null);
+  const [subscription, setSubscription] = useState<SubscriptionDetail | null>(
+    null,
+  );
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -242,7 +251,11 @@ export function ClubSubscriptionDetail({ id }: { id: string }) {
     }
   }, [id]);
 
-  useEffect(() => void reload(), [reload]);
+  useEffect(() => {
+    // Initial API hydration intentionally updates local component state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void reload();
+  }, [reload]);
 
   async function action(path: string, body: Record<string, unknown> = {}) {
     setBusy(true);

@@ -19,7 +19,9 @@ describe('calculateClubPercentageDiscount', () => {
   });
 
   it('clamps the benefit percentage between zero and one hundred', () => {
-    expect(calculateClubPercentageDiscount(1_000, 0, 150).amountCents).toBe(1_000);
+    expect(calculateClubPercentageDiscount(1_000, 0, 150).amountCents).toBe(
+      1_000,
+    );
     expect(calculateClubPercentageDiscount(1_000, 0, -10).amountCents).toBe(0);
   });
 

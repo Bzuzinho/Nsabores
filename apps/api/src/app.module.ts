@@ -131,7 +131,9 @@ import { ClubService } from './club/club.service';
           .default('development-shipping-webhook-secret'),
         SHIPPING_SENDER_NAME: Joi.string().default('Nsabores'),
         SHIPPING_SENDER_ADDRESS: Joi.string().allow('').optional(),
-        CLUB_BILLING_PROVIDER: Joi.string().valid('mock', 'stripe').default('mock'),
+        CLUB_BILLING_PROVIDER: Joi.string()
+          .valid('mock', 'stripe')
+          .default('mock'),
         CLUB_BILLING_WEBHOOK_SECRET: Joi.string()
           .min(16)
           .default('development-club-webhook-secret'),

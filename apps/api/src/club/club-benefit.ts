@@ -4,7 +4,10 @@ export function calculateClubPercentageDiscount(
   discountPercent: number,
 ) {
   const subtotal = Math.max(0, Math.trunc(subtotalCents));
-  const existing = Math.min(subtotal, Math.max(0, Math.trunc(existingProductDiscountCents)));
+  const existing = Math.min(
+    subtotal,
+    Math.max(0, Math.trunc(existingProductDiscountCents)),
+  );
   const percent = Math.min(100, Math.max(0, Math.trunc(discountPercent)));
   const eligibleSubtotal = Math.max(0, subtotal - existing);
   const amountCents = Math.min(

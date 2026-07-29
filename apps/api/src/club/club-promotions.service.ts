@@ -22,17 +22,9 @@ export class ClubPromotionsService extends AdvancedPromotionsService {
     super(clubPrisma);
   }
 
-  override async priceCart(
-    cartId: string,
-    userId?: string,
-    shippingCents = 0,
-  ) {
+  override async priceCart(cartId: string, userId?: string, shippingCents = 0) {
     const base = await super.priceCart(cartId, userId, shippingCents);
-    return this.applyClubBenefit(
-      this.clubPrisma as unknown as Prisma.TransactionClient,
-      base,
-      userId,
-    );
+    return this.applyClubBenefit(this.clubPrisma, base, userId);
   }
 
   override async priceCartInTransaction(

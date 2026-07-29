@@ -24,7 +24,10 @@ export class ClubBillingProvider {
     return this.config.get<string>('CLUB_BILLING_PROVIDER') ?? 'mock';
   }
 
-  createSubscription(userId: string, idempotencyKey: string): BillingSubscriptionResult {
+  createSubscription(
+    userId: string,
+    idempotencyKey: string,
+  ): BillingSubscriptionResult {
     return {
       provider: this.name(),
       providerCustomerId: `club_customer_${userId}`,
@@ -41,7 +44,8 @@ export class ClubBillingProvider {
   }
 
   nextPeriod(start: Date, interval: ClubInterval) {
-    const months = interval === 'MONTHLY' ? 1 : interval === 'QUARTERLY' ? 3 : 12;
+    const months =
+      interval === 'MONTHLY' ? 1 : interval === 'QUARTERLY' ? 3 : 12;
     const end = new Date(start);
     const day = end.getUTCDate();
     end.setUTCDate(1);
@@ -59,7 +63,9 @@ export class ClubBillingProvider {
     const digest = createHmac('sha256', secret).update(rawBody).digest('hex');
     const expected = Buffer.from(digest);
     const received = Buffer.from(signature);
-    return expected.length === received.length && timingSafeEqual(expected, received);
+    return (
+      expected.length === received.length && timingSafeEqual(expected, received)
+    );
   }
 
   private stableId(value: string) {

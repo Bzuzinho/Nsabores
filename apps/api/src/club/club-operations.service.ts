@@ -1,5 +1,11 @@
 import { randomUUID } from 'node:crypto';
-import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { ClubBillingProvider, type ClubInterval } from './billing.provider';
@@ -45,7 +51,8 @@ export class ClubOperationsService {
     `;
     const plan = plans[0];
     if (!plan) throw new BadRequestException('Novo plano indisponível.');
-    if (plan.id === current.planId) return this.club.subscriptionDetail(current.id, userId);
+    if (plan.id === current.planId)
+      return this.club.subscriptionDetail(current.id, userId);
 
     await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`
@@ -58,28 +65,53 @@ export class ClubOperationsService {
           "updatedAt" = CURRENT_TIMESTAMP
         WHERE "id" = ${current.id}::uuid
       `;
-      await this.event(tx, current.id, 'PLAN_CHANGED', current.status, current.status, userId, `Plano alterado para ${plan.code}. O provider mock não aplica prorrata.`);
+      await this.event(
+        tx,
+        current.id,
+        'PLAN_CHANGED',
+        current.status,
+        current.status,
+        userId,
+        `Plano alterado para ${plan.code}. O provider mock não aplica prorrata.`,
+      );
     });
     return this.club.subscriptionDetail(current.id, userId);
   }
 
-  async scheduleCancel(subscriptionId: string, authorId: string, reason?: string) {
+  async scheduleCancel(
+    subscriptionId: string,
+    authorId: string,
+    reason?: string,
+  ) {
     const current = await this.subscription(subscriptionId);
-    if (['CANCELLED', 'EXPIRED'].includes(current.status)) throw new ConflictException('A subscrição já terminou.');
-    if (current.status === 'CANCEL_AT_PERIOD_END') return this.club.subscriptionDetail(subscriptionId);
+    if (['CANCELLED', 'EXPIRED'].includes(current.status))
+      throw new ConflictException('A subscrição já terminou.');
+    if (current.status === 'CANCEL_AT_PERIOD_END')
+      return this.club.subscriptionDetail(subscriptionId);
     await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`
         UPDATE "ClubSubscription" SET "status" = 'CANCEL_AT_PERIOD_END', "cancelAtPeriodEnd" = true,
           "updatedAt" = CURRENT_TIMESTAMP WHERE "id" = ${subscriptionId}::uuid
       `;
-      await this.event(tx, subscriptionId, 'CANCEL_SCHEDULED', current.status, 'CANCEL_AT_PERIOD_END', authorId, reason ?? 'Cancelamento agendado administrativamente.');
+      await this.event(
+        tx,
+        subscriptionId,
+        'CANCEL_SCHEDULED',
+        current.status,
+        'CANCEL_AT_PERIOD_END',
+        authorId,
+        reason ?? 'Cancelamento agendado administrativamente.',
+      );
     });
     return this.club.subscriptionDetail(subscriptionId);
   }
 
   async resume(subscriptionId: string, authorId: string, reason?: string) {
     const current = await this.subscription(subscriptionId);
-    if (current.status !== 'CANCEL_AT_PERIOD_END') throw new ConflictException('A subscrição não tem cancelamento agendado.');
+    if (current.status !== 'CANCEL_AT_PERIOD_END')
+      throw new ConflictException(
+        'A subscrição não tem cancelamento agendado.',
+      );
     const next = current.currentPeriodEnd > new Date() ? 'ACTIVE' : 'EXPIRED';
     await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`
@@ -87,7 +119,15 @@ export class ClubOperationsService {
           "cancelAtPeriodEnd" = false, "cancelledAt" = NULL, "updatedAt" = CURRENT_TIMESTAMP
         WHERE "id" = ${subscriptionId}::uuid
       `;
-      await this.event(tx, subscriptionId, 'RESUMED', current.status, next, authorId, reason ?? 'Cancelamento removido administrativamente.');
+      await this.event(
+        tx,
+        subscriptionId,
+        'RESUMED',
+        current.status,
+        next,
+        authorId,
+        reason ?? 'Cancelamento removido administrativamente.',
+      );
     });
     return this.club.subscriptionDetail(subscriptionId);
   }
@@ -113,7 +153,16 @@ export class ClubOperationsService {
           UPDATE "ClubSubscription" SET "status" = 'PAST_DUE', "updatedAt" = CURRENT_TIMESTAMP
           WHERE "id" = ${body.subscriptionId}::uuid
         `;
-        await this.event(tx, body.subscriptionId, 'PAYMENT_FAILED', current.status, 'PAST_DUE', null, 'Pagamento recorrente falhou.', body.eventId);
+        await this.event(
+          tx,
+          body.subscriptionId,
+          'PAYMENT_FAILED',
+          current.status,
+          'PAST_DUE',
+          null,
+          'Pagamento recorrente falhou.',
+          body.eventId,
+        );
       });
       return { received: true };
     }
@@ -124,7 +173,16 @@ export class ClubOperationsService {
           "cancelledAt" = CURRENT_TIMESTAMP, "updatedAt" = CURRENT_TIMESTAMP
         WHERE "id" = ${body.subscriptionId}::uuid
       `;
-      await this.event(tx, body.subscriptionId, 'CANCELLED', current.status, 'CANCELLED', null, 'Cancelamento confirmado pelo provider.', body.eventId);
+      await this.event(
+        tx,
+        body.subscriptionId,
+        'CANCELLED',
+        current.status,
+        'CANCELLED',
+        null,
+        'Cancelamento confirmado pelo provider.',
+        body.eventId,
+      );
     });
     return { received: true };
   }
