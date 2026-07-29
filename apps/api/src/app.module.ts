@@ -40,6 +40,8 @@ import {
 } from './fulfillment/fulfillment.controller';
 import { FulfillmentService } from './fulfillment/fulfillment.service';
 import { ShippingProvider } from './fulfillment/shipping.provider';
+import { AdminReturnRefundController } from './fulfillment/refund.controller';
+import { ReturnRefundService } from './fulfillment/refund.service';
 
 @Module({
   imports: [
@@ -127,6 +129,7 @@ import { ShippingProvider } from './fulfillment/shipping.provider';
     CustomerFulfillmentController,
     AdminFulfillmentController,
     ShippingWebhookController,
+    AdminReturnRefundController,
   ],
   providers: [
     PrismaService,
@@ -143,6 +146,7 @@ import { ShippingProvider } from './fulfillment/shipping.provider';
     OperationsService,
     FulfillmentService,
     ShippingProvider,
+    ReturnRefundService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
