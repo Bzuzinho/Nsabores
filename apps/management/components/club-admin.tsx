@@ -36,6 +36,7 @@ type ClubSubscription = {
   planCode: string;
   priceCentsSnapshot: number;
   currencySnapshot: string;
+  billingIntervalSnapshot: 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
   currentPeriodEnd: string;
 };
 
@@ -51,6 +52,9 @@ export function ClubAdmin({
 }) {
   const [plans, setPlans] = useState<ClubPlan[]>([]);
   const [subscriptions, setSubscriptions] = useState<ClubSubscription[]>([]);
+  const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [planFilter, setPlanFilter] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -79,33 +83,53 @@ export function ClubAdmin({
   }, [reload]);
 
   const metrics = useMemo(() => {
-    const active = subscriptions.filter(
-      (row) => row.status === 'ACTIVE',
-    ).length;
-    const trial = subscriptions.filter(
-      (row) => row.status === 'TRIALING',
-    ).length;
-    const pastDue = subscriptions.filter(
-      (row) => row.status === 'PAST_DUE',
-    ).length;
+    const active = subscriptions.filter((row) => row.status === 'ACTIVE').length;
+    const trial = subscriptions.filter((row) => row.status === 'TRIALING').length;
+    const pastDue = subscriptions.filter((row) => row.status === 'PAST_DUE').length;
     const cancelling = subscriptions.filter(
       (row) => row.status === 'CANCEL_AT_PERIOD_END',
+    ).length;
+    const cancelled = subscriptions.filter((row) =>
+      ['CANCELLED', 'EXPIRED'].includes(row.status),
     ).length;
     const monthlyEquivalent = subscriptions
       .filter((row) =>
         ['ACTIVE', 'TRIALING', 'CANCEL_AT_PERIOD_END'].includes(row.status),
       )
       .reduce((sum, row) => {
-        const plan = plans.find((candidate) => candidate.code === row.planCode);
-        if (!plan) return sum;
-        if (plan.billingInterval === 'MONTHLY')
+        if (row.billingIntervalSnapshot === 'MONTHLY')
           return sum + row.priceCentsSnapshot;
-        if (plan.billingInterval === 'QUARTERLY')
+        if (row.billingIntervalSnapshot === 'QUARTERLY')
           return sum + Math.round(row.priceCentsSnapshot / 3);
         return sum + Math.round(row.priceCentsSnapshot / 12);
       }, 0);
-    return { active, trial, pastDue, cancelling, monthlyEquivalent };
-  }, [plans, subscriptions]);
+    return {
+      active,
+      trial,
+      pastDue,
+      cancelling,
+      cancelled,
+      monthlyEquivalent,
+    };
+  }, [subscriptions]);
+
+  const filteredSubscriptions = useMemo(() => {
+    const normalized = query.trim().toLocaleLowerCase('pt-PT');
+    return subscriptions.filter((row) => {
+      if (statusFilter && row.status !== statusFilter) return false;
+      if (planFilter && row.planCode !== planFilter) return false;
+      if (!normalized) return true;
+      return [row.firstName, row.lastName, row.email, row.planName, row.planCode]
+        .join(' ')
+        .toLocaleLowerCase('pt-PT')
+        .includes(normalized);
+    });
+  }, [planFilter, query, statusFilter, subscriptions]);
+
+  const statuses = useMemo(
+    () => [...new Set(subscriptions.map((row) => row.status))].sort(),
+    [subscriptions],
+  );
 
   async function createPlan(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -163,24 +187,23 @@ export function ClubAdmin({
       )}
 
       {mode === 'dashboard' && (
-        <>
-          <section className="user-detail">
-            <h2>Resumo</h2>
-            <p>
-              Ativas: <strong>{metrics.active}</strong> · Trial:{' '}
-              <strong>{metrics.trial}</strong> · Past due:{' '}
-              <strong>{metrics.pastDue}</strong> · Cancelamento agendado:{' '}
-              <strong>{metrics.cancelling}</strong>
-            </p>
-            <p>
-              MRR estimado: <strong>{money(metrics.monthlyEquivalent)}</strong>
-            </p>
-            <p>
-              <Link href="/clube/planos">Gerir planos</Link> ·{' '}
-              <Link href="/clube/subscricoes">Ver subscrições</Link>
-            </p>
-          </section>
-        </>
+        <section className="user-detail">
+          <h2>Resumo</h2>
+          <p>
+            Ativas: <strong>{metrics.active}</strong> · Trial:{' '}
+            <strong>{metrics.trial}</strong> · Past due:{' '}
+            <strong>{metrics.pastDue}</strong> · Cancelamento agendado:{' '}
+            <strong>{metrics.cancelling}</strong> · Terminadas:{' '}
+            <strong>{metrics.cancelled}</strong>
+          </p>
+          <p>
+            MRR estimado: <strong>{money(metrics.monthlyEquivalent)}</strong>
+          </p>
+          <p>
+            <Link href="/clube/planos">Gerir planos</Link> ·{' '}
+            <Link href="/clube/subscricoes">Ver subscrições</Link>
+          </p>
+        </section>
       )}
 
       {mode === 'plans' && (
@@ -260,25 +283,73 @@ export function ClubAdmin({
       )}
 
       {mode === 'subscriptions' && (
-        <section className="user-detail">
-          <h2>Subscrições</h2>
-          {!subscriptions.length && <p>Sem subscrições.</p>}
-          {subscriptions.map((row) => (
-            <article key={row.id}>
-              <p>
-                <strong>
-                  {row.firstName} {row.lastName}
-                </strong>{' '}
-                · {row.email}
-              </p>
-              <p>
-                {row.planName} · {row.status} · até{' '}
-                {new Date(row.currentPeriodEnd).toLocaleDateString('pt-PT')}
-              </p>
-              <Link href={`/clube/subscricoes/${row.id}`}>Detalhe</Link>
-            </article>
-          ))}
-        </section>
+        <>
+          <section className="user-detail">
+            <h2>Filtros</h2>
+            <div className="admin-filters">
+              <label>
+                Cliente
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Nome, email ou plano"
+                />
+              </label>
+              <label>
+                Estado
+                <select
+                  value={statusFilter}
+                  onChange={(event) => setStatusFilter(event.target.value)}
+                >
+                  <option value="">Todos</option>
+                  {statuses.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Plano
+                <select
+                  value={planFilter}
+                  onChange={(event) => setPlanFilter(event.target.value)}
+                >
+                  <option value="">Todos</option>
+                  {plans.map((plan) => (
+                    <option key={plan.id} value={plan.code}>
+                      {plan.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <p>
+              A mostrar <strong>{filteredSubscriptions.length}</strong> de{' '}
+              <strong>{subscriptions.length}</strong> subscrições.
+            </p>
+          </section>
+          <section className="user-detail">
+            <h2>Subscrições</h2>
+            {!filteredSubscriptions.length && <p>Sem subscrições correspondentes.</p>}
+            {filteredSubscriptions.map((row) => (
+              <article key={row.id}>
+                <p>
+                  <strong>
+                    {row.firstName} {row.lastName}
+                  </strong>{' '}
+                  · {row.email}
+                </p>
+                <p>
+                  {row.planName} · {row.status} ·{' '}
+                  {money(row.priceCentsSnapshot, row.currencySnapshot)} · até{' '}
+                  {new Date(row.currentPeriodEnd).toLocaleDateString('pt-PT')}
+                </p>
+                <Link href={`/clube/subscricoes/${row.id}`}>Detalhe</Link>
+              </article>
+            ))}
+          </section>
+        </>
       )}
     </>
   );
