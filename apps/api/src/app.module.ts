@@ -77,6 +77,12 @@ import { ClubBillingProvider } from './club/billing.provider';
 import { ClubOperationsService } from './club/club-operations.service';
 import { ClubPromotionsService } from './club/club-promotions.service';
 import { ClubService } from './club/club.service';
+import {
+  AccountLoyaltyController,
+  AdminLoyaltyController,
+  PublicGiftCardController,
+} from './loyalty/loyalty.controller';
+import { LoyaltyService } from './loyalty/loyalty.service';
 
 @Module({
   imports: [
@@ -185,6 +191,9 @@ import { ClubService } from './club/club.service';
     AccountClubOperationsController,
     AdminClubOperationsController,
     ClubWebhookController,
+    AccountLoyaltyController,
+    PublicGiftCardController,
+    AdminLoyaltyController,
   ],
   providers: [
     PrismaService,
@@ -218,6 +227,7 @@ import { ClubService } from './club/club.service';
     ClubBillingProvider,
     ClubService,
     ClubOperationsService,
+    LoyaltyService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
