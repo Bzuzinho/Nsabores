@@ -41,6 +41,9 @@ jobs:
       - name: Check formatting
         run: pnpm format:check
 
+      - name: Generate Prisma client
+        run: pnpm --filter @nsabores/api prisma:generate
+
       - name: Lint
         run: pnpm lint
 
