@@ -37,17 +37,17 @@
     "pg": "^8.16.3"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.5",
+    "@eslint/js": "^10.0.1",
     "@nestjs/cli": "^11.0.7",
-    "@types/node": "^26.1.1",
+    "@types/node": "^26.1.2",
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.5",
     "@types/pg": "^8.15.5",
-    "eslint": "^9.39.5",
-    "globals": "^17.7.0",
-    "prisma": "^7.9.0",
+    "eslint": "^10.8.0",
+    "globals": "^17.8.0",
+    "prisma": "^7.9.1",
     "tsx": "^4.20.6",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.2",
     "typescript-eslint": "^8.34.0",
     "vitest": "^4.1.10"
   }
