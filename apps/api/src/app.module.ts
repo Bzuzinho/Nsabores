@@ -45,8 +45,10 @@ import { ReturnRefundService } from './fulfillment/refund.service';
 import { ReturnReplacementService } from './fulfillment/replacement.service';
 import {
   AdminPromotionsController,
+  CartCouponController,
   PublicPromotionsController,
 } from './promotions/promotions.controller';
+import { PromotionalCommerceService } from './promotions/promotional-commerce.service';
 import { PromotionsService } from './promotions/promotions.service';
 
 @Module({
@@ -137,6 +139,7 @@ import { PromotionsService } from './promotions/promotions.service';
     ShippingWebhookController,
     AdminReturnRefundController,
     PublicPromotionsController,
+    CartCouponController,
     AdminPromotionsController,
   ],
   providers: [
@@ -148,7 +151,8 @@ import { PromotionsService } from './promotions/promotions.service';
     AuthGuard,
     RolesGuard,
     MailProvider,
-    CommerceService,
+    PromotionalCommerceService,
+    { provide: CommerceService, useExisting: PromotionalCommerceService },
     PaymentProvider,
     CommerceMailProvider,
     OperationsService,
