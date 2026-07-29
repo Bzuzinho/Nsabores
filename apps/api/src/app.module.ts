@@ -43,6 +43,11 @@ import { ShippingProvider } from './fulfillment/shipping.provider';
 import { AdminReturnRefundController } from './fulfillment/refund.controller';
 import { ReturnRefundService } from './fulfillment/refund.service';
 import { ReturnReplacementService } from './fulfillment/replacement.service';
+import {
+  AdminPromotionsController,
+  PublicPromotionsController,
+} from './promotions/promotions.controller';
+import { PromotionsService } from './promotions/promotions.service';
 
 @Module({
   imports: [
@@ -131,6 +136,8 @@ import { ReturnReplacementService } from './fulfillment/replacement.service';
     AdminFulfillmentController,
     ShippingWebhookController,
     AdminReturnRefundController,
+    PublicPromotionsController,
+    AdminPromotionsController,
   ],
   providers: [
     PrismaService,
@@ -149,6 +156,7 @@ import { ReturnReplacementService } from './fulfillment/replacement.service';
     ShippingProvider,
     ReturnRefundService,
     ReturnReplacementService,
+    PromotionsService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
