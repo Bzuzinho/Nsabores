@@ -54,8 +54,10 @@ import {
   AdminBundlesController,
   PublicBundlesController,
 } from './bundles/bundles.controller';
+import { BundleAwareCommerceService } from './bundles/bundle-aware-commerce.service';
 import { BundleCartController } from './bundles/bundle-cart.controller';
 import { BundleCartService } from './bundles/bundle-cart.service';
+import { BundleInventoryService } from './bundles/bundle-inventory.service';
 import { BundlesService } from './bundles/bundles.service';
 
 @Module({
@@ -161,8 +163,9 @@ import { BundlesService } from './bundles/bundles.service';
     AuthGuard,
     RolesGuard,
     MailProvider,
-    PromotionalCommerceService,
-    { provide: CommerceService, useExisting: PromotionalCommerceService },
+    BundleAwareCommerceService,
+    { provide: PromotionalCommerceService, useExisting: BundleAwareCommerceService },
+    { provide: CommerceService, useExisting: BundleAwareCommerceService },
     PaymentProvider,
     CommerceMailProvider,
     OperationsService,
@@ -173,6 +176,7 @@ import { BundlesService } from './bundles/bundles.service';
     PromotionsService,
     BundlesService,
     BundleCartService,
+    BundleInventoryService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
