@@ -48,8 +48,10 @@ import {
   CartCouponController,
   PublicPromotionsController,
 } from './promotions/promotions.controller';
+import { AdvancedPromotionsService } from './promotions/advanced-promotions.service';
 import { PromotionalCommerceService } from './promotions/promotional-commerce.service';
 import { PromotionsService } from './promotions/promotions.service';
+import { QuantityDealController } from './promotions/quantity-deal.controller';
 import {
   AdminBundlesController,
   PublicBundlesController,
@@ -150,6 +152,7 @@ import { BundlesService } from './bundles/bundles.service';
     PublicPromotionsController,
     CartCouponController,
     AdminPromotionsController,
+    QuantityDealController,
     PublicBundlesController,
     BundleCartController,
     AdminBundlesController,
@@ -173,7 +176,8 @@ import { BundlesService } from './bundles/bundles.service';
     ShippingProvider,
     ReturnRefundService,
     ReturnReplacementService,
-    PromotionsService,
+    AdvancedPromotionsService,
+    { provide: PromotionsService, useExisting: AdvancedPromotionsService },
     BundlesService,
     BundleCartService,
     BundleInventoryService,
