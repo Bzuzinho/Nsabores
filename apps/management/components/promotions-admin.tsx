@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { managementApi } from './management-auth';
 
@@ -32,6 +33,8 @@ type Promotion = {
   perCustomerLimit?: number | null;
   minimumCartCents?: number | null;
   maximumDiscountCents?: number | null;
+  quantityBuy?: number | null;
+  quantityPay?: number | null;
   targets?: PromotionTarget[];
 };
 
@@ -80,13 +83,17 @@ export function PromotionsAdmin() {
     setError('');
     const form = event.currentTarget;
     const data = new FormData(form);
+    const benefitType = String(data.get('benefitType')) as Promotion['benefitType'];
     try {
-      await managementApi.post('/v1/admin/promotions', {
+      const created = await managementApi.post<Promotion>('/v1/admin/promotions', {
         name: String(data.get('name')),
         code: String(data.get('code')),
         status: String(data.get('status')),
-        benefitType: String(data.get('benefitType')),
-        benefitValue: Number(data.get('benefitValue') ?? 0),
+        benefitType,
+        benefitValue:
+          benefitType === 'QUANTITY_DEAL'
+            ? 0
+            : Number(data.get('benefitValue') ?? 0),
         channel: String(data.get('channel')),
         priority: Number(data.get('priority') ?? 0),
         stackable: data.get('stackable') === 'on',
@@ -96,6 +103,17 @@ export function PromotionsAdmin() {
         maximumDiscountCents: optionalNumber(data.get('maximumDiscountCents')),
         targets: [],
       });
+      if (benefitType === 'QUANTITY_DEAL') {
+        const quantityBuy = Number(data.get('quantityBuy') ?? 3);
+        const quantityPay = Number(data.get('quantityPay') ?? 2);
+        if (quantityPay >= quantityBuy) {
+          throw new Error('Em “Leve X, pague Y”, Y tem de ser inferior a X.');
+        }
+        await managementApi.patch(
+          `/v1/admin/promotions/${created.id}/quantity-deal`,
+          { quantityBuy, quantityPay },
+        );
+      }
       form.reset();
       await reload();
     } catch (reason) {
@@ -165,8 +183,10 @@ export function PromotionsAdmin() {
           <label>Nome<input name="name" required maxLength={150} /></label>
           <label>Código interno<input name="code" required maxLength={80} /></label>
           <label>Estado<select name="status" defaultValue="DRAFT"><option>DRAFT</option><option>ACTIVE</option><option>PAUSED</option></select></label>
-          <label>Benefício<select name="benefitType" defaultValue="PERCENTAGE"><option>PERCENTAGE</option><option>FIXED_AMOUNT</option><option>FREE_SHIPPING</option><option>SPECIAL_PRICE</option></select></label>
-          <label>Valor<input name="benefitValue" type="number" min="0" defaultValue="10" required /><small>Percentagem: 0–100. Valores fixos/preço especial: cêntimos.</small></label>
+          <label>Benefício<select name="benefitType" defaultValue="PERCENTAGE"><option>PERCENTAGE</option><option>FIXED_AMOUNT</option><option>FREE_SHIPPING</option><option>SPECIAL_PRICE</option><option>QUANTITY_DEAL</option></select></label>
+          <label>Valor<input name="benefitValue" type="number" min="0" defaultValue="10" /><small>Percentagem: 0–100. Valores fixos/preço especial: cêntimos. Ignorado em QUANTITY_DEAL.</small></label>
+          <label>Leve<input name="quantityBuy" type="number" min="2" defaultValue="3" /><small>Apenas para QUANTITY_DEAL.</small></label>
+          <label>Pague<input name="quantityPay" type="number" min="1" defaultValue="2" /><small>Apenas para QUANTITY_DEAL.</small></label>
           <label>Canal<select name="channel" defaultValue="BOTH"><option>BOTH</option><option>B2C</option><option>B2B</option></select></label>
           <label>Prioridade<input name="priority" type="number" defaultValue="0" required /></label>
           <label><input name="stackable" type="checkbox" /> Pode acumular com outras promoções</label>
@@ -183,10 +203,17 @@ export function PromotionsAdmin() {
         {promotions.map((promotion) => (
           <article key={promotion.id}>
             <p><strong>{promotion.name}</strong> · {promotion.code} · {promotion.status}</p>
-            <p>{promotion.benefitType} · valor {promotion.benefitValue} · {promotion.channel} · prioridade {promotion.priority}</p>
+            <p>
+              {promotion.benefitType}
+              {promotion.benefitType === 'QUANTITY_DEAL'
+                ? ` · leve ${promotion.quantityBuy ?? '?'} pague ${promotion.quantityPay ?? '?'}`
+                : ` · valor ${promotion.benefitValue}`}
+              {' '}· {promotion.channel} · prioridade {promotion.priority}
+            </p>
             <div>
               {promotion.status !== 'ACTIVE' && <button className="admin-primary" disabled={busy} onClick={() => void setStatus(promotion.id, 'ACTIVE')}>Ativar</button>}
               {promotion.status === 'ACTIVE' && <button disabled={busy} onClick={() => void setStatus(promotion.id, 'PAUSED')}>Pausar</button>}
+              {' '}<Link href={`/promocoes/${promotion.id}`}>Editar regra e alvos</Link>
             </div>
           </article>
         ))}
