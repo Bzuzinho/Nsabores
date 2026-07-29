@@ -65,12 +65,21 @@ export default function CheckoutPage() {
   }
 
   const selected = methods[0];
+  const hasFreeShippingPromotion = (cart?.discounts ?? []).some(
+    (discount) => discount.freeShipping,
+  );
   const shipping =
     selected &&
+    !hasFreeShippingPromotion &&
     (selected.freeShippingAboveCents === null ||
       (cart?.subtotalCents ?? 0) < selected.freeShippingAboveCents)
       ? selected.priceCents
       : 0;
+  const productDiscount = cart?.productDiscountCents ?? cart?.discountCents ?? 0;
+  const estimatedTotal = Math.max(
+    0,
+    (cart?.subtotalCents ?? 0) + shipping - productDiscount,
+  );
 
   return (
     <main id="conteudo" className="account-page">
@@ -168,10 +177,32 @@ export default function CheckoutPage() {
           <input name="marketingConsent" type="checkbox" /> Quero receber
           novidades (opcional).
         </label>
-        <p>
-          Subtotal: {formatPrice(cart?.subtotalCents ?? 0)} · Entrega:{' '}
-          {formatPrice(shipping)}
-        </p>
+
+        <div className="checkout-summary">
+          <p>Subtotal: {formatPrice(cart?.subtotalCents ?? 0)}</p>
+          {(cart?.discounts ?? [])
+            .filter((discount) => !discount.freeShipping)
+            .map((discount, index) => (
+              <p key={`${discount.promotionId ?? discount.label}-${index}`}>
+                {discount.label}
+                {discount.code ? ` (${discount.code})` : ''}: −
+                {formatPrice(discount.amountCents)}
+              </p>
+            ))}
+          <p>
+            Entrega:{' '}
+            {hasFreeShippingPromotion ? (
+              <><s>{formatPrice(selected?.priceCents ?? 0)}</s> Grátis</>
+            ) : (
+              formatPrice(shipping)
+            )}
+          </p>
+          <p>
+            <strong>Total estimado: {formatPrice(estimatedTotal)}</strong>
+          </p>
+          <small>O total final é recalculado no servidor antes do pagamento.</small>
+        </div>
+
         {error && <p role="alert">{error}</p>}
         <button
           className="button button-primary"
