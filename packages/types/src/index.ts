@@ -117,6 +117,17 @@ export type PaymentStatus =
   | 'REFUNDED'
   | 'PARTIALLY_REFUNDED';
 
+export interface AppliedDiscount {
+  promotionId?: string | null;
+  couponId?: string | null;
+  source: string;
+  code?: string | null;
+  label: string;
+  amountCents: number;
+  freeShipping?: boolean;
+  snapshot?: Record<string, unknown>;
+}
+
 export interface Cart {
   id: string;
   status: 'ACTIVE' | 'CONVERTED' | 'ABANDONED';
@@ -133,6 +144,20 @@ export interface Cart {
   }>;
   itemCount: number;
   subtotalCents: number;
+  productDiscountCents?: number;
+  shippingDiscountCents?: number;
+  discountCents?: number;
+  shippingCents?: number;
+  totalCents?: number;
+  discounts?: AppliedDiscount[];
+  coupon?: { id: string; code: string } | null;
+  context?: {
+    channel: 'B2C' | 'B2B';
+    businessAccountId: string | null;
+    priceListId: string | null;
+    paymentTerms: string | null;
+    requiresApproval: boolean;
+  };
 }
 
 export interface DeliveryMethod {
@@ -165,6 +190,7 @@ export interface CommerceOrder {
   internalNotes?: string | null;
   createdAt: string;
   deliveryMethod: DeliveryMethod;
+  discounts?: AppliedDiscount[];
   items: Array<{
     id: string;
     productId: string | null;
