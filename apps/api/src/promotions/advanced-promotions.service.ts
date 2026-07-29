@@ -6,6 +6,7 @@ import {
   type CartPricingResult,
   type PricingDiscount,
 } from './promotions.service';
+import { calculateQuantityDeal } from './quantity-deal';
 import type { QuantityDealDto } from './quantity-deal.dto';
 
 type PricingClient = Prisma.TransactionClient;
@@ -143,11 +144,19 @@ export class AdvancedPromotionsService extends PromotionsService {
       const discountedUnits: Array<{ productId: string; units: number }> = [];
       for (const item of base.items) {
         if (!eligibleIds.has(item.id)) continue;
-        const sets = Math.floor(item.quantity / candidate.quantityBuy);
-        if (!sets) continue;
-        const freeUnits = sets * (candidate.quantityBuy - candidate.quantityPay);
-        amountCents += freeUnits * item.unitPriceCents;
-        discountedUnits.push({ productId: item.productId, units: freeUnits });
+        const deal = calculateQuantityDeal(
+          item.quantity,
+          item.unitPriceCents,
+          candidate.quantityBuy,
+          candidate.quantityPay,
+        );
+        amountCents += deal.discountCents;
+        if (deal.discountedUnits) {
+          discountedUnits.push({
+            productId: item.productId,
+            units: deal.discountedUnits,
+          });
+        }
       }
       if (candidate.maximumDiscountCents !== null) {
         amountCents = Math.min(amountCents, candidate.maximumDiscountCents);
@@ -186,19 +195,16 @@ export class AdvancedPromotionsService extends PromotionsService {
       base.subtotalCents + base.shippingCents,
       productDiscountCents + base.shippingDiscountCents,
     );
+    const appliedCoupon = discounts.find((discount) => discount.couponId !== null);
     return {
       ...base,
       productDiscountCents,
       discountCents,
       totalCents: Math.max(0, base.subtotalCents + base.shippingCents - discountCents),
       discounts,
-      coupon:
-        discounts.find((discount) => discount.couponId !== null)?.couponId
-          ? {
-              id: discounts.find((discount) => discount.couponId !== null)!.couponId!,
-              code: discounts.find((discount) => discount.couponId !== null)!.code ?? '',
-            }
-          : base.coupon,
+      coupon: appliedCoupon?.couponId
+        ? { id: appliedCoupon.couponId, code: appliedCoupon.code ?? '' }
+        : base.coupon,
     };
   }
 
