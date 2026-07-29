@@ -69,6 +69,7 @@ import {
   PublicClubController,
 } from './club/club.controller';
 import { ClubBillingProvider } from './club/billing.provider';
+import { ClubPromotionsService } from './club/club-promotions.service';
 import { ClubService } from './club/club.service';
 
 @Module({
@@ -196,8 +197,9 @@ import { ClubService } from './club/club.service';
     ShippingProvider,
     ReturnRefundService,
     ReturnReplacementService,
-    AdvancedPromotionsService,
-    { provide: PromotionsService, useExisting: AdvancedPromotionsService },
+    ClubPromotionsService,
+    { provide: AdvancedPromotionsService, useExisting: ClubPromotionsService },
+    { provide: PromotionsService, useExisting: ClubPromotionsService },
     CouponAuditService,
     BundlesService,
     BundleCartService,
