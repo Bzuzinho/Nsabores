@@ -1,5 +1,5 @@
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
-import { Injectable, NotImplementedException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotImplementedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { PaymentStatus } from '@prisma/client';
 
@@ -7,6 +7,13 @@ export interface PaymentSession {
   provider: string;
   providerPaymentId: string;
   redirectUrl: string;
+}
+
+export interface PaymentRefund {
+  providerRefundId: string;
+  amountCents: number;
+  status: PaymentStatus;
+  idempotencyKey: string;
 }
 
 @Injectable()
@@ -25,6 +32,28 @@ export class PaymentProvider {
       provider,
       providerPaymentId,
       redirectUrl: `${this.config.get<string>('PAYMENT_SUCCESS_URL') ?? 'http://localhost:3000/checkout/sucesso'}?orderId=${orderId}&paymentId=${providerPaymentId}`,
+    };
+  }
+
+  refund(
+    providerPaymentId: string,
+    amountCents: number,
+    idempotencyKey: string,
+  ): PaymentRefund {
+    if (!Number.isInteger(amountCents) || amountCents <= 0) {
+      throw new BadRequestException('Montante de reembolso inválido.');
+    }
+    const provider = this.config.get<string>('PAYMENT_PROVIDER') ?? 'mock';
+    if (provider !== 'mock') {
+      throw new NotImplementedException(
+        `O provider ${provider} requer um adaptador de reembolso real antes de poder emitir créditos.`,
+      );
+    }
+    return {
+      providerRefundId: `mock_refund_${providerPaymentId}_${randomUUID()}`,
+      amountCents,
+      status: 'REFUNDED',
+      idempotencyKey,
     };
   }
 
