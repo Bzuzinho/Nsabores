@@ -1,1 +1,1 @@
-Trigger Railway deployment for management after root Railpack start fix.
+Trigger Railway deployment for management after explicit root railpack.json config.
