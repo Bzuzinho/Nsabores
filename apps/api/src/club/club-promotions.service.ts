@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { AdvancedPromotionsService } from '../promotions/advanced-promotions.service';
 import type { CartPricingResult, PricingDiscount } from '../promotions/promotions.service';
+import { calculateClubPercentageDiscount } from './club-benefit';
 
 type ActiveClubBenefit = {
   subscriptionId: string;
@@ -59,13 +60,12 @@ export class ClubPromotionsService extends AdvancedPromotionsService {
     const benefit = benefits[0];
     if (!benefit || benefit.discountPercent <= 0) return base;
 
-    const percent = Math.min(100, Math.max(0, benefit.discountPercent));
-    const eligibleSubtotal = Math.max(0, base.subtotalCents - base.productDiscountCents);
-    const amountCents = Math.min(
-      eligibleSubtotal,
-      Math.round((eligibleSubtotal * percent) / 100),
+    const calculated = calculateClubPercentageDiscount(
+      base.subtotalCents,
+      base.productDiscountCents,
+      benefit.discountPercent,
     );
-    if (amountCents <= 0) return base;
+    if (calculated.amountCents <= 0) return base;
 
     const line = {
       promotionId: null,
@@ -73,11 +73,11 @@ export class ClubPromotionsService extends AdvancedPromotionsService {
       source: 'CLUB',
       code: benefit.planCode,
       label: `Benefício Clube Nsabores · ${benefit.planCode}`,
-      amountCents,
+      amountCents: calculated.amountCents,
       freeShipping: false,
       snapshot: {
         benefitType: 'CLUB_PERCENTAGE',
-        discountPercent: percent,
+        discountPercent: calculated.percent,
         subscriptionId: benefit.subscriptionId,
         planId: benefit.planId,
         planCode: benefit.planCode,
@@ -87,7 +87,7 @@ export class ClubPromotionsService extends AdvancedPromotionsService {
 
     const productDiscountCents = Math.min(
       base.subtotalCents,
-      base.productDiscountCents + amountCents,
+      base.productDiscountCents + calculated.amountCents,
     );
     const discountCents = Math.min(
       base.subtotalCents + base.shippingCents,
