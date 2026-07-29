@@ -42,6 +42,7 @@ import { FulfillmentService } from './fulfillment/fulfillment.service';
 import { ShippingProvider } from './fulfillment/shipping.provider';
 import { AdminReturnRefundController } from './fulfillment/refund.controller';
 import { ReturnRefundService } from './fulfillment/refund.service';
+import { ReturnReplacementService } from './fulfillment/replacement.service';
 
 @Module({
   imports: [
@@ -147,6 +148,7 @@ import { ReturnRefundService } from './fulfillment/refund.service';
     FulfillmentService,
     ShippingProvider,
     ReturnRefundService,
+    ReturnReplacementService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
