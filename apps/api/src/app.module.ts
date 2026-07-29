@@ -54,6 +54,8 @@ import {
   AdminBundlesController,
   PublicBundlesController,
 } from './bundles/bundles.controller';
+import { BundleCartController } from './bundles/bundle-cart.controller';
+import { BundleCartService } from './bundles/bundle-cart.service';
 import { BundlesService } from './bundles/bundles.service';
 
 @Module({
@@ -147,6 +149,7 @@ import { BundlesService } from './bundles/bundles.service';
     CartCouponController,
     AdminPromotionsController,
     PublicBundlesController,
+    BundleCartController,
     AdminBundlesController,
   ],
   providers: [
@@ -169,6 +172,7 @@ import { BundlesService } from './bundles/bundles.service';
     ReturnReplacementService,
     PromotionsService,
     BundlesService,
+    BundleCartService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
