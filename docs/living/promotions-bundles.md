@@ -6,7 +6,7 @@
 
 A Sprint 7 está em implementação direta em `main`.
 
-Implementado até esta revisão:
+Implementado nesta fase:
 
 - persistência de promoções, alvos, cupões e snapshots de desconto;
 - cálculo promocional no servidor;
@@ -18,46 +18,43 @@ Implementado até esta revisão:
 - percentagem, valor fixo, preço especial e portes grátis;
 - snapshot imutável de descontos em `OrderDiscount`;
 - `CouponRedemption` apenas após pagamento `PAID`;
-- libertação de redemption quando a encomenda é cancelada;
-- gestão inicial de promoções e cupões no management;
-- modelo persistente de cabazes fixos/configuráveis;
+- gestão de promoções e cupões no management;
+- cabazes fixos e configuráveis;
 - grupos de seleção e componentes;
-- configuração de personalização de oferta;
-- API pública de detalhe e cálculo de cabaz;
-- API administrativa de cabazes.
+- personalização de oferta;
+- múltiplas configurações do mesmo produto no carrinho através de `configurationKey`;
+- personalizador no website;
+- gestão inicial de cabazes em `/cabazes`;
+- snapshot de composição/personalização na encomenda;
+- reserva de stock sobre componentes reais do cabaz.
 
 ## Motor de preços
 
-O servidor resolve o contexto comercial do utilizador antes do cálculo:
+O servidor resolve o contexto comercial antes do cálculo:
 
 - utilizador sem conta empresarial aprovada: `B2C`;
 - utilizador associado a `BusinessAccount` aprovada: `B2B`;
 - em B2B é considerada a `PriceList` atribuída quando existe.
 
-A ordem de cálculo atual é:
+A ordem é:
 
 ```text
 preço base / tabela de preços
-→ promoções automáticas por prioridade
-→ cupão aplicado
+→ preço configurado do cabaz quando aplicável
+→ promoções automáticas
+→ cupão
 → portes
-→ desconto de portes quando aplicável
+→ desconto de portes
 → total final
 ```
 
-A encomenda grava `subtotalCents`, `shippingCents`, `discountCents` e `totalCents` calculados no servidor. Cada desconto é preservado em `OrderDiscount`, incluindo tipo, valor, código e produtos elegíveis usados no cálculo.
+A encomenda grava os valores finais em cêntimos. Cada desconto é preservado em `OrderDiscount` para impedir que alterações posteriores à campanha mudem encomendas históricas.
 
-### Percentagens
-
-`benefitValue` usa percentagem inteira entre 0 e 100 para promoções `PERCENTAGE`.
-
-Para `FIXED_AMOUNT` e `SPECIAL_PRICE`, os valores monetários são guardados em cêntimos.
-
-`QUANTITY_DEAL` está reservado no enum, mas ainda não é aplicado pelo motor até existir uma definição explícita de quantidade comprada/paga. Não é aplicado silenciosamente.
+`QUANTITY_DEAL` permanece reservado no enum, mas ainda não executa uma regra X/Y enquanto essa regra não estiver explicitamente configurada.
 
 ## Cupões
 
-Endpoints públicos do carrinho:
+Endpoints:
 
 ```text
 POST   /v1/cart/coupon
@@ -65,98 +62,145 @@ DELETE /v1/cart/coupon
 GET    /v1/cart
 ```
 
-O código é normalizado em maiúsculas. São validados:
+O código é normalizado em maiúsculas. São validados estado, datas, canal, mínimo de carrinho e limites de utilização.
 
-- estado da promoção;
-- estado do cupão;
-- datas;
-- canal;
-- mínimo de carrinho;
-- limite total;
-- limite por utilizador;
-- limites da promoção.
-
-Cupões com limite por utilizador exigem autenticação.
-
-A utilização não é consumida por simples aplicação ao carrinho. O pagamento `PAID` cria `CouponRedemption` de forma idempotente através da lifecycle de base de dados. Uma encomenda cancelada liberta essa utilização.
-
-## Management
-
-Rotas disponíveis:
-
-```text
-/promocoes
-/cupoes
-```
-
-A primeira versão permite:
-
-- criar promoção;
-- ativar/pausar promoção;
-- definir tipo, valor, canal, prioridade e stacking;
-- configurar limites gerais;
-- criar cupão associado a uma promoção;
-- configurar canal e limites do cupão;
-- consultar promoções e cupões existentes.
-
-A edição detalhada de alvos será expandida na continuação da sprint.
+A aplicação ao carrinho não consome a utilização. O consumo é auditado por `CouponRedemption` quando o pagamento atinge `PAID`, de forma idempotente.
 
 ## Cabazes
 
-A persistência suporta:
+Um `ProductBundle` usa um produto normal como produto comercial principal. Os componentes continuam produtos do catálogo e podem continuar vendáveis isoladamente.
 
-- `FIXED`;
-- `CONFIGURABLE`;
-- preço do produto principal (`PRODUCT_PRICE`);
-- preço derivado dos componentes (`COMPONENT_TOTAL`);
-- mínimo/máximo de escolhas;
-- grupos de seleção;
-- componentes obrigatórios/opcionais;
-- mínimo/máximo por componente;
-- diferença de preço por componente.
+Modos:
 
-Endpoints públicos:
+- `FIXED`: composição definida administrativamente;
+- `CONFIGURABLE`: o cliente escolhe opções respeitando mínimos/máximos globais e por grupo.
+
+Preço:
+
+- `PRODUCT_PRICE`: preço do produto principal + diferenças de seleção + personalização paga;
+- `COMPONENT_TOTAL`: soma dos componentes + diferenças + personalização paga.
+
+O browser pode pré-visualizar por:
 
 ```text
 GET  /v1/bundles/:slug
 POST /v1/bundles/:slug/price
 ```
 
-Endpoints de gestão:
+A inclusão no carrinho é feita por:
 
 ```text
-GET   /v1/admin/bundles
-GET   /v1/admin/bundles/:id
-POST  /v1/admin/bundles
-PATCH /v1/admin/bundles/:id
+POST /v1/cart/bundles/:slug
 ```
 
-O cálculo do cabaz é efetuado no servidor. O browser apenas envia escolhas e recebe a composição validada e o preço resultante.
+O preço e a composição são recalculados no servidor nessa operação.
+
+## Múltiplas configurações no carrinho
+
+`CartItem.configurationKey` distingue configurações do mesmo produto:
+
+- produto normal: `default`;
+- cabaz configurado: hash SHA-256 da composição e personalização normalizadas.
+
+Assim o mesmo cabaz pode existir simultaneamente no carrinho com destinatários, mensagens ou componentes diferentes sem uma configuração substituir a outra.
+
+`CartItemBundleSelection` preserva os componentes da linha e `CartItemPersonalization` preserva os dados de oferta.
+
+O merge visitante → conta mantém `configurationKey`, composição e personalização.
 
 ## Personalização
 
-A configuração por produto já suporta:
+A configuração administrativa pode ativar:
 
-- mensagem de oferta;
+- mensagem/cartão;
 - nome do destinatário;
-- embalagem especial e respetivo custo;
+- embalagem especial e custo adicional;
 - data pretendida;
 - observações;
-- packing slip sem preço;
-- limites de tamanho de mensagem e observações.
+- packing slip sem valores.
 
-Foram criadas estruturas de snapshot para carrinho e encomenda, mas a captura no carrinho ainda não está ligada ao frontend nesta revisão.
+O backend valida cada campo e os limites máximos antes de persistir.
 
-## Próximo sub-bloco
+## Checkout e snapshots
 
-O modelo histórico de `CartItem` tem unicidade por `(cartId, productId)`. Isso impede colocar no mesmo carrinho duas configurações/personalizações diferentes do mesmo cabaz.
+O checkout passa pela camada `BundleAwareCommerceService`.
 
-Antes de ativar `Adicionar ao carrinho` no personalizador, o próximo passo é introduzir uma chave de configuração na linha de carrinho, mantendo o comportamento `default` para produtos normais. Depois serão ligados:
+Cada linha configurada cria um `OrderItem` independente. Mesmo que duas linhas usem o mesmo produto principal, permanecem distintas.
 
-1. composição ao carrinho;
-2. snapshot de componentes/personalização na encomenda;
-3. reserva de stock dos componentes reais;
-4. página `/loja/cabazes/[slug]/personalizar`;
-5. gestão visual de componentes/grupos no management.
+São congelados:
 
-Esta limitação é intencionalmente mantida visível para evitar um fluxo que pareça suportar múltiplas personalizações mas sobrescreva silenciosamente uma configuração anterior.
+- componentes em `OrderItemBundleSelection`;
+- nome e SKU do componente;
+- quantidade;
+- diferença de preço;
+- personalização em `OrderItemPersonalization`;
+- custo extra de personalização.
+
+Alterações futuras ao catálogo ou ao cabaz não mudam a encomenda histórica.
+
+## Promoções sobre cabazes
+
+O preço efetivo da configuração entra no subtotal.
+
+Os extras de configuração/personalização não podem aumentar artificialmente um desconto que já tinha sido calculado sobre o produto base. A camada bundle-aware recalcula quando o preço efetivo é inferior, mas limita o desconto ao valor originalmente obtido pelo motor promocional quando o preço configurado é superior.
+
+Isto evita criar desconto adicional apenas por escolher embalagem especial ou componentes mais caros.
+
+## Stock
+
+Ao adicionar ao carrinho, a API verifica disponibilidade dos componentes monitorizados.
+
+No checkout, a necessidade de stock é calculada por produto real:
+
+- linha normal → produto da linha;
+- cabaz → componentes do snapshot × quantidade do cabaz.
+
+Se o mesmo componente aparecer várias vezes na encomenda, as necessidades são agregadas e é criada uma única `StockReservation` por produto/encomenda.
+
+`releaseOrder` e `fulfillOrder` continuam compatíveis porque trabalham sobre as reservas já criadas, independentemente da origem ser produto normal ou componente de cabaz.
+
+## Management
+
+Rotas:
+
+```text
+/promocoes
+/cupoes
+/cabazes
+```
+
+A gestão de cabazes permite atualmente criar produto principal, modo, regra de preço, componentes e opções básicas de personalização. A edição avançada de grupos e um editor de detalhe dedicado continuam por melhorar.
+
+## Website
+
+Produtos com cabaz ativo apresentam `Personalizar cabaz`.
+
+O fluxo está em:
+
+```text
+/loja/cabazes/[slug]/personalizar
+```
+
+O utilizador escolhe componentes, personalização e quantidade; o preço é recalculado pela API antes de permitir adicionar ao carrinho.
+
+## Migrações
+
+As migrations da Sprint 7 são deliberadamente explícitas. O `start:prod` não executa migrations automaticamente.
+
+Antes de testar as funcionalidades numa base que ainda não recebeu estas migrations:
+
+```bash
+pnpm --filter @nsabores/api prisma:migrate:deploy
+```
+
+## Próximos passos antes de fechar a Sprint 7
+
+- executar as migrations e seed numa base limpa;
+- smoke test real: promoção → cupão → cabaz configurado → checkout → reserva → expedição;
+- testar duas configurações diferentes do mesmo cabaz no mesmo carrinho;
+- testes automatizados de concorrência/limites de cupão;
+- testes de snapshot e stock de componentes;
+- implementar `QUANTITY_DEAL` X/Y;
+- melhorar edição de grupos no management;
+- sincronizar os modelos SQL das Sprints 6/7 no `schema.prisma` para reduzir drift futuro;
+- validar todos os quality gates antes de encerrar a issue #25.
