@@ -108,3 +108,6 @@ jobs:
 
       - name: Seed clean database
         run: pnpm --filter @nsabores/api prisma:seed
+
+      - name: Validate Club lifecycle
+        run: pnpm --filter @nsabores/api validate:club
