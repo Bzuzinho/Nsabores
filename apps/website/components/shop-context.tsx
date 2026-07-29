@@ -19,12 +19,14 @@ const api = new ApiClient(
 
 interface ShopContextValue {
   addToCart: (product: Product) => Promise<void>;
+  applyCoupon: (code: string) => Promise<void>;
   cart: Cart | null;
   cartCount: number;
   cartItems: Cart['items'];
   cartOpen: boolean;
   closeCart: () => void;
   openCart: () => void;
+  removeCoupon: () => Promise<void>;
   removeFromCart: (itemId: string) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   refreshCart: () => Promise<void>;
@@ -140,15 +142,45 @@ export function ShopProvider({ children }: { children: ReactNode }) {
     [mutate],
   );
 
+  const applyCoupon = useCallback(async (code: string) => {
+    try {
+      const next = await api.post<Cart>('/v1/cart/coupon', { code });
+      setCart(next);
+      setToast(`Cupão ${next.coupon?.code ?? code.toUpperCase()} aplicado.`);
+      window.setTimeout(() => setToast(''), 2600);
+    } catch (reason) {
+      setToast(
+        reason instanceof Error ? reason.message : 'Não foi possível aplicar o cupão.',
+      );
+      throw reason;
+    }
+  }, []);
+
+  const removeCoupon = useCallback(async () => {
+    try {
+      const next = await api.delete<Cart>('/v1/cart/coupon');
+      setCart(next);
+      setToast('Cupão removido.');
+      window.setTimeout(() => setToast(''), 2600);
+    } catch (reason) {
+      setToast(
+        reason instanceof Error ? reason.message : 'Não foi possível remover o cupão.',
+      );
+      throw reason;
+    }
+  }, []);
+
   const value = useMemo<ShopContextValue>(
     () => ({
       addToCart,
+      applyCoupon,
       cart,
       cartCount: cart?.itemCount ?? 0,
       cartItems: cart?.items ?? [],
       cartOpen,
       closeCart: () => setCartOpen(false),
       openCart: () => setCartOpen(true),
+      removeCoupon,
       removeFromCart,
       updateQuantity,
       refreshCart,
@@ -156,9 +188,11 @@ export function ShopProvider({ children }: { children: ReactNode }) {
     }),
     [
       addToCart,
+      applyCoupon,
       cart,
       cartOpen,
       refreshCart,
+      removeCoupon,
       removeFromCart,
       toast,
       updateQuantity,
