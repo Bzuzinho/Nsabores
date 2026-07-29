@@ -1,1 +1,1 @@
-Trigger Railway deployment for management after explicit root railpack.json config.
+Force fresh Railway deployment for management after clearing watch paths and CI gate.
