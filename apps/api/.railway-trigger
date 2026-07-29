@@ -1,1 +1,1 @@
-Trigger Railway deployment for api after explicit root railpack.json config.
+Force fresh Railway deployment for api after clearing watch paths and CI gate.
