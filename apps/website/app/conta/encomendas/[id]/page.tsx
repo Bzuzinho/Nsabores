@@ -38,8 +38,18 @@ export default function OrderPage() {
         <strong>Total: {formatPrice(order.totalCents)}</strong>
       </p>
       <p>
-        <Link href={`/conta/encomendas/${id}/tracking`}>Acompanhar expedição</Link>
-        {canReturn && <> · <Link href={`/conta/encomendas/${id}/devolver`}>Pedir devolução</Link></>}
+        <Link href={`/conta/encomendas/${id}/tracking`}>
+          Acompanhar expedição
+        </Link>
+        {canReturn && (
+          <>
+            {' '}
+            ·{' '}
+            <Link href={`/conta/encomendas/${id}/devolver`}>
+              Pedir devolução
+            </Link>
+          </>
+        )}
       </p>
       <h2>Histórico</h2>
       {order.statusHistory.map((item) => (

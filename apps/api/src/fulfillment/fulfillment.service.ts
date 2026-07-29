@@ -6,7 +6,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { OrderStatus, Prisma, StockMovementType, StockReservationStatus } from '@prisma/client';
+import {
+  OrderStatus,
+  Prisma,
+  StockMovementType,
+  StockReservationStatus,
+} from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { OperationsService } from '../operations/operations.service';
 import type {
@@ -14,12 +19,11 @@ import type {
   CreateShipmentDto,
   CreateSupportCaseDto,
   ReturnDecisionDto,
-  ReturnRequestStatusDtoValue,
   ShipmentEventDto,
-  ShipmentStatusDtoValue,
   SupportCaseCommentDto,
   SupportCaseStatusUpdateDto,
 } from './dto';
+import { ReturnRequestStatusDtoValue, ShipmentStatusDtoValue } from './dto';
 import { ShippingProvider } from './shipping.provider';
 
 interface ShipmentRow {
@@ -94,7 +98,9 @@ export class FulfillmentService {
   preparationQueue() {
     return this.prisma.order.findMany({
       where: {
-        status: { in: [OrderStatus.PAID, OrderStatus.PROCESSING, OrderStatus.READY] },
+        status: {
+          in: [OrderStatus.PAID, OrderStatus.PROCESSING, OrderStatus.READY],
+        },
       },
       include: {
         items: true,
@@ -145,7 +151,8 @@ export class FulfillmentService {
       SELECT * FROM "Shipment" WHERE "idempotencyKey" = ${body.idempotencyKey} LIMIT 1
     `;
     if (duplicate[0]) return this.shipment(duplicate[0].id);
-    if (!body.items.length) throw new BadRequestException('A expedição não tem artigos.');
+    if (!body.items.length)
+      throw new BadRequestException('A expedição não tem artigos.');
 
     const shipmentId = randomUUID();
     const shipmentNumber = number('SHP');
@@ -156,16 +163,21 @@ export class FulfillmentService {
       });
       if (!order) throw new NotFoundException('Encomenda não encontrada.');
       if (
-        ![OrderStatus.PAID, OrderStatus.PROCESSING, OrderStatus.READY].includes(
-          order.status,
-        )
+        order.status !== OrderStatus.PAID &&
+        order.status !== OrderStatus.PROCESSING &&
+        order.status !== OrderStatus.READY
       ) {
-        throw new ConflictException('A encomenda não está pronta para preparação.');
+        throw new ConflictException(
+          'A encomenda não está pronta para preparação.',
+        );
       }
 
       for (const line of body.items) {
-        const orderItem = order.items.find((item) => item.id === line.orderItemId);
-        if (!orderItem) throw new BadRequestException('Artigo inválido na expedição.');
+        const orderItem = order.items.find(
+          (item) => item.id === line.orderItemId,
+        );
+        if (!orderItem)
+          throw new BadRequestException('Artigo inválido na expedição.');
         const shipped = await tx.$queryRaw<Array<{ quantity: bigint }>>`
           SELECT COALESCE(SUM(si."quantity"), 0)::bigint AS quantity
           FROM "ShipmentItem" si
@@ -173,7 +185,10 @@ export class FulfillmentService {
           WHERE si."orderItemId" = ${line.orderItemId}::uuid
             AND s."status" <> 'CANCELLED'::"ShipmentStatus"
         `;
-        if (Number(shipped[0]?.quantity ?? 0) + line.quantity > orderItem.quantity) {
+        if (
+          Number(shipped[0]?.quantity ?? 0) + line.quantity >
+          orderItem.quantity
+        ) {
           throw new ConflictException(
             `A quantidade expedida de ${orderItem.productName} excede a encomendada.`,
           );
@@ -254,14 +269,21 @@ export class FulfillmentService {
     }
 
     await this.prisma.$transaction(async (tx) => {
-      const lines = await tx.$queryRaw<Array<{ orderItemId: string; quantity: number; productId: string | null }>>`
+      const lines = await tx.$queryRaw<
+        Array<{
+          orderItemId: string;
+          quantity: number;
+          productId: string | null;
+        }>
+      >`
         SELECT si."orderItemId", si."quantity", oi."productId"
         FROM "ShipmentItem" si
         JOIN "OrderItem" oi ON oi."id" = si."orderItemId"
         WHERE si."shipmentId" = ${id}::uuid
       `;
       for (const line of lines) {
-        if (!line.productId) throw new ConflictException('Produto removido do catálogo.');
+        if (!line.productId)
+          throw new ConflictException('Produto removido do catálogo.');
         const reservation = await tx.stockReservation.findFirst({
           where: {
             orderId: shipment.orderId,
@@ -270,7 +292,9 @@ export class FulfillmentService {
           },
         });
         if (!reservation || reservation.quantity < line.quantity) {
-          throw new ConflictException('Reserva de stock insuficiente para expedir.');
+          throw new ConflictException(
+            'Reserva de stock insuficiente para expedir.',
+          );
         }
         const changed = await tx.stockItem.updateMany({
           where: {
@@ -283,7 +307,8 @@ export class FulfillmentService {
             reservedQuantity: { decrement: line.quantity },
           },
         });
-        if (changed.count !== 1) throw new ConflictException('Stock inconsistente.');
+        if (changed.count !== 1)
+          throw new ConflictException('Stock inconsistente.');
         if (reservation.quantity === line.quantity) {
           await tx.stockReservation.update({
             where: { id: reservation.id },
@@ -326,7 +351,9 @@ export class FulfillmentService {
           ), 0)
       `;
       if (Number(remaining[0]?.count ?? 0) === 0) {
-        const order = await tx.order.findUniqueOrThrow({ where: { id: shipment.orderId } });
+        const order = await tx.order.findUniqueOrThrow({
+          where: { id: shipment.orderId },
+        });
         if (order.status !== OrderStatus.SHIPPED) {
           await tx.order.update({
             where: { id: order.id },
@@ -370,7 +397,7 @@ export class FulfillmentService {
         "updatedAt" = CURRENT_TIMESTAMP
       WHERE "id" = ${id}::uuid
     `;
-    if (status === 'DELIVERED') {
+    if (status === ShipmentStatusDtoValue.DELIVERED) {
       const active = await this.prisma.$queryRaw<Array<{ count: bigint }>>`
         SELECT COUNT(*)::bigint AS count FROM "Shipment"
         WHERE "orderId" = ${shipment.orderId}::uuid
@@ -400,7 +427,9 @@ export class FulfillmentService {
   }
 
   async trackingForUser(orderId: string, userId: string) {
-    const order = await this.prisma.order.findFirst({ where: { id: orderId, userId } });
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, userId },
+    });
     if (!order) throw new NotFoundException('Encomenda não encontrada.');
     return this.shipments(orderId);
   }
@@ -410,7 +439,8 @@ export class FulfillmentService {
       where: { number: orderNumber, email: email.trim().toLowerCase() },
       select: { id: true, number: true, status: true },
     });
-    if (!order) throw new NotFoundException('Não foi possível localizar a encomenda.');
+    if (!order)
+      throw new NotFoundException('Não foi possível localizar a encomenda.');
     return { order, shipments: await this.shipments(order.id) };
   }
 
@@ -420,15 +450,21 @@ export class FulfillmentService {
       include: { items: true },
     });
     if (!order) throw new NotFoundException('Encomenda não encontrada.');
-    if (![OrderStatus.SHIPPED, OrderStatus.DELIVERED].includes(order.status)) {
+    if (
+      order.status !== OrderStatus.SHIPPED &&
+      order.status !== OrderStatus.DELIVERED
+    ) {
       throw new ConflictException('A encomenda ainda não admite devolução.');
     }
-    if (!body.items.length) throw new BadRequestException('Selecione artigos para devolver.');
+    if (!body.items.length)
+      throw new BadRequestException('Selecione artigos para devolver.');
     const returnId = randomUUID();
     const returnNumber = number('RMA');
     await this.prisma.$transaction(async (tx) => {
       for (const line of body.items) {
-        const item = order.items.find((candidate) => candidate.id === line.orderItemId);
+        const item = order.items.find(
+          (candidate) => candidate.id === line.orderItemId,
+        );
         if (!item) throw new BadRequestException('Artigo inválido.');
         const previous = await tx.$queryRaw<Array<{ quantity: bigint }>>`
           SELECT COALESCE(SUM(ri."quantity"), 0)::bigint AS quantity
@@ -437,8 +473,13 @@ export class FulfillmentService {
           WHERE ri."orderItemId" = ${line.orderItemId}::uuid
             AND rr."status" NOT IN ('REJECTED', 'CANCELLED')
         `;
-        if (Number(previous[0]?.quantity ?? 0) + line.quantity > item.quantity) {
-          throw new ConflictException('Quantidade de devolução superior à comprada.');
+        if (
+          Number(previous[0]?.quantity ?? 0) + line.quantity >
+          item.quantity
+        ) {
+          throw new ConflictException(
+            'Quantidade de devolução superior à comprada.',
+          );
         }
       }
       await tx.$executeRaw`
@@ -550,12 +591,15 @@ export class FulfillmentService {
   ) {
     const request = await this.returnRequest(id);
     await this.prisma.$transaction(async (tx) => {
-      if (status === 'RECEIVED') {
+      if (status === ReturnRequestStatusDtoValue.RECEIVED) {
         await tx.$executeRaw`
           UPDATE "ReturnRequest" SET "receivedAt" = CURRENT_TIMESTAMP WHERE "id" = ${id}::uuid
         `;
       }
-      if (status === 'CLOSED' || status === 'REFUNDED') {
+      if (
+        status === ReturnRequestStatusDtoValue.CLOSED ||
+        status === ReturnRequestStatusDtoValue.REFUNDED
+      ) {
         await tx.$executeRaw`
           UPDATE "ReturnRequest" SET "closedAt" = CURRENT_TIMESTAMP WHERE "id" = ${id}::uuid
         `;
@@ -572,8 +616,14 @@ export class FulfillmentService {
           ${authorId}::uuid, ${note ?? null}, CURRENT_TIMESTAMP)
       `;
 
-      if (status === 'INSPECTED') {
-        const restock = await tx.$queryRaw<Array<{ orderItemId: string; quantity: number; productId: string | null }>>`
+      if (status === ReturnRequestStatusDtoValue.INSPECTED) {
+        const restock = await tx.$queryRaw<
+          Array<{
+            orderItemId: string;
+            quantity: number;
+            productId: string | null;
+          }>
+        >`
           SELECT ri."orderItemId", ri."quantity", oi."productId"
           FROM "ReturnItem" ri JOIN "OrderItem" oi ON oi."id" = ri."orderItemId"
           WHERE ri."returnRequestId" = ${id}::uuid
@@ -583,7 +633,10 @@ export class FulfillmentService {
           if (!line.productId) continue;
           await tx.stockItem.upsert({
             where: { productId: line.productId },
-            create: { productId: line.productId, onHandQuantity: line.quantity },
+            create: {
+              productId: line.productId,
+              onHandQuantity: line.quantity,
+            },
             update: { onHandQuantity: { increment: line.quantity } },
           });
           await tx.stockMovement.create({
@@ -609,7 +662,8 @@ export class FulfillmentService {
       const order = await this.prisma.order.findFirst({
         where: { id: body.orderId, userId },
       });
-      if (!order) throw new ForbiddenException('Sem acesso à encomenda indicada.');
+      if (!order)
+        throw new ForbiddenException('Sem acesso à encomenda indicada.');
     }
     const id = randomUUID();
     const caseNumber = number('SUP');
@@ -646,8 +700,11 @@ export class FulfillmentService {
           SELECT * FROM "SupportCase" WHERE "id" = ${id}::uuid LIMIT 1
         `;
     const supportCase = rows[0];
-    if (!supportCase) throw new NotFoundException('Caso de apoio não encontrado.');
-    const comments = await this.prisma.$queryRaw<Array<Record<string, unknown>>>`
+    if (!supportCase)
+      throw new NotFoundException('Caso de apoio não encontrado.');
+    const comments = await this.prisma.$queryRaw<
+      Array<Record<string, unknown>>
+    >`
       SELECT c.*, u."firstName", u."lastName"
       FROM "SupportCaseComment" c
       LEFT JOIN "User" u ON u."id" = c."authorId"
@@ -658,10 +715,7 @@ export class FulfillmentService {
     return { ...supportCase, comments };
   }
 
-  async updateSupportCase(
-    id: string,
-    body: SupportCaseStatusUpdateDto,
-  ) {
+  async updateSupportCase(id: string, body: SupportCaseStatusUpdateDto) {
     await this.supportCase(id);
     await this.prisma.$executeRaw`
       UPDATE "SupportCase" SET "status" = ${body.status}::"SupportCaseStatus",

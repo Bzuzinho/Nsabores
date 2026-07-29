@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { StockMovementType } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 
@@ -53,7 +57,9 @@ export class BundleInventoryService {
         if (components.length) {
           for (const component of components) {
             if (!component.componentProductId)
-              throw new ConflictException(`Componente removido de ${item.productName}.`);
+              throw new ConflictException(
+                `Componente removido de ${item.productName}.`,
+              );
             this.aggregate(
               needs,
               component.componentProductId,
@@ -63,7 +69,12 @@ export class BundleInventoryService {
           }
         } else {
           if (!item.productId) throw new ConflictException('Produto removido.');
-          this.aggregate(needs, item.productId, item.quantity, item.productName);
+          this.aggregate(
+            needs,
+            item.productId,
+            item.quantity,
+            item.productName,
+          );
         }
       }
 

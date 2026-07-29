@@ -1,6 +1,10 @@
 import { randomBytes, randomUUID } from 'node:crypto';
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { OrderStatus, PaymentStatus } from '@prisma/client';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { OrderStatus, PaymentStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { OperationsService } from '../operations/operations.service';
 
@@ -41,7 +45,9 @@ export class ReturnReplacementService {
     const request = requests[0];
     if (!request) throw new NotFoundException('Devolução não encontrada.');
     if (request.resolution !== 'REPLACEMENT') {
-      throw new ConflictException('Esta devolução não está configurada para substituição.');
+      throw new ConflictException(
+        'Esta devolução não está configurada para substituição.',
+      );
     }
     if (!['INSPECTED', 'APPROVED'].includes(request.status)) {
       throw new ConflictException(
@@ -59,7 +65,8 @@ export class ReturnReplacementService {
     const original = await this.prisma.order.findUnique({
       where: { id: request.orderId },
     });
-    if (!original) throw new NotFoundException('Encomenda original não encontrada.');
+    if (!original)
+      throw new NotFoundException('Encomenda original não encontrada.');
 
     const items = await this.prisma.$queryRaw<ReturnReplacementItem[]>`
       SELECT ri."orderItemId", ri."quantity", oi."productId", oi."productName", oi."sku", oi."imageUrl"
@@ -68,7 +75,10 @@ export class ReturnReplacementService {
       WHERE ri."returnRequestId" = ${returnRequestId}::uuid
       ORDER BY ri."createdAt" ASC
     `;
-    if (!items.length) throw new ConflictException('A devolução não tem artigos para substituir.');
+    if (!items.length)
+      throw new ConflictException(
+        'A devolução não tem artigos para substituir.',
+      );
     if (items.some((item) => !item.productId)) {
       throw new ConflictException('Um dos produtos já não existe no catálogo.');
     }
@@ -91,8 +101,14 @@ export class ReturnReplacementService {
           taxCents: 0,
           totalCents: 0,
           currency: original.currency,
-          billingAddress: original.billingAddress,
-          shippingAddress: original.shippingAddress,
+          billingAddress:
+            original.billingAddress === null
+              ? Prisma.JsonNull
+              : original.billingAddress,
+          shippingAddress:
+            original.shippingAddress === null
+              ? Prisma.JsonNull
+              : original.shippingAddress,
           customerNotes: undefined,
           internalNotes: `Encomenda de substituição criada a partir da devolução ${request.number} e da encomenda ${original.number}.`,
           source: 'RETURN_REPLACEMENT',

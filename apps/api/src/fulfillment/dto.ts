@@ -166,7 +166,8 @@ export class CreateSupportCaseDto {
   @IsOptional() @IsUUID() orderId?: string;
   @IsOptional() @IsUUID() shipmentId?: string;
   @IsEnum(SupportCaseTypeDtoValue) type!: SupportCaseTypeDtoValue;
-  @IsOptional() @IsEnum(SupportCasePriorityDtoValue)
+  @IsOptional()
+  @IsEnum(SupportCasePriorityDtoValue)
   priority?: SupportCasePriorityDtoValue;
   @IsString() @IsNotEmpty() subject!: string;
   @IsString() @IsNotEmpty() @MaxLength(5000) description!: string;

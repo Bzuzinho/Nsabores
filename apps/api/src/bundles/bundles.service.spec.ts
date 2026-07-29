@@ -145,7 +145,7 @@ describe('BundlesService pricing', () => {
 
   it('rejects an out-of-stock selected component', async () => {
     const outOfStock = fixture();
-    outOfStock.items[0].stockStatus = 'OUT_OF_STOCK';
+    outOfStock.items[0]!.stockStatus = 'OUT_OF_STOCK';
     const service = serviceWith(outOfStock);
 
     await expect(

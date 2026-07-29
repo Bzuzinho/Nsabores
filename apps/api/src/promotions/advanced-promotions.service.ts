@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import {
@@ -45,9 +49,13 @@ export class AdvancedPromotionsService extends PromotionsService {
 
   async configureQuantityDeal(id: string, body: QuantityDealDto) {
     if (body.quantityPay >= body.quantityBuy) {
-      throw new BadRequestException('A quantidade paga tem de ser inferior à quantidade levada.');
+      throw new BadRequestException(
+        'A quantidade paga tem de ser inferior à quantidade levada.',
+      );
     }
-    const rows = await this.advancedPrisma.$queryRaw<Array<{ benefitType: string }>>`
+    const rows = await this.advancedPrisma.$queryRaw<
+      Array<{ benefitType: string }>
+    >`
       SELECT "benefitType"::text AS "benefitType"
       FROM "Promotion"
       WHERE "id" = ${id}::uuid
@@ -69,12 +77,7 @@ export class AdvancedPromotionsService extends PromotionsService {
 
   override async priceCart(cartId: string, userId?: string, shippingCents = 0) {
     const base = await super.priceCart(cartId, userId, shippingCents);
-    return this.applyQuantityDeals(
-      this.advancedPrisma as unknown as PricingClient,
-      cartId,
-      userId,
-      base,
-    );
+    return this.applyQuantityDeals(this.advancedPrisma, cartId, userId, base);
   }
 
   override async priceCartInTransaction(
@@ -83,7 +86,12 @@ export class AdvancedPromotionsService extends PromotionsService {
     userId?: string,
     shippingCents = 0,
   ) {
-    const base = await super.priceCartInTransaction(tx, cartId, userId, shippingCents);
+    const base = await super.priceCartInTransaction(
+      tx,
+      cartId,
+      userId,
+      shippingCents,
+    );
     return this.applyQuantityDeals(tx, cartId, userId, base);
   }
 
@@ -94,17 +102,26 @@ export class AdvancedPromotionsService extends PromotionsService {
     base: CartPricingResult,
   ): Promise<CartPricingResult> {
     if (!base.items.length) return base;
-    const candidates = await this.quantityCandidates(client, cartId, base, userId);
+    const candidates = await this.quantityCandidates(
+      client,
+      cartId,
+      base,
+      userId,
+    );
     if (!candidates.length) return base;
 
-    const categoryRows = await client.$queryRaw<Array<{ id: string; categoryId: string }>>(
+    const categoryRows = await client.$queryRaw<
+      Array<{ id: string; categoryId: string }>
+    >(
       Prisma.sql`
         SELECT "id", "categoryId"
         FROM "Product"
         WHERE "id" IN (${Prisma.join(base.items.map((item) => Prisma.sql`${item.productId}::uuid`))})
       `,
     );
-    const categoryByProduct = new Map(categoryRows.map((row) => [row.id, row.categoryId]));
+    const categoryByProduct = new Map(
+      categoryRows.map((row) => [row.id, row.categoryId]),
+    );
 
     const discounts = [...base.discounts];
     let productDiscountCents = base.productDiscountCents;
@@ -121,7 +138,11 @@ export class AdvancedPromotionsService extends PromotionsService {
         for (const item of base.items) eligibleIds.add(item.id);
       } else {
         for (const target of targets) {
-          if (target.priceListId && target.priceListId !== base.context.priceListId) continue;
+          if (
+            target.priceListId &&
+            target.priceListId !== base.context.priceListId
+          )
+            continue;
           if (
             target.businessAccountId &&
             target.businessAccountId !== base.context.businessAccountId
@@ -134,8 +155,15 @@ export class AdvancedPromotionsService extends PromotionsService {
               (!target.categoryId ||
                 target.categoryId === categoryByProduct.get(item.productId)),
           );
-          const matchedQuantity = matched.reduce((sum, item) => sum + item.quantity, 0);
-          if (target.minimumQuantity && matchedQuantity < target.minimumQuantity) continue;
+          const matchedQuantity = matched.reduce(
+            (sum, item) => sum + item.quantity,
+            0,
+          );
+          if (
+            target.minimumQuantity &&
+            matchedQuantity < target.minimumQuantity
+          )
+            continue;
           for (const item of matched) eligibleIds.add(item.id);
         }
       }
@@ -195,12 +223,17 @@ export class AdvancedPromotionsService extends PromotionsService {
       base.subtotalCents + base.shippingCents,
       productDiscountCents + base.shippingDiscountCents,
     );
-    const appliedCoupon = discounts.find((discount) => discount.couponId !== null);
+    const appliedCoupon = discounts.find(
+      (discount) => discount.couponId !== null,
+    );
     return {
       ...base,
       productDiscountCents,
       discountCents,
-      totalCents: Math.max(0, base.subtotalCents + base.shippingCents - discountCents),
+      totalCents: Math.max(
+        0,
+        base.subtotalCents + base.shippingCents - discountCents,
+      ),
       discounts,
       coupon: appliedCoupon?.couponId
         ? { id: appliedCoupon.couponId, code: appliedCoupon.code ?? '' }
@@ -257,7 +290,9 @@ export class AdvancedPromotionsService extends PromotionsService {
 
     const eligible: QuantityCandidate[] = [];
     for (const candidate of rows) {
-      const counts = await client.$queryRaw<Array<{ globalCount: number; customerCount: number }>>`
+      const counts = await client.$queryRaw<
+        Array<{ globalCount: number; customerCount: number }>
+      >`
         SELECT
           COUNT(*) FILTER (
             WHERE od."promotionId" = ${candidate.id}::uuid
@@ -289,7 +324,9 @@ export class AdvancedPromotionsService extends PromotionsService {
       eligible.push(candidate);
     }
     return eligible.sort(
-      (a, b) => b.priority - a.priority || a.createdAt.getTime() - b.createdAt.getTime(),
+      (a, b) =>
+        b.priority - a.priority ||
+        a.createdAt.getTime() - b.createdAt.getTime(),
     );
   }
 }

@@ -69,12 +69,24 @@ export class CommerceService {
     const product = await this.availableProduct(productId);
     const cart = await this.getOrCreateCart(identity);
     const current = await this.prisma.cartItem.findUnique({
-      where: { cartId_productId: { cartId: cart.id, productId } },
+      where: {
+        cartId_productId_configurationKey: {
+          cartId: cart.id,
+          productId,
+          configurationKey: 'default',
+        },
+      },
     });
     const next = (current?.quantity ?? 0) + quantity;
     if (next > 99) throw new BadRequestException('Quantidade máxima: 99.');
     await this.prisma.cartItem.upsert({
-      where: { cartId_productId: { cartId: cart.id, productId } },
+      where: {
+        cartId_productId_configurationKey: {
+          cartId: cart.id,
+          productId,
+          configurationKey: 'default',
+        },
+      },
       update: { quantity: next, unitPriceCents: product.priceCents },
       create: {
         cartId: cart.id,
@@ -134,17 +146,19 @@ export class CommerceService {
       for (const item of guest.items) {
         const existing = await tx.cartItem.findUnique({
           where: {
-            cartId_productId: {
+            cartId_productId_configurationKey: {
               cartId: account.id,
               productId: item.productId,
+              configurationKey: item.configurationKey,
             },
           },
         });
         await tx.cartItem.upsert({
           where: {
-            cartId_productId: {
+            cartId_productId_configurationKey: {
               cartId: account.id,
               productId: item.productId,
+              configurationKey: item.configurationKey,
             },
           },
           create: { ...item, id: undefined, cartId: account.id },
@@ -399,7 +413,11 @@ export class CommerceService {
       }
       await this.prisma.cartItem.upsert({
         where: {
-          cartId_productId: { cartId: cart.id, productId: product.id },
+          cartId_productId_configurationKey: {
+            cartId: cart.id,
+            productId: product.id,
+            configurationKey: 'default',
+          },
         },
         create: {
           cartId: cart.id,

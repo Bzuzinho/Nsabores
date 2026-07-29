@@ -10,10 +10,18 @@ export default function OperationsPage() {
         </div>
       </header>
       <section className="user-detail">
-        <p><Link href="/operacoes/preparacao">Preparação de encomendas</Link></p>
-        <p><Link href="/expedicoes">Expedições e tracking</Link></p>
-        <p><Link href="/devolucoes">Devoluções e RMA</Link></p>
-        <p><Link href="/apoio">Pós-venda e incidências</Link></p>
+        <p>
+          <Link href="/operacoes/preparacao">Preparação de encomendas</Link>
+        </p>
+        <p>
+          <Link href="/expedicoes">Expedições e tracking</Link>
+        </p>
+        <p>
+          <Link href="/devolucoes">Devoluções e RMA</Link>
+        </p>
+        <p>
+          <Link href="/apoio">Pós-venda e incidências</Link>
+        </p>
       </section>
     </>
   );

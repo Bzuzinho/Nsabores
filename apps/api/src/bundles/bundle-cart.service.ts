@@ -1,5 +1,9 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import type { BundleCartDto } from './dto';
 import { BundlesService } from './bundles.service';
@@ -16,6 +20,15 @@ interface StockRow {
   trackStock: boolean;
 }
 
+interface ValidatedPersonalization {
+  giftMessage?: string;
+  recipientName?: string;
+  specialPackaging?: boolean;
+  requestedDate?: string;
+  notes?: string;
+  hidePrice?: boolean;
+}
+
 @Injectable()
 export class BundleCartService {
   constructor(
@@ -25,7 +38,10 @@ export class BundleCartService {
 
   async add(cartId: string, slug: string, body: BundleCartDto) {
     const bundle = await this.bundles.publicBySlug(slug);
-    const personalization = this.validatePersonalization(bundle, body.personalization ?? {});
+    const personalization = this.validatePersonalization(
+      bundle,
+      body.personalization ?? {},
+    );
     const pricing = await this.bundles.priceBySlug(slug, {
       selections: body.selections,
       specialPackaging: personalization.specialPackaging,
@@ -36,7 +52,10 @@ export class BundleCartService {
       .update(
         JSON.stringify({
           bundleId: bundle.id,
-          composition: pricing.composition.map((line) => [line.bundleItemId, line.quantity]),
+          composition: pricing.composition.map((line) => [
+            line.bundleItemId,
+            line.quantity,
+          ]),
           personalization,
         }),
       )
@@ -54,7 +73,8 @@ export class BundleCartService {
       `;
       const current = existing[0];
       const nextQuantity = (current?.quantity ?? 0) + body.quantity;
-      if (nextQuantity > 99) throw new BadRequestException('Quantidade máxima: 99.');
+      if (nextQuantity > 99)
+        throw new BadRequestException('Quantidade máxima: 99.');
 
       const cartItemId = current?.id ?? randomUUID();
       if (current) {
@@ -74,7 +94,9 @@ export class BundleCartService {
         `;
 
         for (const line of pricing.composition) {
-          const definition = bundle.items.find((item) => item.id === line.bundleItemId);
+          const definition = bundle.items.find(
+            (item) => item.id === line.bundleItemId,
+          );
           await tx.$executeRaw`
             INSERT INTO "CartItemBundleSelection" (
               "id", "cartItemId", "componentProductId", "groupId", "quantity", "unitPriceDeltaCents", "createdAt"
@@ -97,40 +119,65 @@ export class BundleCartService {
         }
       }
 
-      return { cartItemId, configurationKey, unitPriceCents: pricing.priceCents, quantity: nextQuantity };
+      return {
+        cartItemId,
+        configurationKey,
+        unitPriceCents: pricing.priceCents,
+        quantity: nextQuantity,
+      };
     });
   }
 
   private validatePersonalization(
     bundle: Awaited<ReturnType<BundlesService['publicBySlug']>>,
-    input: BundleCartDto['personalization'] extends infer T ? NonNullable<T> : never,
+    input: BundleCartDto['personalization'] extends infer T
+      ? NonNullable<T>
+      : never,
   ) {
     const config = bundle.personalization;
-    const result: Record<string, string | boolean> = {};
+    const result: ValidatedPersonalization = {};
     if (input.giftMessage) {
-      if (!config?.allowGiftMessage) throw new BadRequestException('Este cabaz não aceita mensagem de oferta.');
-      if (input.giftMessage.length > config.messageMaxLength) throw new BadRequestException('A mensagem de oferta é demasiado longa.');
+      if (!config?.allowGiftMessage)
+        throw new BadRequestException(
+          'Este cabaz não aceita mensagem de oferta.',
+        );
+      if (input.giftMessage.length > config.messageMaxLength)
+        throw new BadRequestException(
+          'A mensagem de oferta é demasiado longa.',
+        );
       result.giftMessage = input.giftMessage.trim();
     }
     if (input.recipientName) {
-      if (!config?.allowRecipientName) throw new BadRequestException('Este cabaz não aceita nome de destinatário.');
+      if (!config?.allowRecipientName)
+        throw new BadRequestException(
+          'Este cabaz não aceita nome de destinatário.',
+        );
       result.recipientName = input.recipientName.trim();
     }
     if (input.specialPackaging) {
-      if (!config?.allowSpecialPackaging) throw new BadRequestException('A embalagem especial não está disponível.');
+      if (!config?.allowSpecialPackaging)
+        throw new BadRequestException(
+          'A embalagem especial não está disponível.',
+        );
       result.specialPackaging = true;
     }
     if (input.requestedDate) {
-      if (!config?.allowRequestedDate) throw new BadRequestException('Este cabaz não permite escolher data.');
+      if (!config?.allowRequestedDate)
+        throw new BadRequestException('Este cabaz não permite escolher data.');
       result.requestedDate = input.requestedDate;
     }
     if (input.notes) {
-      if (!config?.allowNotes) throw new BadRequestException('Este cabaz não aceita observações.');
-      if (input.notes.length > config.notesMaxLength) throw new BadRequestException('As observações são demasiado longas.');
+      if (!config?.allowNotes)
+        throw new BadRequestException('Este cabaz não aceita observações.');
+      if (input.notes.length > config.notesMaxLength)
+        throw new BadRequestException('As observações são demasiado longas.');
       result.notes = input.notes.trim();
     }
     if (input.hidePrice) {
-      if (!config?.allowHidePrice) throw new BadRequestException('Este cabaz não permite ocultar o preço.');
+      if (!config?.allowHidePrice)
+        throw new BadRequestException(
+          'Este cabaz não permite ocultar o preço.',
+        );
       result.hidePrice = true;
     }
     return result;
@@ -151,7 +198,9 @@ export class BundleCartService {
       if (!stock || !stock.trackStock) continue;
       const needed = component.quantity * bundleQuantity;
       if (stock.onHandQuantity - stock.reservedQuantity < needed) {
-        throw new ConflictException(`Stock insuficiente para ${component.name}.`);
+        throw new ConflictException(
+          `Stock insuficiente para ${component.name}.`,
+        );
       }
     }
   }

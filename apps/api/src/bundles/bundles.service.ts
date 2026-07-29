@@ -13,6 +13,7 @@ import type {
   BundleUpsertDto,
   PersonalizationConfigDto,
 } from './dto';
+import { BundleModeDtoValue } from './dto';
 
 interface BundleRow {
   id: string;
@@ -155,11 +156,13 @@ export class BundlesService {
       where: { id: body.productId },
       select: { id: true },
     });
-    if (!product) throw new NotFoundException('Produto principal não encontrado.');
+    if (!product)
+      throw new NotFoundException('Produto principal não encontrado.');
     const existing = await this.prisma.$queryRaw<Array<{ id: string }>>`
       SELECT "id" FROM "ProductBundle" WHERE "productId" = ${body.productId}::uuid LIMIT 1
     `;
-    if (existing[0]) throw new ConflictException('Este produto já tem um cabaz configurado.');
+    if (existing[0])
+      throw new ConflictException('Este produto já tem um cabaz configurado.');
     const id = randomUUID();
     await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`
@@ -186,7 +189,10 @@ export class BundlesService {
         WHERE "productId" = ${body.productId}::uuid AND "id" <> ${id}::uuid
         LIMIT 1
       `;
-      if (duplicate[0]) throw new ConflictException('Este produto já tem outro cabaz configurado.');
+      if (duplicate[0])
+        throw new ConflictException(
+          'Este produto já tem outro cabaz configurado.',
+        );
       await tx.$executeRaw`
         UPDATE "ProductBundle" SET
           "productId" = ${body.productId}::uuid,
@@ -221,24 +227,51 @@ export class BundlesService {
       for (const item of items) selected.set(item.id, item.quantity);
     } else {
       for (const selection of body.selections) {
-        const item = items.find((candidate) => candidate.id === selection.bundleItemId);
-        if (!item) throw new BadRequestException('A seleção contém um artigo inválido.');
+        const item = items.find(
+          (candidate) => candidate.id === selection.bundleItemId,
+        );
+        if (!item)
+          throw new BadRequestException('A seleção contém um artigo inválido.');
         if (item.stockStatus === 'OUT_OF_STOCK')
           throw new ConflictException(`${item.productName} está sem stock.`);
         if (selection.quantity < item.minimumQuantity)
-          throw new BadRequestException(`Quantidade mínima inválida para ${item.productName}.`);
-        if (item.maximumQuantity !== null && selection.quantity > item.maximumQuantity)
-          throw new BadRequestException(`Quantidade máxima excedida para ${item.productName}.`);
+          throw new BadRequestException(
+            `Quantidade mínima inválida para ${item.productName}.`,
+          );
+        if (
+          item.maximumQuantity !== null &&
+          selection.quantity > item.maximumQuantity
+        )
+          throw new BadRequestException(
+            `Quantidade máxima excedida para ${item.productName}.`,
+          );
         selected.set(item.id, selection.quantity);
       }
       for (const item of items.filter((candidate) => candidate.isRequired)) {
-        if (!selected.has(item.id)) selected.set(item.id, Math.max(item.quantity, item.minimumQuantity, 1));
+        if (!selected.has(item.id))
+          selected.set(
+            item.id,
+            Math.max(item.quantity, item.minimumQuantity, 1),
+          );
       }
-      const selectionCount = [...selected.values()].reduce((sum, quantity) => sum + quantity, 0);
-      if (bundle.minimumSelections !== null && selectionCount < bundle.minimumSelections)
-        throw new BadRequestException('Ainda não selecionou artigos suficientes para este cabaz.');
-      if (bundle.maximumSelections !== null && selectionCount > bundle.maximumSelections)
-        throw new BadRequestException('Selecionou artigos a mais para este cabaz.');
+      const selectionCount = [...selected.values()].reduce(
+        (sum, quantity) => sum + quantity,
+        0,
+      );
+      if (
+        bundle.minimumSelections !== null &&
+        selectionCount < bundle.minimumSelections
+      )
+        throw new BadRequestException(
+          'Ainda não selecionou artigos suficientes para este cabaz.',
+        );
+      if (
+        bundle.maximumSelections !== null &&
+        selectionCount > bundle.maximumSelections
+      )
+        throw new BadRequestException(
+          'Selecionou artigos a mais para este cabaz.',
+        );
       for (const group of bundle.groups) {
         const groupItems = items.filter((item) => item.groupId === group.id);
         const groupCount = groupItems.reduce(
@@ -246,9 +279,16 @@ export class BundlesService {
           0,
         );
         if (groupCount < group.minimumSelections)
-          throw new BadRequestException(`Escolha pelo menos ${group.minimumSelections} opção(ões) em ${group.name}.`);
-        if (group.maximumSelections !== null && groupCount > group.maximumSelections)
-          throw new BadRequestException(`Escolha no máximo ${group.maximumSelections} opção(ões) em ${group.name}.`);
+          throw new BadRequestException(
+            `Escolha pelo menos ${group.minimumSelections} opção(ões) em ${group.name}.`,
+          );
+        if (
+          group.maximumSelections !== null &&
+          groupCount > group.maximumSelections
+        )
+          throw new BadRequestException(
+            `Escolha no máximo ${group.maximumSelections} opção(ões) em ${group.name}.`,
+          );
       }
     }
 
@@ -263,7 +303,8 @@ export class BundlesService {
         quantity,
         unitPriceCents: item.productPriceCents,
         unitPriceDeltaCents: item.priceDeltaCents,
-        totalComponentCents: (item.productPriceCents + item.priceDeltaCents) * quantity,
+        totalComponentCents:
+          (item.productPriceCents + item.priceDeltaCents) * quantity,
       };
     });
     const componentTotalCents = composition.reduce(
@@ -304,7 +345,8 @@ export class BundlesService {
     const groupIds = new Map<string, string>();
     for (const group of body.groups) {
       const normalized = group.code.trim().toUpperCase().replace(/\s+/g, '-');
-      if (groupIds.has(normalized)) throw new BadRequestException('Existem grupos duplicados.');
+      if (groupIds.has(normalized))
+        throw new BadRequestException('Existem grupos duplicados.');
       const id = randomUUID();
       groupIds.set(normalized, id);
       await tx.$executeRaw`
@@ -320,11 +362,18 @@ export class BundlesService {
     }
     const seen = new Set<string>();
     for (const item of body.items) {
-      const groupCode = item.groupCode?.trim().toUpperCase().replace(/\s+/g, '-');
+      const groupCode = item.groupCode
+        ?.trim()
+        .toUpperCase()
+        .replace(/\s+/g, '-');
       const groupId = groupCode ? groupIds.get(groupCode) : undefined;
-      if (groupCode && !groupId) throw new BadRequestException(`Grupo desconhecido: ${item.groupCode}.`);
+      if (groupCode && !groupId)
+        throw new BadRequestException(`Grupo desconhecido: ${item.groupCode}.`);
       const key = `${item.productId}:${groupId ?? 'none'}`;
-      if (seen.has(key)) throw new BadRequestException('Existem componentes duplicados no mesmo grupo.');
+      if (seen.has(key))
+        throw new BadRequestException(
+          'Existem componentes duplicados no mesmo grupo.',
+        );
       seen.add(key);
       await this.assertComponentProduct(tx, body.productId, item);
       await tx.$executeRaw`
@@ -348,12 +397,15 @@ export class BundlesService {
     item: BundleItemDto,
   ) {
     if (item.productId === bundleProductId)
-      throw new BadRequestException('O cabaz não pode conter o próprio produto principal como componente.');
+      throw new BadRequestException(
+        'O cabaz não pode conter o próprio produto principal como componente.',
+      );
     const product = await tx.product.findUnique({
       where: { id: item.productId },
       select: { id: true },
     });
-    if (!product) throw new NotFoundException('Produto componente não encontrado.');
+    if (!product)
+      throw new NotFoundException('Produto componente não encontrado.');
   }
 
   private async upsertPersonalization(
@@ -396,11 +448,15 @@ export class BundlesService {
       body.maximumSelections !== undefined &&
       body.maximumSelections < body.minimumSelections
     ) {
-      throw new BadRequestException('O máximo de escolhas não pode ser inferior ao mínimo.');
+      throw new BadRequestException(
+        'O máximo de escolhas não pode ser inferior ao mínimo.',
+      );
     }
-    if (body.mode === 'FIXED' && !body.items.length)
-      throw new BadRequestException('Um cabaz fixo precisa de pelo menos um componente.');
-    if (body.mode === 'CONFIGURABLE' && !body.items.length)
+    if (body.mode === BundleModeDtoValue.FIXED && !body.items.length)
+      throw new BadRequestException(
+        'Um cabaz fixo precisa de pelo menos um componente.',
+      );
+    if (body.mode === BundleModeDtoValue.CONFIGURABLE && !body.items.length)
       throw new BadRequestException('Um cabaz configurável precisa de opções.');
   }
 }

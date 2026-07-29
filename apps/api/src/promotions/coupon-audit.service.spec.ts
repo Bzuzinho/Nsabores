@@ -20,7 +20,9 @@ describe('CouponAuditService', () => {
           redeemedAt: new Date('2026-07-29T12:00:00Z'),
         },
       ]);
-    const service = new CouponAuditService({ $queryRaw: queryRaw } as unknown as PrismaService);
+    const service = new CouponAuditService({
+      $queryRaw: queryRaw,
+    } as unknown as PrismaService);
 
     await expect(service.redemptions('coupon-1')).resolves.toEqual([
       expect.objectContaining({
@@ -33,7 +35,9 @@ describe('CouponAuditService', () => {
 
   it('rejects audit lookup for a missing coupon', async () => {
     const queryRaw = vi.fn().mockResolvedValueOnce([]);
-    const service = new CouponAuditService({ $queryRaw: queryRaw } as unknown as PrismaService);
+    const service = new CouponAuditService({
+      $queryRaw: queryRaw,
+    } as unknown as PrismaService);
 
     await expect(service.redemptions('missing')).rejects.toBeInstanceOf(
       NotFoundException,

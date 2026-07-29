@@ -29,7 +29,9 @@ export default function CartPage() {
       setCouponCode('');
     } catch (reason) {
       setCouponError(
-        reason instanceof Error ? reason.message : 'Não foi possível aplicar o cupão.',
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível aplicar o cupão.',
       );
     } finally {
       setCouponBusy(false);
@@ -43,7 +45,9 @@ export default function CartPage() {
       await removeCoupon();
     } catch (reason) {
       setCouponError(
-        reason instanceof Error ? reason.message : 'Não foi possível remover o cupão.',
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível remover o cupão.',
       );
     } finally {
       setCouponBusy(false);
@@ -154,7 +158,10 @@ export default function CartPage() {
                     placeholder="Ex.: BEMVINDO10"
                   />
                 </label>
-                <button type="submit" disabled={couponBusy || !couponCode.trim()}>
+                <button
+                  type="submit"
+                  disabled={couponBusy || !couponCode.trim()}
+                >
                   {couponBusy ? 'A validar…' : 'Aplicar cupão'}
                 </button>
               </form>

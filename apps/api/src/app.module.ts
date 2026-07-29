@@ -170,7 +170,10 @@ import { BundlesService } from './bundles/bundles.service';
     RolesGuard,
     MailProvider,
     BundleAwareCommerceService,
-    { provide: PromotionalCommerceService, useExisting: BundleAwareCommerceService },
+    {
+      provide: PromotionalCommerceService,
+      useExisting: BundleAwareCommerceService,
+    },
     { provide: CommerceService, useExisting: BundleAwareCommerceService },
     PaymentProvider,
     CommerceMailProvider,

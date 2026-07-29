@@ -41,7 +41,9 @@ if (!service || !(service in commands)) {
 }
 
 const [command, args] = commands[service];
-console.log(`Starting Railway service "${service}" with: ${command} ${args.join(' ')}`);
+console.log(
+  `Starting Railway service "${service}" with: ${command} ${args.join(' ')}`,
+);
 
 const child = spawn(command, args, {
   stdio: 'inherit',

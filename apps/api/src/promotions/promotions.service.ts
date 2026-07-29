@@ -5,9 +5,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { CartStatus, Prisma, StockStatus } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import type { CouponDto, PromotionDto, PromotionTargetDto } from './dto';
+import { PromotionBenefitTypeDtoValue } from './dto';
 
 interface PromotionRow {
   id: string;
@@ -70,7 +71,7 @@ interface PricingItemRow {
   slug: string;
   sku: string;
   imageUrl: string;
-  stockStatus: string;
+  stockStatus: StockStatus;
 }
 
 interface PromotionCandidate extends PromotionRow {
@@ -92,7 +93,7 @@ export interface PricingDiscount {
 
 export interface CartPricingResult {
   id: string;
-  status: string;
+  status: CartStatus;
   context: PricingContext;
   items: Array<{
     id: string;
@@ -106,7 +107,7 @@ export interface CartPricingResult {
       slug: string;
       sku: string;
       imageUrl: string;
-      stockStatus: string;
+      stockStatus: StockStatus;
     };
   }>;
   itemCount: number;
@@ -335,12 +336,7 @@ export class PromotionsService {
   }
 
   priceCart(cartId: string, userId?: string, shippingCents = 0) {
-    return this.priceCartWithClient(
-      this.prisma as unknown as Prisma.TransactionClient,
-      cartId,
-      userId,
-      shippingCents,
-    );
+    return this.priceCartWithClient(this.prisma, cartId, userId, shippingCents);
   }
 
   priceCartInTransaction(
@@ -386,7 +382,9 @@ export class PromotionsService {
     userId?: string,
     shippingCents = 0,
   ): Promise<CartPricingResult> {
-    const cartRows = await client.$queryRaw<Array<{ id: string; status: string }>>`
+    const cartRows = await client.$queryRaw<
+      Array<{ id: string; status: CartStatus }>
+    >`
       SELECT "id", "status"::text AS "status" FROM "Cart" WHERE "id" = ${cartId}::uuid LIMIT 1
     `;
     if (!cartRows[0]) throw new NotFoundException('Carrinho não encontrado.');
@@ -408,8 +406,14 @@ export class PromotionsService {
     let shippingDiscountCents = 0;
 
     for (const candidate of candidates) {
-      const eligible = await this.eligibleItems(client, candidate, items, context);
-      if (!eligible.length && candidate.benefitType !== 'FREE_SHIPPING') continue;
+      const eligible = await this.eligibleItems(
+        client,
+        candidate,
+        items,
+        context,
+      );
+      if (!eligible.length && candidate.benefitType !== 'FREE_SHIPPING')
+        continue;
       const eligibleSubtotal = eligible.reduce(
         (sum, item) => sum + item.unitPriceCents * item.quantity,
         0,
@@ -418,7 +422,9 @@ export class PromotionsService {
       let freeShipping = false;
       switch (candidate.benefitType) {
         case 'PERCENTAGE':
-          amountCents = Math.round((eligibleSubtotal * candidate.benefitValue) / 100);
+          amountCents = Math.round(
+            (eligibleSubtotal * candidate.benefitValue) / 100,
+          );
           break;
         case 'FIXED_AMOUNT':
           amountCents = Math.min(candidate.benefitValue, eligibleSubtotal);
@@ -470,7 +476,8 @@ export class PromotionsService {
         },
       };
       discounts.push(line);
-      if (freeShipping) shippingDiscountCents = Math.max(shippingDiscountCents, amountCents);
+      if (freeShipping)
+        shippingDiscountCents = Math.max(shippingDiscountCents, amountCents);
       else productDiscountCents += amountCents;
       if (!candidate.stackable) break;
     }
@@ -599,11 +606,7 @@ export class PromotionsService {
     cartId: string,
     context: PricingContext,
   ) {
-    const items = await this.pricingItems(
-      client as unknown as Prisma.TransactionClient,
-      cartId,
-      context,
-    );
+    const items = await this.pricingItems(client, cartId, context);
     return items.reduce(
       (sum, item) => sum + item.unitPriceCents * item.quantity,
       0,
@@ -628,9 +631,7 @@ export class PromotionsService {
         AND NOT EXISTS (SELECT 1 FROM "Coupon" c WHERE c."promotionId" = p."id")
       ORDER BY p."priority" DESC, p."createdAt" ASC
     `;
-    const couponRows = await client.$queryRaw<
-      Array<CouponRow & PromotionRow>
-    >`
+    const couponRows = await client.$queryRaw<Array<CouponRow & PromotionRow>>`
       SELECT c."id", c."promotionId", c."code", c."isActive", c."validFrom", c."validUntil",
              c."usageLimit", c."perUserLimit", c."channel", c."minimumCartCents",
              c."createdAt", c."updatedAt",
@@ -668,11 +669,22 @@ export class PromotionsService {
     }
     const eligible: PromotionCandidate[] = [];
     for (const candidate of candidates) {
-      if (await this.usageAvailable(client, candidate, userId, context.businessAccountId)) {
+      if (
+        await this.usageAvailable(
+          client,
+          candidate,
+          userId,
+          context.businessAccountId,
+        )
+      ) {
         eligible.push(candidate);
       }
     }
-    return eligible.sort((a, b) => b.priority - a.priority || a.createdAt.getTime() - b.createdAt.getTime());
+    return eligible.sort(
+      (a, b) =>
+        b.priority - a.priority ||
+        a.createdAt.getTime() - b.createdAt.getTime(),
+    );
   }
 
   private async eligibleItems(
@@ -689,7 +701,8 @@ export class PromotionsService {
     if (!targets.length) return items;
     const eligible = new Map<string, PricingItemRow>();
     for (const target of targets) {
-      if (target.priceListId && target.priceListId !== context.priceListId) continue;
+      if (target.priceListId && target.priceListId !== context.priceListId)
+        continue;
       if (
         target.businessAccountId &&
         target.businessAccountId !== context.businessAccountId
@@ -728,7 +741,9 @@ export class PromotionsService {
     if (coupon.channel !== 'BOTH' && coupon.channel !== context.channel)
       throw new BadRequestException('O cupão não é válido neste canal.');
     if (coupon.minimumCartCents && subtotalCents < coupon.minimumCartCents)
-      throw new BadRequestException('O carrinho não atinge o valor mínimo do cupão.');
+      throw new BadRequestException(
+        'O carrinho não atinge o valor mínimo do cupão.',
+      );
     if (coupon.perUserLimit && !userId)
       throw new BadRequestException('Este cupão requer autenticação.');
     if (coupon.usageLimit) {
@@ -740,7 +755,9 @@ export class PromotionsService {
           AND o."status" <> 'CANCELLED'::"OrderStatus"
       `;
       if ((rows[0]?.count ?? 0) >= coupon.usageLimit)
-        throw new BadRequestException('O limite de utilização do cupão foi atingido.');
+        throw new BadRequestException(
+          'O limite de utilização do cupão foi atingido.',
+        );
     }
     if (coupon.perUserLimit && userId) {
       const rows = await client.$queryRaw<Array<{ count: number }>>`
@@ -752,7 +769,9 @@ export class PromotionsService {
           AND o."status" <> 'CANCELLED'::"OrderStatus"
       `;
       if ((rows[0]?.count ?? 0) >= coupon.perUserLimit)
-        throw new BadRequestException('Já atingiu o limite de utilização deste cupão.');
+        throw new BadRequestException(
+          'Já atingiu o limite de utilização deste cupão.',
+        );
     }
   }
 
@@ -824,7 +843,10 @@ export class PromotionsService {
 
   private validatePromotion(body: PromotionDto) {
     this.validateDates(body.startsAt, body.endsAt);
-    if (body.benefitType === 'PERCENTAGE' && body.benefitValue > 100) {
+    if (
+      body.benefitType === PromotionBenefitTypeDtoValue.PERCENTAGE &&
+      body.benefitValue > 100
+    ) {
       throw new BadRequestException('A percentagem deve estar entre 0 e 100.');
     }
   }

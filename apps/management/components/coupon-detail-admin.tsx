@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { managementApi } from './management-auth';
 
 type Promotion = {
@@ -50,7 +50,7 @@ export function CouponDetailAdmin({ id }: { id: string }) {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
 
-  async function reload() {
+  const reload = useCallback(async () => {
     const [couponRow, promotionRows, redemptionRows] = await Promise.all([
       managementApi.get<Coupon>(`/v1/admin/coupons/${id}`),
       managementApi.get<Promotion[]>('/v1/admin/promotions'),
@@ -59,39 +59,49 @@ export function CouponDetailAdmin({ id }: { id: string }) {
     setCoupon(couponRow);
     setPromotions(promotionRows);
     setRedemptions(redemptionRows);
-  }
-
-  useEffect(() => {
-    void reload().catch((reason) =>
-      setError(
-        reason instanceof Error ? reason.message : 'Não foi possível carregar o cupão.',
-      ),
-    );
   }, [id]);
 
-  if (error && !coupon) return <div className="admin-state admin-error">{error}</div>;
+  useEffect(() => {
+    // Initial API hydration intentionally updates local component state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void reload().catch((reason) =>
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível carregar o cupão.',
+      ),
+    );
+  }, [reload]);
+
+  if (error && !coupon)
+    return <div className="admin-state admin-error">{error}</div>;
   if (!coupon) return <div className="admin-state">A carregar cupão…</div>;
+  const loadedCoupon = coupon;
 
   async function save() {
     setBusy(true);
     setError('');
     setMessage('');
     try {
-      await managementApi.patch(`/v1/admin/coupons/${coupon.id}`, {
-        promotionId: coupon.promotionId,
-        code: coupon.code,
-        isActive: coupon.isActive,
-        validFrom: coupon.validFrom || undefined,
-        validUntil: coupon.validUntil || undefined,
-        usageLimit: coupon.usageLimit ?? undefined,
-        perUserLimit: coupon.perUserLimit ?? undefined,
-        channel: coupon.channel,
-        minimumCartCents: coupon.minimumCartCents ?? undefined,
+      await managementApi.patch(`/v1/admin/coupons/${loadedCoupon.id}`, {
+        promotionId: loadedCoupon.promotionId,
+        code: loadedCoupon.code,
+        isActive: loadedCoupon.isActive,
+        validFrom: loadedCoupon.validFrom || undefined,
+        validUntil: loadedCoupon.validUntil || undefined,
+        usageLimit: loadedCoupon.usageLimit ?? undefined,
+        perUserLimit: loadedCoupon.perUserLimit ?? undefined,
+        channel: loadedCoupon.channel,
+        minimumCartCents: loadedCoupon.minimumCartCents ?? undefined,
       });
       await reload();
       setMessage('Cupão atualizado.');
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Não foi possível atualizar o cupão.');
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível atualizar o cupão.',
+      );
     } finally {
       setBusy(false);
     }
@@ -108,7 +118,11 @@ export function CouponDetailAdmin({ id }: { id: string }) {
         <Link href="/cupoes">Voltar aos cupões</Link>
       </header>
       {message && <p className="admin-message">{message}</p>}
-      {error && <p className="admin-error" role="alert">{error}</p>}
+      {error && (
+        <p className="admin-error" role="alert">
+          {error}
+        </p>
+      )}
 
       <section className="user-detail">
         <h2>Configuração</h2>
@@ -116,7 +130,9 @@ export function CouponDetailAdmin({ id }: { id: string }) {
           Promoção
           <select
             value={coupon.promotionId}
-            onChange={(event) => setCoupon({ ...coupon, promotionId: event.target.value })}
+            onChange={(event) =>
+              setCoupon({ ...coupon, promotionId: event.target.value })
+            }
           >
             {promotions.map((promotion) => (
               <option key={promotion.id} value={promotion.id}>
@@ -130,7 +146,9 @@ export function CouponDetailAdmin({ id }: { id: string }) {
           <input
             value={coupon.code}
             maxLength={80}
-            onChange={(event) => setCoupon({ ...coupon, code: event.target.value })}
+            onChange={(event) =>
+              setCoupon({ ...coupon, code: event.target.value })
+            }
           />
         </label>
         <label>
@@ -138,7 +156,10 @@ export function CouponDetailAdmin({ id }: { id: string }) {
           <select
             value={coupon.channel}
             onChange={(event) =>
-              setCoupon({ ...coupon, channel: event.target.value as Coupon['channel'] })
+              setCoupon({
+                ...coupon,
+                channel: event.target.value as Coupon['channel'],
+              })
             }
           >
             <option>BOTH</option>
@@ -185,7 +206,9 @@ export function CouponDetailAdmin({ id }: { id: string }) {
             onChange={(event) =>
               setCoupon({
                 ...coupon,
-                usageLimit: event.target.value ? Number(event.target.value) : null,
+                usageLimit: event.target.value
+                  ? Number(event.target.value)
+                  : null,
               })
             }
           />
@@ -199,7 +222,9 @@ export function CouponDetailAdmin({ id }: { id: string }) {
             onChange={(event) =>
               setCoupon({
                 ...coupon,
-                perUserLimit: event.target.value ? Number(event.target.value) : null,
+                perUserLimit: event.target.value
+                  ? Number(event.target.value)
+                  : null,
               })
             }
           />
@@ -213,7 +238,9 @@ export function CouponDetailAdmin({ id }: { id: string }) {
             onChange={(event) =>
               setCoupon({
                 ...coupon,
-                minimumCartCents: event.target.value ? Number(event.target.value) : null,
+                minimumCartCents: event.target.value
+                  ? Number(event.target.value)
+                  : null,
               })
             }
           />
@@ -222,11 +249,17 @@ export function CouponDetailAdmin({ id }: { id: string }) {
           <input
             type="checkbox"
             checked={coupon.isActive}
-            onChange={(event) => setCoupon({ ...coupon, isActive: event.target.checked })}
+            onChange={(event) =>
+              setCoupon({ ...coupon, isActive: event.target.checked })
+            }
           />{' '}
           Cupão ativo
         </label>
-        <button className="admin-primary" disabled={busy} onClick={() => void save()}>
+        <button
+          className="admin-primary"
+          disabled={busy}
+          onClick={() => void save()}
+        >
           {busy ? 'A guardar…' : 'Guardar alterações'}
         </button>
       </section>
@@ -234,11 +267,14 @@ export function CouponDetailAdmin({ id }: { id: string }) {
       <section className="user-detail">
         <h2>Utilizações</h2>
         <p>{redemptions.length} utilização(ões) confirmada(s).</p>
-        {!redemptions.length && <p>Este cupão ainda não foi consumido por nenhuma encomenda paga.</p>}
+        {!redemptions.length && (
+          <p>Este cupão ainda não foi consumido por nenhuma encomenda paga.</p>
+        )}
         {redemptions.map((redemption) => (
           <article key={redemption.id}>
             <p>
-              <strong>{redemption.orderNumber}</strong> · {money(redemption.amountCents)}
+              <strong>{redemption.orderNumber}</strong> ·{' '}
+              {money(redemption.amountCents)}
             </p>
             <p>{new Date(redemption.redeemedAt).toLocaleString('pt-PT')}</p>
             <p>

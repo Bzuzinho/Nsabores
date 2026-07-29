@@ -115,7 +115,13 @@ export class PromotionalCommerceService extends CommerceService {
     try {
       const base = await super.cart(identity);
       const rows = await this.promotionalPrisma.$queryRaw<
-        Array<ConfiguredCartRow & { productPriceCents: number; isActive: boolean; stockStatus: string }>
+        Array<
+          ConfiguredCartRow & {
+            productPriceCents: number;
+            isActive: boolean;
+            stockStatus: string;
+          }
+        >
       >`
         SELECT ci."id", ci."productId", ci."quantity", ci."unitPriceCents", ci."configurationKey",
                p."priceCents" AS "productPriceCents", p."isActive", p."stockStatus"::text AS "stockStatus"
@@ -152,7 +158,9 @@ export class PromotionalCommerceService extends CommerceService {
     if (!sessionId) return this.cart({ userId });
     try {
       const account = await super.cart({ userId });
-      const guests = await this.promotionalPrisma.$queryRaw<Array<{ id: string }>>`
+      const guests = await this.promotionalPrisma.$queryRaw<
+        Array<{ id: string }>
+      >`
         SELECT "id"
         FROM "Cart"
         WHERE "sessionId" = ${sessionId}::uuid AND "status" = 'ACTIVE'::"CartStatus"
@@ -271,7 +279,10 @@ export class PromotionalCommerceService extends CommerceService {
             "updatedAt" = CURRENT_TIMESTAMP
         `;
       }
-      return { cart: await this.promotions.priceCart(cart.id, userId), skipped };
+      return {
+        cart: await this.promotions.priceCart(cart.id, userId),
+        skipped,
+      };
     } catch (error) {
       if (!this.isPreConfigurationSchema(error)) throw error;
       return super.repeatOrder(userId, id);
@@ -375,7 +386,7 @@ export class PromotionalCommerceService extends CommerceService {
           businessAccountId: pricing.context.businessAccountId,
           priceListId: pricing.context.priceListId,
           paymentTermsSnapshot: pricing.context.paymentTerms
-            ? ({ terms: pricing.context.paymentTerms } as Prisma.InputJsonValue)
+            ? { terms: pricing.context.paymentTerms }
             : Prisma.JsonNull,
           requiresApproval: pricing.context.requiresApproval,
           items: {

@@ -12,7 +12,12 @@ type PreparationOrder = {
   customerName: string;
   status: string;
   createdAt: string;
-  items: Array<{ id: string; productName: string; sku: string; quantity: number }>;
+  items: Array<{
+    id: string;
+    productName: string;
+    sku: string;
+    quantity: number;
+  }>;
 };
 
 type Shipment = {
@@ -86,13 +91,19 @@ export function FulfillmentAdmin({ mode }: { mode: Mode }) {
               : '/v1/admin/support-cases';
       setData(await managementApi.get<unknown[]>(path));
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Não foi possível carregar os dados.');
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível carregar os dados.',
+      );
     } finally {
       setLoading(false);
     }
   }, [mode]);
 
   useEffect(() => {
+    // Initial synchronization with the management API.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void reload();
   }, [reload]);
 
@@ -137,7 +148,14 @@ function PreparationTable({ rows }: { rows: PreparationOrder[] }) {
     <div className="admin-table-wrap">
       <table>
         <thead>
-          <tr><th>Encomenda</th><th>Cliente</th><th>Estado</th><th>Artigos</th><th>Data</th><th></th></tr>
+          <tr>
+            <th>Encomenda</th>
+            <th>Cliente</th>
+            <th>Estado</th>
+            <th>Artigos</th>
+            <th>Data</th>
+            <th></th>
+          </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
@@ -145,9 +163,15 @@ function PreparationTable({ rows }: { rows: PreparationOrder[] }) {
               <td>{row.number}</td>
               <td>{row.customerName}</td>
               <td>{row.status}</td>
-              <td>{row.items.map((item) => `${item.quantity}× ${item.productName}`).join(', ')}</td>
+              <td>
+                {row.items
+                  .map((item) => `${item.quantity}× ${item.productName}`)
+                  .join(', ')}
+              </td>
               <td>{new Date(row.createdAt).toLocaleString('pt-PT')}</td>
-              <td><Link href={`/encomendas/${row.id}`}>Abrir</Link></td>
+              <td>
+                <Link href={`/encomendas/${row.id}`}>Abrir</Link>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -156,7 +180,13 @@ function PreparationTable({ rows }: { rows: PreparationOrder[] }) {
   );
 }
 
-function ShipmentsTable({ rows, onChange }: { rows: Shipment[]; onChange: () => Promise<void> }) {
+function ShipmentsTable({
+  rows,
+  onChange,
+}: {
+  rows: Shipment[];
+  onChange: () => Promise<void>;
+}) {
   if (!rows.length) return <Empty />;
   const action = async (path: string) => {
     await managementApi.post(path);
@@ -166,18 +196,53 @@ function ShipmentsTable({ rows, onChange }: { rows: Shipment[]; onChange: () => 
     <div className="admin-table-wrap">
       <table>
         <thead>
-          <tr><th>Expedição</th><th>Transportadora</th><th>Estado</th><th>Tracking</th><th>Ações</th></tr>
+          <tr>
+            <th>Expedição</th>
+            <th>Transportadora</th>
+            <th>Estado</th>
+            <th>Tracking</th>
+            <th>Ações</th>
+          </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
             <tr key={row.id}>
-              <td><Link href={`/expedicoes/${row.id}`}>{row.number}</Link><small>{new Date(row.createdAt).toLocaleString('pt-PT')}</small></td>
-              <td>{row.provider} · {row.service}</td>
-              <td>{row.status}</td>
-              <td>{row.trackingUrl ? <a href={row.trackingUrl} target="_blank" rel="noreferrer">{row.trackingNumber ?? 'Abrir tracking'}</a> : row.trackingNumber ?? '—'}</td>
               <td>
-                {!row.trackingNumber && <button onClick={() => void action(`/v1/admin/shipments/${row.id}/label`)}>Criar etiqueta</button>}
-                {['READY', 'LABEL_CREATED'].includes(row.status) && <button onClick={() => void action(`/v1/admin/shipments/${row.id}/dispatch`)}>Expedir</button>}
+                <Link href={`/expedicoes/${row.id}`}>{row.number}</Link>
+                <small>{new Date(row.createdAt).toLocaleString('pt-PT')}</small>
+              </td>
+              <td>
+                {row.provider} · {row.service}
+              </td>
+              <td>{row.status}</td>
+              <td>
+                {row.trackingUrl ? (
+                  <a href={row.trackingUrl} target="_blank" rel="noreferrer">
+                    {row.trackingNumber ?? 'Abrir tracking'}
+                  </a>
+                ) : (
+                  (row.trackingNumber ?? '—')
+                )}
+              </td>
+              <td>
+                {!row.trackingNumber && (
+                  <button
+                    onClick={() =>
+                      void action(`/v1/admin/shipments/${row.id}/label`)
+                    }
+                  >
+                    Criar etiqueta
+                  </button>
+                )}
+                {['READY', 'LABEL_CREATED'].includes(row.status) && (
+                  <button
+                    onClick={() =>
+                      void action(`/v1/admin/shipments/${row.id}/dispatch`)
+                    }
+                  >
+                    Expedir
+                  </button>
+                )}
               </td>
             </tr>
           ))}
@@ -193,16 +258,27 @@ function ReturnsTable({ rows }: { rows: ReturnRequest[] }) {
     <div className="admin-table-wrap">
       <table>
         <thead>
-          <tr><th>RMA</th><th>Motivo</th><th>Resolução</th><th>Estado</th><th></th></tr>
+          <tr>
+            <th>RMA</th>
+            <th>Motivo</th>
+            <th>Resolução</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
             <tr key={row.id}>
-              <td><Link href={`/devolucoes/${row.id}`}>{row.number}</Link><small>{new Date(row.createdAt).toLocaleString('pt-PT')}</small></td>
+              <td>
+                <Link href={`/devolucoes/${row.id}`}>{row.number}</Link>
+                <small>{new Date(row.createdAt).toLocaleString('pt-PT')}</small>
+              </td>
               <td>{row.reason}</td>
               <td>{row.resolution}</td>
               <td>{row.status}</td>
-              <td><Link href={`/devolucoes/${row.id}`}>Gerir</Link></td>
+              <td>
+                <Link href={`/devolucoes/${row.id}`}>Gerir</Link>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -217,17 +293,29 @@ function SupportTable({ rows }: { rows: SupportCase[] }) {
     <div className="admin-table-wrap">
       <table>
         <thead>
-          <tr><th>Caso</th><th>Assunto</th><th>Tipo</th><th>Prioridade</th><th>Estado</th><th></th></tr>
+          <tr>
+            <th>Caso</th>
+            <th>Assunto</th>
+            <th>Tipo</th>
+            <th>Prioridade</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
             <tr key={row.id}>
-              <td><Link href={`/apoio/${row.id}`}>{row.number}</Link><small>{new Date(row.createdAt).toLocaleString('pt-PT')}</small></td>
+              <td>
+                <Link href={`/apoio/${row.id}`}>{row.number}</Link>
+                <small>{new Date(row.createdAt).toLocaleString('pt-PT')}</small>
+              </td>
               <td>{row.subject}</td>
               <td>{row.type}</td>
               <td>{row.priority}</td>
               <td>{row.status}</td>
-              <td><Link href={`/apoio/${row.id}`}>Abrir</Link></td>
+              <td>
+                <Link href={`/apoio/${row.id}`}>Abrir</Link>
+              </td>
             </tr>
           ))}
         </tbody>

@@ -12,7 +12,10 @@ export default function TrackingPage() {
       <section className="contact-intro">
         <p className="eyebrow">Encomendas</p>
         <h1>Acompanhe a sua encomenda.</h1>
-        <p>Consulte o estado da encomenda e das expedições associadas usando o número da encomenda e o email da compra.</p>
+        <p>
+          Consulte o estado da encomenda e das expedições associadas usando o
+          número da encomenda e o email da compra.
+        </p>
       </section>
       <PublicTracking />
     </main>

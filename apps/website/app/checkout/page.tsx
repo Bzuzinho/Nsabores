@@ -75,7 +75,8 @@ export default function CheckoutPage() {
       (cart?.subtotalCents ?? 0) < selected.freeShippingAboveCents)
       ? selected.priceCents
       : 0;
-  const productDiscount = cart?.productDiscountCents ?? cart?.discountCents ?? 0;
+  const productDiscount =
+    cart?.productDiscountCents ?? cart?.discountCents ?? 0;
   const estimatedTotal = Math.max(
     0,
     (cart?.subtotalCents ?? 0) + shipping - productDiscount,
@@ -192,7 +193,9 @@ export default function CheckoutPage() {
           <p>
             Entrega:{' '}
             {hasFreeShippingPromotion ? (
-              <><s>{formatPrice(selected?.priceCents ?? 0)}</s> Grátis</>
+              <>
+                <s>{formatPrice(selected?.priceCents ?? 0)}</s> Grátis
+              </>
             ) : (
               formatPrice(shipping)
             )}
@@ -200,7 +203,9 @@ export default function CheckoutPage() {
           <p>
             <strong>Total estimado: {formatPrice(estimatedTotal)}</strong>
           </p>
-          <small>O total final é recalculado no servidor antes do pagamento.</small>
+          <small>
+            O total final é recalculado no servidor antes do pagamento.
+          </small>
         </div>
 
         {error && <p role="alert">{error}</p>}

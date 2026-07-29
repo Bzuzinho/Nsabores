@@ -56,10 +56,7 @@ export class CustomerFulfillmentController {
   }
 
   @Get('returns/:id')
-  returnRequest(
-    @CurrentUser() user: AuthPrincipal,
-    @Param('id') id: string,
-  ) {
+  returnRequest(@CurrentUser() user: AuthPrincipal, @Param('id') id: string) {
     return this.fulfillment.returnRequest(id, user.sub);
   }
 
@@ -77,10 +74,7 @@ export class CustomerFulfillmentController {
   }
 
   @Get('support-cases/:id')
-  supportCase(
-    @CurrentUser() user: AuthPrincipal,
-    @Param('id') id: string,
-  ) {
+  supportCase(@CurrentUser() user: AuthPrincipal, @Param('id') id: string) {
     return this.fulfillment.supportCase(id, user.sub);
   }
 
@@ -125,10 +119,7 @@ export class AdminFulfillmentController {
   }
 
   @Post('shipments/:id/dispatch')
-  dispatch(
-    @CurrentUser() user: AuthPrincipal,
-    @Param('id') id: string,
-  ) {
+  dispatch(@CurrentUser() user: AuthPrincipal, @Param('id') id: string) {
     return this.fulfillment.dispatch(id, user.sub);
   }
 

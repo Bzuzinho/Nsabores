@@ -65,7 +65,9 @@ export function PromotionsAdmin() {
 
   const reload = useCallback(async () => {
     try {
-      setPromotions(await managementApi.get<Promotion[]>('/v1/admin/promotions'));
+      setPromotions(
+        await managementApi.get<Promotion[]>('/v1/admin/promotions'),
+      );
     } catch (reason) {
       setError(
         reason instanceof Error
@@ -75,7 +77,11 @@ export function PromotionsAdmin() {
     }
   }, []);
 
-  useEffect(() => void reload(), [reload]);
+  useEffect(() => {
+    // Initial synchronization with the management API.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void reload();
+  }, [reload]);
 
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -83,26 +89,33 @@ export function PromotionsAdmin() {
     setError('');
     const form = event.currentTarget;
     const data = new FormData(form);
-    const benefitType = String(data.get('benefitType')) as Promotion['benefitType'];
+    const benefitType = String(
+      data.get('benefitType'),
+    ) as Promotion['benefitType'];
     try {
-      const created = await managementApi.post<Promotion>('/v1/admin/promotions', {
-        name: String(data.get('name')),
-        code: String(data.get('code')),
-        status: String(data.get('status')),
-        benefitType,
-        benefitValue:
-          benefitType === 'QUANTITY_DEAL'
-            ? 0
-            : Number(data.get('benefitValue') ?? 0),
-        channel: String(data.get('channel')),
-        priority: Number(data.get('priority') ?? 0),
-        stackable: data.get('stackable') === 'on',
-        globalUsageLimit: optionalNumber(data.get('globalUsageLimit')),
-        perCustomerLimit: optionalNumber(data.get('perCustomerLimit')),
-        minimumCartCents: optionalNumber(data.get('minimumCartCents')),
-        maximumDiscountCents: optionalNumber(data.get('maximumDiscountCents')),
-        targets: [],
-      });
+      const created = await managementApi.post<Promotion>(
+        '/v1/admin/promotions',
+        {
+          name: String(data.get('name')),
+          code: String(data.get('code')),
+          status: String(data.get('status')),
+          benefitType,
+          benefitValue:
+            benefitType === 'QUANTITY_DEAL'
+              ? 0
+              : Number(data.get('benefitValue') ?? 0),
+          channel: String(data.get('channel')),
+          priority: Number(data.get('priority') ?? 0),
+          stackable: data.get('stackable') === 'on',
+          globalUsageLimit: optionalNumber(data.get('globalUsageLimit')),
+          perCustomerLimit: optionalNumber(data.get('perCustomerLimit')),
+          minimumCartCents: optionalNumber(data.get('minimumCartCents')),
+          maximumDiscountCents: optionalNumber(
+            data.get('maximumDiscountCents'),
+          ),
+          targets: [],
+        },
+      );
       if (benefitType === 'QUANTITY_DEAL') {
         const quantityBuy = Number(data.get('quantityBuy') ?? 3);
         const quantityPay = Number(data.get('quantityPay') ?? 2);
@@ -118,7 +131,9 @@ export function PromotionsAdmin() {
       await reload();
     } catch (reason) {
       setError(
-        reason instanceof Error ? reason.message : 'Não foi possível criar a promoção.',
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível criar a promoção.',
       );
     } finally {
       setBusy(false);
@@ -177,25 +192,98 @@ export function PromotionsAdmin() {
         </div>
         <Link href="/promocoes/nova">Nova promoção</Link>
       </header>
-      {error && <p className="admin-error" role="alert">{error}</p>}
+      {error && (
+        <p className="admin-error" role="alert">
+          {error}
+        </p>
+      )}
       <section className="user-detail">
         <h2>Nova promoção</h2>
         <form className="auth-form" onSubmit={create}>
-          <label>Nome<input name="name" required maxLength={150} /></label>
-          <label>Código interno<input name="code" required maxLength={80} /></label>
-          <label>Estado<select name="status" defaultValue="DRAFT"><option>DRAFT</option><option>ACTIVE</option><option>PAUSED</option></select></label>
-          <label>Benefício<select name="benefitType" defaultValue="PERCENTAGE"><option>PERCENTAGE</option><option>FIXED_AMOUNT</option><option>FREE_SHIPPING</option><option>SPECIAL_PRICE</option><option>QUANTITY_DEAL</option></select></label>
-          <label>Valor<input name="benefitValue" type="number" min="0" defaultValue="10" /><small>Percentagem: 0–100. Valores fixos/preço especial: cêntimos. Ignorado em QUANTITY_DEAL.</small></label>
-          <label>Leve<input name="quantityBuy" type="number" min="2" defaultValue="3" /><small>Apenas para QUANTITY_DEAL.</small></label>
-          <label>Pague<input name="quantityPay" type="number" min="1" defaultValue="2" /><small>Apenas para QUANTITY_DEAL.</small></label>
-          <label>Canal<select name="channel" defaultValue="BOTH"><option>BOTH</option><option>B2C</option><option>B2B</option></select></label>
-          <label>Prioridade<input name="priority" type="number" defaultValue="0" required /></label>
-          <label><input name="stackable" type="checkbox" /> Pode acumular com outras promoções</label>
-          <label>Utilizações globais<input name="globalUsageLimit" type="number" min="1" /></label>
-          <label>Limite por cliente/empresa<input name="perCustomerLimit" type="number" min="1" /></label>
-          <label>Carrinho mínimo (cêntimos)<input name="minimumCartCents" type="number" min="0" /></label>
-          <label>Desconto máximo (cêntimos)<input name="maximumDiscountCents" type="number" min="0" /></label>
-          <button className="admin-primary" disabled={busy}>Criar promoção</button>
+          <label>
+            Nome
+            <input name="name" required maxLength={150} />
+          </label>
+          <label>
+            Código interno
+            <input name="code" required maxLength={80} />
+          </label>
+          <label>
+            Estado
+            <select name="status" defaultValue="DRAFT">
+              <option>DRAFT</option>
+              <option>ACTIVE</option>
+              <option>PAUSED</option>
+            </select>
+          </label>
+          <label>
+            Benefício
+            <select name="benefitType" defaultValue="PERCENTAGE">
+              <option>PERCENTAGE</option>
+              <option>FIXED_AMOUNT</option>
+              <option>FREE_SHIPPING</option>
+              <option>SPECIAL_PRICE</option>
+              <option>QUANTITY_DEAL</option>
+            </select>
+          </label>
+          <label>
+            Valor
+            <input
+              name="benefitValue"
+              type="number"
+              min="0"
+              defaultValue="10"
+            />
+            <small>
+              Percentagem: 0–100. Valores fixos/preço especial: cêntimos.
+              Ignorado em QUANTITY_DEAL.
+            </small>
+          </label>
+          <label>
+            Leve
+            <input name="quantityBuy" type="number" min="2" defaultValue="3" />
+            <small>Apenas para QUANTITY_DEAL.</small>
+          </label>
+          <label>
+            Pague
+            <input name="quantityPay" type="number" min="1" defaultValue="2" />
+            <small>Apenas para QUANTITY_DEAL.</small>
+          </label>
+          <label>
+            Canal
+            <select name="channel" defaultValue="BOTH">
+              <option>BOTH</option>
+              <option>B2C</option>
+              <option>B2B</option>
+            </select>
+          </label>
+          <label>
+            Prioridade
+            <input name="priority" type="number" defaultValue="0" required />
+          </label>
+          <label>
+            <input name="stackable" type="checkbox" /> Pode acumular com outras
+            promoções
+          </label>
+          <label>
+            Utilizações globais
+            <input name="globalUsageLimit" type="number" min="1" />
+          </label>
+          <label>
+            Limite por cliente/empresa
+            <input name="perCustomerLimit" type="number" min="1" />
+          </label>
+          <label>
+            Carrinho mínimo (cêntimos)
+            <input name="minimumCartCents" type="number" min="0" />
+          </label>
+          <label>
+            Desconto máximo (cêntimos)
+            <input name="maximumDiscountCents" type="number" min="0" />
+          </label>
+          <button className="admin-primary" disabled={busy}>
+            Criar promoção
+          </button>
         </form>
       </section>
       <section className="user-detail">
@@ -203,18 +291,38 @@ export function PromotionsAdmin() {
         {!promotions.length && <p>Sem promoções criadas.</p>}
         {promotions.map((promotion) => (
           <article key={promotion.id}>
-            <p><strong>{promotion.name}</strong> · {promotion.code} · {promotion.status}</p>
+            <p>
+              <strong>{promotion.name}</strong> · {promotion.code} ·{' '}
+              {promotion.status}
+            </p>
             <p>
               {promotion.benefitType}
               {promotion.benefitType === 'QUANTITY_DEAL'
                 ? ` · leve ${promotion.quantityBuy ?? '?'} pague ${promotion.quantityPay ?? '?'}`
-                : ` · valor ${promotion.benefitValue}`}
-              {' '}· {promotion.channel} · prioridade {promotion.priority}
+                : ` · valor ${promotion.benefitValue}`}{' '}
+              · {promotion.channel} · prioridade {promotion.priority}
             </p>
             <div>
-              {promotion.status !== 'ACTIVE' && <button className="admin-primary" disabled={busy} onClick={() => void setStatus(promotion.id, 'ACTIVE')}>Ativar</button>}
-              {promotion.status === 'ACTIVE' && <button disabled={busy} onClick={() => void setStatus(promotion.id, 'PAUSED')}>Pausar</button>}
-              {' '}<Link href={`/promocoes/${promotion.id}`}>Editar regra e alvos</Link>
+              {promotion.status !== 'ACTIVE' && (
+                <button
+                  className="admin-primary"
+                  disabled={busy}
+                  onClick={() => void setStatus(promotion.id, 'ACTIVE')}
+                >
+                  Ativar
+                </button>
+              )}
+              {promotion.status === 'ACTIVE' && (
+                <button
+                  disabled={busy}
+                  onClick={() => void setStatus(promotion.id, 'PAUSED')}
+                >
+                  Pausar
+                </button>
+              )}{' '}
+              <Link href={`/promocoes/${promotion.id}`}>
+                Editar regra e alvos
+              </Link>
             </div>
           </article>
         ))}
@@ -239,12 +347,18 @@ export function CouponsAdmin() {
       setPromotions(promotionRows);
     } catch (reason) {
       setError(
-        reason instanceof Error ? reason.message : 'Não foi possível carregar os cupões.',
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível carregar os cupões.',
       );
     }
   }, []);
 
-  useEffect(() => void reload(), [reload]);
+  useEffect(() => {
+    // Initial synchronization with the management API.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void reload();
+  }, [reload]);
 
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -266,7 +380,9 @@ export function CouponsAdmin() {
       await reload();
     } catch (reason) {
       setError(
-        reason instanceof Error ? reason.message : 'Não foi possível criar o cupão.',
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível criar o cupão.',
       );
     } finally {
       setBusy(false);
@@ -282,17 +398,57 @@ export function CouponsAdmin() {
           <p>Códigos promocionais associados a campanhas ativas.</p>
         </div>
       </header>
-      {error && <p className="admin-error" role="alert">{error}</p>}
+      {error && (
+        <p className="admin-error" role="alert">
+          {error}
+        </p>
+      )}
       <section className="user-detail">
         <h2>Novo cupão</h2>
         <form className="auth-form" onSubmit={create}>
-          <label>Promoção<select name="promotionId" required defaultValue=""><option value="" disabled>Selecionar…</option>{promotions.map((promotion) => <option key={promotion.id} value={promotion.id}>{promotion.name} · {promotion.code}</option>)}</select></label>
-          <label>Código<input name="code" required maxLength={80} /></label>
-          <label>Canal<select name="channel" defaultValue="BOTH"><option>BOTH</option><option>B2C</option><option>B2B</option></select></label>
-          <label>Utilizações totais<input name="usageLimit" type="number" min="1" /></label>
-          <label>Utilizações por utilizador<input name="perUserLimit" type="number" min="1" /></label>
-          <label>Carrinho mínimo (cêntimos)<input name="minimumCartCents" type="number" min="0" /></label>
-          <button className="admin-primary" disabled={busy || !promotions.length}>Criar cupão</button>
+          <label>
+            Promoção
+            <select name="promotionId" required defaultValue="">
+              <option value="" disabled>
+                Selecionar…
+              </option>
+              {promotions.map((promotion) => (
+                <option key={promotion.id} value={promotion.id}>
+                  {promotion.name} · {promotion.code}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Código
+            <input name="code" required maxLength={80} />
+          </label>
+          <label>
+            Canal
+            <select name="channel" defaultValue="BOTH">
+              <option>BOTH</option>
+              <option>B2C</option>
+              <option>B2B</option>
+            </select>
+          </label>
+          <label>
+            Utilizações totais
+            <input name="usageLimit" type="number" min="1" />
+          </label>
+          <label>
+            Utilizações por utilizador
+            <input name="perUserLimit" type="number" min="1" />
+          </label>
+          <label>
+            Carrinho mínimo (cêntimos)
+            <input name="minimumCartCents" type="number" min="0" />
+          </label>
+          <button
+            className="admin-primary"
+            disabled={busy || !promotions.length}
+          >
+            Criar cupão
+          </button>
         </form>
       </section>
       <section className="user-detail">
@@ -300,9 +456,19 @@ export function CouponsAdmin() {
         {!coupons.length && <p>Sem cupões criados.</p>}
         {coupons.map((coupon) => (
           <article key={coupon.id}>
-            <p><strong>{coupon.code}</strong> · {coupon.isActive ? 'Ativo' : 'Inativo'} · {coupon.channel}</p>
-            <p>Promoção: {coupon.promotionName ?? coupon.promotionCode ?? coupon.promotionId}</p>
-            <Link href={`/cupoes/${coupon.id}`}>Editar e consultar utilizações</Link>
+            <p>
+              <strong>{coupon.code}</strong> ·{' '}
+              {coupon.isActive ? 'Ativo' : 'Inativo'} · {coupon.channel}
+            </p>
+            <p>
+              Promoção:{' '}
+              {coupon.promotionName ??
+                coupon.promotionCode ??
+                coupon.promotionId}
+            </p>
+            <Link href={`/cupoes/${coupon.id}`}>
+              Editar e consultar utilizações
+            </Link>
           </article>
         ))}
       </section>

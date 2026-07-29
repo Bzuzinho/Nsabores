@@ -39,7 +39,9 @@ export class ReturnRefundService {
 
   async refundReturn(returnRequestId: string, authorId: string) {
     if (!this.provider.supportsRefund()) {
-      throw new ConflictException('O provider de pagamentos não suporta reembolso.');
+      throw new ConflictException(
+        'O provider de pagamentos não suporta reembolso.',
+      );
     }
 
     const requests = await this.prisma.$queryRaw<ReturnRefundRow[]>`
@@ -51,7 +53,9 @@ export class ReturnRefundService {
     const request = requests[0];
     if (!request) throw new NotFoundException('Devolução não encontrada.');
     if (request.resolution !== 'REFUND') {
-      throw new ConflictException('Esta devolução não está configurada para reembolso.');
+      throw new ConflictException(
+        'Esta devolução não está configurada para reembolso.',
+      );
     }
     if (request.status === 'REFUNDED') {
       return this.refundSummary(returnRequestId);
@@ -69,7 +73,9 @@ export class ReturnRefundService {
     `;
     const amountCents = Number(totals[0]?.total ?? 0);
     if (amountCents <= 0) {
-      throw new ConflictException('A devolução não tem montante elegível para reembolso.');
+      throw new ConflictException(
+        'A devolução não tem montante elegível para reembolso.',
+      );
     }
 
     const payment = await this.prisma.payment.findFirst({
@@ -79,7 +85,10 @@ export class ReturnRefundService {
       },
       orderBy: { createdAt: 'desc' },
     });
-    if (!payment) throw new ConflictException('Não existe pagamento elegível para reembolso.');
+    if (!payment)
+      throw new ConflictException(
+        'Não existe pagamento elegível para reembolso.',
+      );
 
     const metadata = this.paymentMetadata(payment.metadata);
     const idempotencyKey = `return:${returnRequestId}:refund`;
@@ -90,7 +99,9 @@ export class ReturnRefundService {
 
     const alreadyRefunded = Number(metadata.refundedCents ?? 0);
     if (alreadyRefunded + amountCents > payment.amountCents) {
-      throw new ConflictException('O reembolso excede o montante do pagamento original.');
+      throw new ConflictException(
+        'O reembolso excede o montante do pagamento original.',
+      );
     }
 
     const providerRefund = this.provider.refund(
@@ -102,7 +113,9 @@ export class ReturnRefundService {
     const fullRefund = refundedCents >= payment.amountCents;
 
     await this.prisma.$transaction(async (tx) => {
-      const order = await tx.order.findUniqueOrThrow({ where: { id: request.orderId } });
+      const order = await tx.order.findUniqueOrThrow({
+        where: { id: request.orderId },
+      });
       const nextPaymentStatus = fullRefund
         ? PaymentStatus.REFUNDED
         : PaymentStatus.PARTIALLY_REFUNDED;
@@ -124,7 +137,7 @@ export class ReturnRefundService {
                 createdAt: new Date().toISOString(),
               },
             ],
-          } as Prisma.InputJsonValue,
+          },
         },
       });
 
@@ -191,6 +204,6 @@ export class ReturnRefundService {
 
   private paymentMetadata(value: Prisma.JsonValue | null): RefundMetadata {
     if (!value || Array.isArray(value) || typeof value !== 'object') return {};
-    return value as RefundMetadata;
+    return value;
   }
 }

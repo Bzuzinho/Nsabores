@@ -16,18 +16,12 @@ export class AdminReturnRefundController {
   ) {}
 
   @Post(':id/refund')
-  refund(
-    @CurrentUser() user: AuthPrincipal,
-    @Param('id') id: string,
-  ) {
+  refund(@CurrentUser() user: AuthPrincipal, @Param('id') id: string) {
     return this.refunds.refundReturn(id, user.sub);
   }
 
   @Post(':id/replacement')
-  replacement(
-    @CurrentUser() user: AuthPrincipal,
-    @Param('id') id: string,
-  ) {
+  replacement(@CurrentUser() user: AuthPrincipal, @Param('id') id: string) {
     return this.replacements.createReplacement(id, user.sub);
   }
 }

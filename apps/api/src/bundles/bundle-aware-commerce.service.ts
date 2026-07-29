@@ -1,5 +1,9 @@
 import { randomBytes, randomUUID } from 'node:crypto';
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from '@nestjs/common';
 import { CartStatus, OrderStatus, Prisma } from '@prisma/client';
 import type { CheckoutDto } from '../commerce/dto';
 import { CommerceMailProvider } from '../commerce/mail.provider';
@@ -63,11 +67,19 @@ export class BundleAwareCommerceService extends PromotionalCommerceService {
     return this.overlay(await super.cart(identity));
   }
 
-  override async addItem(identity: CartIdentity, productId: string, quantity: number) {
+  override async addItem(
+    identity: CartIdentity,
+    productId: string,
+    quantity: number,
+  ) {
     return this.overlay(await super.addItem(identity, productId, quantity));
   }
 
-  override async updateItem(identity: CartIdentity, itemId: string, quantity: number) {
+  override async updateItem(
+    identity: CartIdentity,
+    itemId: string,
+    quantity: number,
+  ) {
     return this.overlay(await super.updateItem(identity, itemId, quantity));
   }
 
@@ -112,17 +124,30 @@ export class BundleAwareCommerceService extends PromotionalCommerceService {
         where: { id: base.id },
         include: { items: { include: { product: true } } },
       });
-      if (!cart?.items.length) throw new BadRequestException('O carrinho está vazio.');
-      if (cart.items.some(({ product }) => !product.isActive || product.stockStatus === 'OUT_OF_STOCK'))
-        throw new ConflictException('Um ou mais produtos deixaram de estar disponíveis.');
+      if (!cart?.items.length)
+        throw new BadRequestException('O carrinho está vazio.');
+      if (
+        cart.items.some(
+          ({ product }) =>
+            !product.isActive || product.stockStatus === 'OUT_OF_STOCK',
+        )
+      )
+        throw new ConflictException(
+          'Um ou mais produtos deixaram de estar disponíveis.',
+        );
 
       const delivery = await tx.deliveryMethod.findFirst({
         where: { id: body.deliveryMethodId, isActive: true },
       });
-      if (!delivery) throw new BadRequestException('Método de entrega indisponível.');
+      if (!delivery)
+        throw new BadRequestException('Método de entrega indisponível.');
 
       const withoutShipping = await this.overlay(
-        await this.bundlePromotions.priceCartInTransaction(tx, cart.id, identity.userId),
+        await this.bundlePromotions.priceCartInTransaction(
+          tx,
+          cart.id,
+          identity.userId,
+        ),
         tx,
       );
       const shippingCents =
@@ -151,8 +176,10 @@ export class BundleAwareCommerceService extends PromotionalCommerceService {
           shippingCents,
           discountCents: pricing.discountCents,
           totalCents: pricing.totalCents,
-          billingAddress: body.billingAddress as unknown as Prisma.InputJsonValue,
-          shippingAddress: body.shippingAddress as unknown as Prisma.InputJsonValue,
+          billingAddress:
+            body.billingAddress as unknown as Prisma.InputJsonValue,
+          shippingAddress:
+            body.shippingAddress as unknown as Prisma.InputJsonValue,
           customerNotes: body.customerNotes,
           deliveryMethodId: delivery.id,
           idempotencyKey: body.idempotencyKey,
@@ -160,7 +187,7 @@ export class BundleAwareCommerceService extends PromotionalCommerceService {
           businessAccountId: pricing.context.businessAccountId,
           priceListId: pricing.context.priceListId,
           paymentTermsSnapshot: pricing.context.paymentTerms
-            ? ({ terms: pricing.context.paymentTerms } as Prisma.InputJsonValue)
+            ? { terms: pricing.context.paymentTerms }
             : Prisma.JsonNull,
           requiresApproval: pricing.context.requiresApproval,
           statusHistory: { create: { toStatus: OrderStatus.PENDING_PAYMENT } },
@@ -220,7 +247,7 @@ export class BundleAwareCommerceService extends PromotionalCommerceService {
 
   private async overlay(
     pricing: CartPricingResult,
-    client: Prisma.TransactionClient = this.bundlePrisma as unknown as Prisma.TransactionClient,
+    client: Prisma.TransactionClient = this.bundlePrisma,
   ): Promise<CartPricingResult> {
     const rows = await client.$queryRaw<ConfiguredPriceRow[]>`
       SELECT "id", "unitPriceCents"
@@ -231,10 +258,16 @@ export class BundleAwareCommerceService extends PromotionalCommerceService {
     const configured = new Map(rows.map((row) => [row.id, row.unitPriceCents]));
     const items = pricing.items.map((item) => {
       const unitPriceCents = configured.get(item.id) ?? item.unitPriceCents;
-      return { ...item, unitPriceCents, totalCents: unitPriceCents * item.quantity };
+      return {
+        ...item,
+        unitPriceCents,
+        totalCents: unitPriceCents * item.quantity,
+      };
     });
     const subtotalCents = items.reduce((sum, item) => sum + item.totalCents, 0);
-    const discounts = pricing.discounts.map((discount) => this.repriceDiscount(discount, items));
+    const discounts = pricing.discounts.map((discount) =>
+      this.repriceDiscount(discount, items),
+    );
     const productDiscountCents = discounts
       .filter((line) => !line.freeShipping)
       .reduce((sum, line) => sum + line.amountCents, 0);
@@ -252,7 +285,10 @@ export class BundleAwareCommerceService extends PromotionalCommerceService {
       productDiscountCents,
       shippingDiscountCents,
       discountCents,
-      totalCents: Math.max(0, subtotalCents + pricing.shippingCents - discountCents),
+      totalCents: Math.max(
+        0,
+        subtotalCents + pricing.shippingCents - discountCents,
+      ),
       discounts,
     };
   }
@@ -269,18 +305,24 @@ export class BundleAwareCommerceService extends PromotionalCommerceService {
       ? items.filter((item) => ids.includes(item.productId))
       : items;
     const subtotal = eligible.reduce((sum, item) => sum + item.totalCents, 0);
-    const type = String(discount.snapshot.benefitType ?? '');
+    const benefitType = discount.snapshot.benefitType;
+    const type = typeof benefitType === 'string' ? benefitType : '';
     const value = Number(discount.snapshot.benefitValue ?? 0);
     let calculated = discount.amountCents;
-    if (type === 'PERCENTAGE') calculated = Math.round((subtotal * value) / 100);
+    if (type === 'PERCENTAGE')
+      calculated = Math.round((subtotal * value) / 100);
     else if (type === 'FIXED_AMOUNT') calculated = Math.min(value, subtotal);
     else if (type === 'SPECIAL_PRICE') {
       calculated = eligible.reduce(
-        (sum, item) => sum + Math.max(0, item.unitPriceCents - value) * item.quantity,
+        (sum, item) =>
+          sum + Math.max(0, item.unitPriceCents - value) * item.quantity,
         0,
       );
     }
-    return { ...discount, amountCents: Math.min(discount.amountCents, Math.max(0, calculated)) };
+    return {
+      ...discount,
+      amountCents: Math.min(discount.amountCents, Math.max(0, calculated)),
+    };
   }
 
   private async snapshotLine(

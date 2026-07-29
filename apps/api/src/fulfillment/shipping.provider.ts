@@ -25,7 +25,7 @@ export interface ShippingLabel {
 export class ShippingProvider {
   constructor(private readonly config: ConfigService) {}
 
-  async createLabel(request: ShippingRequest): Promise<ShippingLabel> {
+  createLabel(request: ShippingRequest): Promise<ShippingLabel> {
     const provider = this.config.get<string>('SHIPPING_PROVIDER', 'mock');
     if (provider !== 'mock') {
       throw new ServiceUnavailableException(
@@ -35,23 +35,25 @@ export class ShippingProvider {
 
     const token = randomBytes(6).toString('hex').toUpperCase();
     const trackingNumber = `NS${token}`;
-    return {
+    return Promise.resolve({
       provider,
       providerShipmentId: `mock_${request.shipmentNumber}_${token}`,
       trackingNumber,
       trackingUrl: `https://tracking.invalid/${trackingNumber}`,
       labelUrl: `https://labels.invalid/${trackingNumber}.pdf`,
       estimatedDeliveryAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-    };
+    });
   }
 
-  async cancel(_providerShipmentId: string): Promise<void> {
+  cancel(providerShipmentId: string): Promise<void> {
+    void providerShipmentId;
     const provider = this.config.get<string>('SHIPPING_PROVIDER', 'mock');
     if (provider !== 'mock') {
       throw new ServiceUnavailableException(
         `O provider de transporte ${provider} ainda não está configurado.`,
       );
     }
+    return Promise.resolve();
   }
 
   verifyWebhook(rawBody: string, signature?: string): boolean {

@@ -58,7 +58,12 @@ type Bundle = {
 type BundlePrice = {
   priceCents: number;
   packagingCents: number;
-  composition: Array<{ bundleItemId: string; productId: string; name: string; quantity: number }>;
+  composition: Array<{
+    bundleItemId: string;
+    productId: string;
+    name: string;
+    quantity: number;
+  }>;
 };
 
 export function BundleCustomizer({ slug }: { slug: string }) {
@@ -89,7 +94,11 @@ export function BundleCustomizer({ slug }: { slug: string }) {
         }
         setSelections(initial);
       })
-      .catch((reason) => setError(reason instanceof Error ? reason.message : 'Cabaz indisponível.'));
+      .catch((reason) =>
+        setError(
+          reason instanceof Error ? reason.message : 'Cabaz indisponível.',
+        ),
+      );
   }, [slug]);
 
   const selectionPayload = useMemo(
@@ -117,14 +126,22 @@ export function BundleCustomizer({ slug }: { slug: string }) {
         })
         .catch((reason) => {
           setPrice(null);
-          setError(reason instanceof Error ? reason.message : 'A composição ainda não é válida.');
+          setError(
+            reason instanceof Error
+              ? reason.message
+              : 'A composição ainda não é válida.',
+          );
         });
     }, 180);
     return () => window.clearTimeout(timer);
   }, [bundle, selectionPayload, slug, specialPackaging]);
 
   if (!bundle) {
-    return <main className="section"><p>{error || 'A carregar cabaz…'}</p></main>;
+    return (
+      <main className="section">
+        <p>{error || 'A carregar cabaz…'}</p>
+      </main>
+    );
   }
 
   async function add() {
@@ -146,7 +163,11 @@ export function BundleCustomizer({ slug }: { slug: string }) {
       await refreshCart();
       openCart();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Não foi possível adicionar o cabaz.');
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível adicionar o cabaz.',
+      );
     } finally {
       setSaving(false);
     }
@@ -156,56 +177,186 @@ export function BundleCustomizer({ slug }: { slug: string }) {
     <main id="conteudo" className="section">
       <p className="eyebrow">Cabaz personalizado</p>
       <h1>{bundle.productName}</h1>
-      <p><Link href={`/loja/${bundle.productSlug}`}>Voltar ao produto</Link></p>
+      <p>
+        <Link href={`/loja/${bundle.productSlug}`}>Voltar ao produto</Link>
+      </p>
 
       {bundle.groups.map((group) => (
         <section key={group.id} className="account-card">
           <h2>{group.name}</h2>
-          <p>Escolha entre {group.minimumSelections} e {group.maximumSelections ?? 'sem limite'} unidade(s).</p>
-          {bundle.items.filter((item) => item.groupId === group.id).map((item) => (
-            <BundleOption key={item.id} item={item} value={selections[item.id] ?? 0} disabled={bundle.mode === 'FIXED'} onChange={(value) => setSelections((current) => ({ ...current, [item.id]: value }))} />
-          ))}
+          <p>
+            Escolha entre {group.minimumSelections} e{' '}
+            {group.maximumSelections ?? 'sem limite'} unidade(s).
+          </p>
+          {bundle.items
+            .filter((item) => item.groupId === group.id)
+            .map((item) => (
+              <BundleOption
+                key={item.id}
+                item={item}
+                value={selections[item.id] ?? 0}
+                disabled={bundle.mode === 'FIXED'}
+                onChange={(value) =>
+                  setSelections((current) => ({ ...current, [item.id]: value }))
+                }
+              />
+            ))}
         </section>
       ))}
 
       {bundle.items.some((item) => !item.groupId) && (
         <section className="account-card">
           <h2>Composição</h2>
-          {bundle.items.filter((item) => !item.groupId).map((item) => (
-            <BundleOption key={item.id} item={item} value={selections[item.id] ?? 0} disabled={bundle.mode === 'FIXED' || item.isRequired} onChange={(value) => setSelections((current) => ({ ...current, [item.id]: value }))} />
-          ))}
+          {bundle.items
+            .filter((item) => !item.groupId)
+            .map((item) => (
+              <BundleOption
+                key={item.id}
+                item={item}
+                value={selections[item.id] ?? 0}
+                disabled={bundle.mode === 'FIXED' || item.isRequired}
+                onChange={(value) =>
+                  setSelections((current) => ({ ...current, [item.id]: value }))
+                }
+              />
+            ))}
         </section>
       )}
 
       {bundle.personalization && (
         <section className="account-card">
           <h2>Personalização da oferta</h2>
-          {bundle.personalization.allowRecipientName && <label>Nome do destinatário<input maxLength={200} value={recipientName} onChange={(event) => setRecipientName(event.target.value)} /></label>}
-          {bundle.personalization.allowGiftMessage && <label>Mensagem<textarea maxLength={bundle.personalization.messageMaxLength} value={giftMessage} onChange={(event) => setGiftMessage(event.target.value)} /></label>}
-          {bundle.personalization.allowSpecialPackaging && <label><input type="checkbox" checked={specialPackaging} onChange={(event) => setSpecialPackaging(event.target.checked)} /> Embalagem especial (+{formatPrice(bundle.personalization.specialPackagingCents)})</label>}
-          {bundle.personalization.allowRequestedDate && <label>Data pretendida<input type="date" value={requestedDate} onChange={(event) => setRequestedDate(event.target.value)} /></label>}
-          {bundle.personalization.allowNotes && <label>Observações<textarea maxLength={bundle.personalization.notesMaxLength} value={notes} onChange={(event) => setNotes(event.target.value)} /></label>}
-          {bundle.personalization.allowHidePrice && <label><input type="checkbox" checked={hidePrice} onChange={(event) => setHidePrice(event.target.checked)} /> Não incluir valores no packing slip</label>}
+          {bundle.personalization.allowRecipientName && (
+            <label>
+              Nome do destinatário
+              <input
+                maxLength={200}
+                value={recipientName}
+                onChange={(event) => setRecipientName(event.target.value)}
+              />
+            </label>
+          )}
+          {bundle.personalization.allowGiftMessage && (
+            <label>
+              Mensagem
+              <textarea
+                maxLength={bundle.personalization.messageMaxLength}
+                value={giftMessage}
+                onChange={(event) => setGiftMessage(event.target.value)}
+              />
+            </label>
+          )}
+          {bundle.personalization.allowSpecialPackaging && (
+            <label>
+              <input
+                type="checkbox"
+                checked={specialPackaging}
+                onChange={(event) => setSpecialPackaging(event.target.checked)}
+              />{' '}
+              Embalagem especial (+
+              {formatPrice(bundle.personalization.specialPackagingCents)})
+            </label>
+          )}
+          {bundle.personalization.allowRequestedDate && (
+            <label>
+              Data pretendida
+              <input
+                type="date"
+                value={requestedDate}
+                onChange={(event) => setRequestedDate(event.target.value)}
+              />
+            </label>
+          )}
+          {bundle.personalization.allowNotes && (
+            <label>
+              Observações
+              <textarea
+                maxLength={bundle.personalization.notesMaxLength}
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
+              />
+            </label>
+          )}
+          {bundle.personalization.allowHidePrice && (
+            <label>
+              <input
+                type="checkbox"
+                checked={hidePrice}
+                onChange={(event) => setHidePrice(event.target.checked)}
+              />{' '}
+              Não incluir valores no packing slip
+            </label>
+          )}
         </section>
       )}
 
       <section className="account-card">
         <h2>Resumo</h2>
-        {price ? <p><strong>{formatPrice(price.priceCents)}</strong> por cabaz</p> : <p>Complete a composição para calcular o preço.</p>}
-        <label>Quantidade<input type="number" min={1} max={99} value={quantity} onChange={(event) => setQuantity(Math.max(1, Math.min(99, Number(event.target.value))))} /></label>
+        {price ? (
+          <p>
+            <strong>{formatPrice(price.priceCents)}</strong> por cabaz
+          </p>
+        ) : (
+          <p>Complete a composição para calcular o preço.</p>
+        )}
+        <label>
+          Quantidade
+          <input
+            type="number"
+            min={1}
+            max={99}
+            value={quantity}
+            onChange={(event) =>
+              setQuantity(Math.max(1, Math.min(99, Number(event.target.value))))
+            }
+          />
+        </label>
         {error && <p role="alert">{error}</p>}
-        <button className="button button-primary" disabled={!price || saving} onClick={() => void add()}>{saving ? 'A adicionar…' : 'Adicionar ao carrinho'}</button>
+        <button
+          className="button button-primary"
+          disabled={!price || saving}
+          onClick={() => void add()}
+        >
+          {saving ? 'A adicionar…' : 'Adicionar ao carrinho'}
+        </button>
       </section>
     </main>
   );
 }
 
-function BundleOption({ item, value, disabled, onChange }: { item: Bundle['items'][number]; value: number; disabled: boolean; onChange: (value: number) => void }) {
+function BundleOption({
+  item,
+  value,
+  disabled,
+  onChange,
+}: {
+  item: Bundle['items'][number];
+  value: number;
+  disabled: boolean;
+  onChange: (value: number) => void;
+}) {
   return (
     <article className="cart-item">
       <Image src={item.productImageUrl} alt="" width={72} height={72} />
-      <div><strong>{item.productName}</strong><small>{item.stockStatus === 'OUT_OF_STOCK' ? 'Esgotado' : item.isRequired ? 'Obrigatório' : 'Opcional'}</small></div>
-      <input aria-label={`Quantidade de ${item.productName}`} type="number" min={item.minimumQuantity} max={item.maximumQuantity ?? 99} value={value} disabled={disabled || item.stockStatus === 'OUT_OF_STOCK'} onChange={(event) => onChange(Math.max(0, Number(event.target.value)))} />
+      <div>
+        <strong>{item.productName}</strong>
+        <small>
+          {item.stockStatus === 'OUT_OF_STOCK'
+            ? 'Esgotado'
+            : item.isRequired
+              ? 'Obrigatório'
+              : 'Opcional'}
+        </small>
+      </div>
+      <input
+        aria-label={`Quantidade de ${item.productName}`}
+        type="number"
+        min={item.minimumQuantity}
+        max={item.maximumQuantity ?? 99}
+        value={value}
+        disabled={disabled || item.stockStatus === 'OUT_OF_STOCK'}
+        onChange={(event) => onChange(Math.max(0, Number(event.target.value)))}
+      />
     </article>
   );
 }

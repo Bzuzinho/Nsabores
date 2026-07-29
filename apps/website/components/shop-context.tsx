@@ -150,7 +150,9 @@ export function ShopProvider({ children }: { children: ReactNode }) {
       window.setTimeout(() => setToast(''), 2600);
     } catch (reason) {
       setToast(
-        reason instanceof Error ? reason.message : 'Não foi possível aplicar o cupão.',
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível aplicar o cupão.',
       );
       throw reason;
     }
@@ -164,7 +166,9 @@ export function ShopProvider({ children }: { children: ReactNode }) {
       window.setTimeout(() => setToast(''), 2600);
     } catch (reason) {
       setToast(
-        reason instanceof Error ? reason.message : 'Não foi possível remover o cupão.',
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível remover o cupão.',
       );
       throw reason;
     }
