@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { FacebookIcon, InstagramIcon } from './icons';
 
@@ -33,13 +34,19 @@ export function SiteFooter() {
     <footer className="site-footer">
       <div className="footer-main">
         <div className="footer-brand">
-          <span className="brand-emblem" aria-hidden="true">
-            ◒
-          </span>
-          <Link className="brand-name" href="/">
-            Nsabores
+          <Link
+            className="footer-logo-link"
+            href="/"
+            aria-label="Nsabores, início"
+          >
+            <Image
+              className="footer-logo"
+              src="/images/logo-nsabores-white.png"
+              alt=""
+              width={1789}
+              height={512}
+            />
           </Link>
-          <small>Mercearia gourmet</small>
           <p>
             Mais do que produtos, criamos experiências que unem pessoas e
             celebram o que é nosso.

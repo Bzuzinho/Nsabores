@@ -37,11 +37,14 @@ export function SiteHeader() {
     <>
       <header className="site-header">
         <Link className="brand" href="/" aria-label="Nsabores, início">
-          <span className="brand-emblem" aria-hidden="true">
-            ◒
-          </span>
-          <span className="brand-name">Nsabores</span>
-          <span className="brand-tagline">Mercearia gourmet</span>
+          <Image
+            className="brand-logo"
+            src="/images/logo-nsabores-white.png"
+            alt=""
+            width={1789}
+            height={512}
+            priority
+          />
         </Link>
 
         <nav className="desktop-navigation" aria-label="Navegação principal">
