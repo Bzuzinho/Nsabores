@@ -1,0 +1,154 @@
+enum LoyaltyAccountStatus {
+  ACTIVE
+  SUSPENDED
+  CLOSED
+}
+
+enum LoyaltyTransactionType {
+  EARN_PENDING
+  EARN_RELEASED
+  REDEEM_RESERVED
+  REDEEMED
+  REDEEM_RELEASED
+  EXPIRED
+  REVERSED
+  ADJUSTMENT
+}
+
+enum LoyaltyTransactionStatus {
+  PENDING
+  AVAILABLE
+  RESERVED
+  COMPLETED
+  CANCELLED
+}
+
+enum GiftCardStatus {
+  ACTIVE
+  BLOCKED
+  DEPLETED
+  EXPIRED
+  CANCELLED
+}
+
+enum GiftCardTransactionType {
+  ISSUE
+  RESERVE
+  REDEEM
+  RELEASE
+  REFUND
+  ADJUSTMENT
+  EXPIRE
+}
+
+enum GiftCardTransactionStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+model LoyaltyAccount {
+  id                     String               @id @default(uuid()) @db.Uuid
+  userId                 String               @unique @db.Uuid
+  status                 LoyaltyAccountStatus @default(ACTIVE)
+  availablePoints        Int                  @default(0)
+  pendingPoints          Int                  @default(0)
+  reservedPoints         Int                  @default(0)
+  lifetimeEarnedPoints   Int                  @default(0)
+  lifetimeRedeemedPoints Int                  @default(0)
+  tier                   String?
+  suspendedAt            DateTime?
+  suspensionReason       String?
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @default(now()) @updatedAt
+
+  @@index([status, updatedAt])
+}
+
+model LoyaltyRule {
+  id                        String        @id @default(uuid()) @db.Uuid
+  name                      String
+  code                      String        @unique
+  isActive                  Boolean       @default(true)
+  channel                   SalesChannel?
+  pointsPerEuro             Int           @default(1)
+  clubMultiplierBasisPoints Int           @default(10000)
+  minimumOrderCents         Int?
+  maximumPointsPerOrder     Int?
+  pendingDays               Int           @default(0)
+  validFrom                 DateTime?
+  validUntil                DateTime?
+  configuration             Json          @default("{}")
+  createdAt                 DateTime      @default(now())
+  updatedAt                 DateTime      @default(now()) @updatedAt
+
+  @@index([isActive, channel, validFrom, validUntil])
+}
+
+model LoyaltyTransaction {
+  id                   String                   @id @default(uuid()) @db.Uuid
+  accountId            String                   @db.Uuid
+  orderId              String?                  @db.Uuid
+  ruleId               String?                  @db.Uuid
+  type                 LoyaltyTransactionType
+  status               LoyaltyTransactionStatus
+  points               Int
+  availableBalanceAfter Int
+  pendingBalanceAfter  Int
+  reservedBalanceAfter Int
+  availableAt          DateTime?
+  expiresAt            DateTime?
+  parentTransactionId  String?                  @db.Uuid
+  idempotencyKey       String                   @unique
+  note                 String?
+  metadata             Json?
+  createdAt            DateTime                 @default(now())
+
+  @@index([accountId, createdAt])
+  @@index([status, availableAt])
+  @@index([orderId])
+}
+
+model GiftCard {
+  id                String         @id @default(uuid()) @db.Uuid
+  codeHash          String         @unique
+  codeLast4         String         @db.Char(4)
+  pinHash           String?
+  status            GiftCardStatus @default(ACTIVE)
+  initialAmountCents Int
+  balanceCents      Int
+  reservedCents     Int            @default(0)
+  currency          String         @default("EUR") @db.Char(3)
+  purchaserUserId   String?        @db.Uuid
+  recipientEmail    String?
+  recipientName     String?
+  message           String?
+  expiresAt         DateTime?
+  activatedAt       DateTime       @default(now())
+  blockedAt         DateTime?
+  blockReason       String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @default(now()) @updatedAt
+
+  @@index([status, expiresAt])
+  @@index([purchaserUserId, createdAt])
+}
+
+model GiftCardTransaction {
+  id                    String                    @id @default(uuid()) @db.Uuid
+  giftCardId            String                    @db.Uuid
+  orderId               String?                   @db.Uuid
+  type                  GiftCardTransactionType
+  status                GiftCardTransactionStatus
+  amountCents           Int
+  balanceAfterCents     Int
+  reservedAfterCents    Int
+  idempotencyKey        String                    @unique
+  parentTransactionId   String?                   @db.Uuid
+  note                  String?
+  metadata              Json?
+  createdAt             DateTime                  @default(now())
+
+  @@index([giftCardId, createdAt])
+  @@index([orderId])
+}
