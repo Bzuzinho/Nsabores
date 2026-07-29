@@ -2,8 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { AdvancedPromotionsService } from '../promotions/advanced-promotions.service';
-import type { CartPricingResult, PricingDiscount } from '../promotions/promotions.service';
+import type {
+  CartPricingResult,
+  PricingDiscount,
+} from '../promotions/promotions.service';
 import { calculateClubPercentageDiscount } from './club-benefit';
+import { isClubSchemaUnavailable } from './schema-compat';
 
 type ActiveClubBenefit = {
   subscriptionId: string;
@@ -18,7 +22,11 @@ export class ClubPromotionsService extends AdvancedPromotionsService {
     super(clubPrisma);
   }
 
-  override async priceCart(cartId: string, userId?: string, shippingCents = 0) {
+  override async priceCart(
+    cartId: string,
+    userId?: string,
+    shippingCents = 0,
+  ) {
     const base = await super.priceCart(cartId, userId, shippingCents);
     return this.applyClubBenefit(
       this.clubPrisma as unknown as Prisma.TransactionClient,
@@ -33,7 +41,12 @@ export class ClubPromotionsService extends AdvancedPromotionsService {
     userId?: string,
     shippingCents = 0,
   ) {
-    const base = await super.priceCartInTransaction(tx, cartId, userId, shippingCents);
+    const base = await super.priceCartInTransaction(
+      tx,
+      cartId,
+      userId,
+      shippingCents,
+    );
     return this.applyClubBenefit(tx, base, userId);
   }
 
@@ -43,20 +56,28 @@ export class ClubPromotionsService extends AdvancedPromotionsService {
     userId?: string,
   ): Promise<CartPricingResult> {
     if (!userId || !base.items.length) return base;
-    const benefits = await client.$queryRaw<ActiveClubBenefit[]>`
-      SELECT
-        s."id" AS "subscriptionId",
-        s."planId",
-        COALESCE(s."planSnapshot"->>'code', p."code") AS "planCode",
-        COALESCE((s."planSnapshot"->'benefits'->>'discountPercent')::int, 0) AS "discountPercent"
-      FROM "ClubSubscription" s
-      JOIN "ClubPlan" p ON p."id" = s."planId"
-      WHERE s."userId" = ${userId}::uuid
-        AND s."status" IN ('TRIALING','ACTIVE','CANCEL_AT_PERIOD_END')
-        AND s."currentPeriodEnd" > CURRENT_TIMESTAMP
-      ORDER BY s."createdAt" DESC
-      LIMIT 1
-    `;
+
+    let benefits: ActiveClubBenefit[];
+    try {
+      benefits = await client.$queryRaw<ActiveClubBenefit[]>`
+        SELECT
+          s."id" AS "subscriptionId",
+          s."planId",
+          COALESCE(s."planSnapshot"->>'code', p."code") AS "planCode",
+          COALESCE((s."planSnapshot"->'benefits'->>'discountPercent')::int, 0) AS "discountPercent"
+        FROM "ClubSubscription" s
+        JOIN "ClubPlan" p ON p."id" = s."planId"
+        WHERE s."userId" = ${userId}::uuid
+          AND s."status" IN ('TRIALING','ACTIVE','CANCEL_AT_PERIOD_END')
+          AND s."currentPeriodEnd" > CURRENT_TIMESTAMP
+        ORDER BY s."createdAt" DESC
+        LIMIT 1
+      `;
+    } catch (error) {
+      if (isClubSchemaUnavailable(error)) return base;
+      throw error;
+    }
+
     const benefit = benefits[0];
     if (!benefit || benefit.discountPercent <= 0) return base;
 
