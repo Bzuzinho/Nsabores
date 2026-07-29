@@ -1,0 +1,21 @@
+import { Controller, Param, Post, UseGuards } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
+import { CurrentUser, Roles } from '../auth/auth.decorators';
+import { AuthGuard, RolesGuard } from '../auth/auth.guards';
+import type { AuthPrincipal } from '../auth/auth.types';
+import { ReturnRefundService } from './refund.service';
+
+@UseGuards(AuthGuard, RolesGuard)
+@Roles(UserRole.STAFF, UserRole.ADMIN)
+@Controller('v1/admin/returns')
+export class AdminReturnRefundController {
+  constructor(private readonly refunds: ReturnRefundService) {}
+
+  @Post(':id/refund')
+  refund(
+    @CurrentUser() user: AuthPrincipal,
+    @Param('id') id: string,
+  ) {
+    return this.refunds.refundReturn(id, user.sub);
+  }
+}
