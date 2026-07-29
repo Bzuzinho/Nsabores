@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { managementApi } from './management-auth';
 
@@ -117,10 +118,10 @@ export function FulfillmentAdmin({ mode }: { mode: Mode }) {
         <ShipmentsTable rows={data as Shipment[]} onChange={reload} />
       )}
       {!loading && !error && mode === 'returns' && (
-        <ReturnsTable rows={data as ReturnRequest[]} onChange={reload} />
+        <ReturnsTable rows={data as ReturnRequest[]} />
       )}
       {!loading && !error && mode === 'support' && (
-        <SupportTable rows={data as SupportCase[]} onChange={reload} />
+        <SupportTable rows={data as SupportCase[]} />
       )}
     </>
   );
@@ -135,13 +136,18 @@ function PreparationTable({ rows }: { rows: PreparationOrder[] }) {
   return (
     <div className="admin-table-wrap">
       <table>
-        <thead><tr><th>Encomenda</th><th>Cliente</th><th>Estado</th><th>Artigos</th><th>Data</th></tr></thead>
+        <thead>
+          <tr><th>Encomenda</th><th>Cliente</th><th>Estado</th><th>Artigos</th><th>Data</th><th></th></tr>
+        </thead>
         <tbody>
           {rows.map((row) => (
             <tr key={row.id}>
-              <td>{row.number}</td><td>{row.customerName}</td><td>{row.status}</td>
+              <td>{row.number}</td>
+              <td>{row.customerName}</td>
+              <td>{row.status}</td>
               <td>{row.items.map((item) => `${item.quantity}× ${item.productName}`).join(', ')}</td>
               <td>{new Date(row.createdAt).toLocaleString('pt-PT')}</td>
+              <td><Link href={`/encomendas/${row.id}`}>Abrir</Link></td>
             </tr>
           ))}
         </tbody>
@@ -159,12 +165,15 @@ function ShipmentsTable({ rows, onChange }: { rows: Shipment[]; onChange: () => 
   return (
     <div className="admin-table-wrap">
       <table>
-        <thead><tr><th>Expedição</th><th>Transportadora</th><th>Estado</th><th>Tracking</th><th>Ações</th></tr></thead>
+        <thead>
+          <tr><th>Expedição</th><th>Transportadora</th><th>Estado</th><th>Tracking</th><th>Ações</th></tr>
+        </thead>
         <tbody>
           {rows.map((row) => (
             <tr key={row.id}>
-              <td>{row.number}<small>{new Date(row.createdAt).toLocaleString('pt-PT')}</small></td>
-              <td>{row.provider} · {row.service}</td><td>{row.status}</td>
+              <td><Link href={`/expedicoes/${row.id}`}>{row.number}</Link><small>{new Date(row.createdAt).toLocaleString('pt-PT')}</small></td>
+              <td>{row.provider} · {row.service}</td>
+              <td>{row.status}</td>
               <td>{row.trackingUrl ? <a href={row.trackingUrl} target="_blank" rel="noreferrer">{row.trackingNumber ?? 'Abrir tracking'}</a> : row.trackingNumber ?? '—'}</td>
               <td>
                 {!row.trackingNumber && <button onClick={() => void action(`/v1/admin/shipments/${row.id}/label`)}>Criar etiqueta</button>}
@@ -178,27 +187,22 @@ function ShipmentsTable({ rows, onChange }: { rows: Shipment[]; onChange: () => 
   );
 }
 
-function ReturnsTable({ rows, onChange }: { rows: ReturnRequest[]; onChange: () => Promise<void> }) {
+function ReturnsTable({ rows }: { rows: ReturnRequest[] }) {
   if (!rows.length) return <Empty />;
-  const changeStatus = async (id: string, status: string) => {
-    await managementApi.patch(`/v1/admin/returns/${id}/status`, { status });
-    await onChange();
-  };
   return (
     <div className="admin-table-wrap">
       <table>
-        <thead><tr><th>RMA</th><th>Motivo</th><th>Resolução</th><th>Estado</th><th>Operação</th></tr></thead>
+        <thead>
+          <tr><th>RMA</th><th>Motivo</th><th>Resolução</th><th>Estado</th><th></th></tr>
+        </thead>
         <tbody>
           {rows.map((row) => (
             <tr key={row.id}>
-              <td>{row.number}<small>{new Date(row.createdAt).toLocaleString('pt-PT')}</small></td>
-              <td>{row.reason}</td><td>{row.resolution}</td><td>{row.status}</td>
-              <td>
-                <select defaultValue="" aria-label={`Atualizar ${row.number}`} onChange={(event) => event.target.value && void changeStatus(row.id, event.target.value)}>
-                  <option value="">Atualizar estado…</option>
-                  {['UNDER_REVIEW', 'RECEIVED', 'INSPECTED', 'REFUND_PENDING', 'REFUNDED', 'CLOSED'].map((status) => <option key={status}>{status}</option>)}
-                </select>
-              </td>
+              <td><Link href={`/devolucoes/${row.id}`}>{row.number}</Link><small>{new Date(row.createdAt).toLocaleString('pt-PT')}</small></td>
+              <td>{row.reason}</td>
+              <td>{row.resolution}</td>
+              <td>{row.status}</td>
+              <td><Link href={`/devolucoes/${row.id}`}>Gerir</Link></td>
             </tr>
           ))}
         </tbody>
@@ -207,26 +211,23 @@ function ReturnsTable({ rows, onChange }: { rows: ReturnRequest[]; onChange: () 
   );
 }
 
-function SupportTable({ rows, onChange }: { rows: SupportCase[]; onChange: () => Promise<void> }) {
+function SupportTable({ rows }: { rows: SupportCase[] }) {
   if (!rows.length) return <Empty />;
-  const changeStatus = async (id: string, status: string) => {
-    await managementApi.patch(`/v1/admin/support-cases/${id}`, { status });
-    await onChange();
-  };
   return (
     <div className="admin-table-wrap">
       <table>
-        <thead><tr><th>Caso</th><th>Assunto</th><th>Tipo</th><th>Prioridade</th><th>Estado</th></tr></thead>
+        <thead>
+          <tr><th>Caso</th><th>Assunto</th><th>Tipo</th><th>Prioridade</th><th>Estado</th><th></th></tr>
+        </thead>
         <tbody>
           {rows.map((row) => (
             <tr key={row.id}>
-              <td>{row.number}<small>{new Date(row.createdAt).toLocaleString('pt-PT')}</small></td>
-              <td>{row.subject}</td><td>{row.type}</td><td>{row.priority}</td>
-              <td>
-                <select value={row.status} onChange={(event) => void changeStatus(row.id, event.target.value)}>
-                  {['OPEN', 'IN_PROGRESS', 'WAITING_CUSTOMER', 'WAITING_CARRIER', 'RESOLVED', 'CLOSED'].map((status) => <option key={status}>{status}</option>)}
-                </select>
-              </td>
+              <td><Link href={`/apoio/${row.id}`}>{row.number}</Link><small>{new Date(row.createdAt).toLocaleString('pt-PT')}</small></td>
+              <td>{row.subject}</td>
+              <td>{row.type}</td>
+              <td>{row.priority}</td>
+              <td>{row.status}</td>
+              <td><Link href={`/apoio/${row.id}`}>Abrir</Link></td>
             </tr>
           ))}
         </tbody>
