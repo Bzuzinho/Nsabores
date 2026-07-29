@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "cross-env NEXT_TELEMETRY_DISABLED=1 turbo dev",
     "build": "cross-env NEXT_TELEMETRY_DISABLED=1 turbo build",
+    "start": "node scripts/railway-start.mjs",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
