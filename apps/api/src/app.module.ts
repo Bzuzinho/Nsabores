@@ -50,6 +50,11 @@ import {
 } from './promotions/promotions.controller';
 import { PromotionalCommerceService } from './promotions/promotional-commerce.service';
 import { PromotionsService } from './promotions/promotions.service';
+import {
+  AdminBundlesController,
+  PublicBundlesController,
+} from './bundles/bundles.controller';
+import { BundlesService } from './bundles/bundles.service';
 
 @Module({
   imports: [
@@ -141,6 +146,8 @@ import { PromotionsService } from './promotions/promotions.service';
     PublicPromotionsController,
     CartCouponController,
     AdminPromotionsController,
+    PublicBundlesController,
+    AdminBundlesController,
   ],
   providers: [
     PrismaService,
@@ -161,6 +168,7 @@ import { PromotionsService } from './promotions/promotions.service';
     ReturnRefundService,
     ReturnReplacementService,
     PromotionsService,
+    BundlesService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
