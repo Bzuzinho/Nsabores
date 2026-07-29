@@ -47,7 +47,8 @@ export class PromotionDto {
   @IsString() @IsNotEmpty() @MaxLength(150) name!: string;
   @IsString() @IsNotEmpty() @MaxLength(80) code!: string;
   @IsEnum(PromotionStatusDtoValue) status!: PromotionStatusDtoValue;
-  @IsEnum(PromotionBenefitTypeDtoValue) benefitType!: PromotionBenefitTypeDtoValue;
+  @IsEnum(PromotionBenefitTypeDtoValue)
+  benefitType!: PromotionBenefitTypeDtoValue;
   @IsInt() @Min(0) benefitValue!: number;
   @IsEnum(PromotionChannelDtoValue) channel!: PromotionChannelDtoValue;
   @IsOptional() @IsString() startsAt?: string;
@@ -75,4 +76,8 @@ export class CouponDto {
   @IsOptional() @IsInt() @Min(1) perUserLimit?: number;
   @IsEnum(PromotionChannelDtoValue) channel!: PromotionChannelDtoValue;
   @IsOptional() @IsInt() @Min(0) minimumCartCents?: number;
+}
+
+export class ApplyCouponDto {
+  @IsString() @IsNotEmpty() @MaxLength(80) code!: string;
 }
