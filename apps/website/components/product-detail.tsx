@@ -1,9 +1,16 @@
 'use client';
 
+import { ApiClient } from '@nsabores/api-client';
 import Image from 'next/image';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import type { Product } from '@/data/site';
 import { formatPrice } from '@/data/site';
 import { useShop } from './shop-context';
+
+const api = new ApiClient(
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000',
+);
 
 const availability = {
   IN_STOCK: 'Em stock',
@@ -14,10 +21,19 @@ const availability = {
 
 export function ProductDetail({ product }: { product: Product }) {
   const { addToCart } = useShop();
+  const [isBundle, setIsBundle] = useState(false);
   const images = [
     product.imageUrl,
     ...product.gallery.filter((image) => image !== product.imageUrl),
   ];
+
+  useEffect(() => {
+    void api
+      .get(`/v1/bundles/${product.slug}`)
+      .then(() => setIsBundle(true))
+      .catch(() => setIsBundle(false));
+  }, [product.slug]);
+
   return (
     <article className="product-detail">
       <div className="product-gallery">
@@ -40,13 +56,22 @@ export function ProductDetail({ product }: { product: Product }) {
           {formatPrice(product.priceCents)}
         </strong>
         <p>{availability[product.stockStatus]}</p>
-        <button
-          className="button button-primary"
-          disabled={product.stockStatus === 'OUT_OF_STOCK'}
-          onClick={() => void addToCart(product).catch(() => undefined)}
-        >
-          Adicionar ao carrinho
-        </button>
+        {isBundle ? (
+          <Link
+            className="button button-primary"
+            href={`/loja/cabazes/${product.slug}/personalizar`}
+          >
+            Personalizar cabaz
+          </Link>
+        ) : (
+          <button
+            className="button button-primary"
+            disabled={product.stockStatus === 'OUT_OF_STOCK'}
+            onClick={() => void addToCart(product).catch(() => undefined)}
+          >
+            Adicionar ao carrinho
+          </button>
+        )}
       </div>
     </article>
   );
