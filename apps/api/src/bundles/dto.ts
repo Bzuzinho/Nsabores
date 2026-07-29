@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
+  IsDateString,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -91,4 +92,27 @@ export class BundlePriceDto {
   selections!: BundleSelectionDto[];
 
   @IsOptional() @IsBoolean() specialPackaging?: boolean;
+}
+
+export class BundlePersonalizationDto {
+  @IsOptional() @IsString() @MaxLength(2000) giftMessage?: string;
+  @IsOptional() @IsString() @MaxLength(200) recipientName?: string;
+  @IsOptional() @IsBoolean() specialPackaging?: boolean;
+  @IsOptional() @IsDateString() requestedDate?: string;
+  @IsOptional() @IsString() @MaxLength(4000) notes?: string;
+  @IsOptional() @IsBoolean() hidePrice?: boolean;
+}
+
+export class BundleCartDto {
+  @IsInt() @Min(1) quantity!: number;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BundleSelectionDto)
+  selections!: BundleSelectionDto[];
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => BundlePersonalizationDto)
+  personalization?: BundlePersonalizationDto;
 }
