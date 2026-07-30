@@ -1,0 +1,32 @@
+enum ProductionPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum ProductionWorkStatus {
+  QUEUED
+  IN_PROGRESS
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+model ProductionWorkOrder {
+  id                String               @id @default(uuid()) @db.Uuid
+  orderId           String               @unique @db.Uuid
+  status            ProductionWorkStatus @default(QUEUED)
+  priority          ProductionPriority   @default(NORMAL)
+  targetDate        DateTime?
+  responsibleUserId String?              @db.Uuid
+  productionNotes   String?
+  startedAt         DateTime?
+  readyAt           DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @default(now()) @updatedAt
+
+  @@index([status, priority, targetDate])
+  @@index([responsibleUserId, status])
+}
