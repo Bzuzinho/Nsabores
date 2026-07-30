@@ -18,13 +18,29 @@ Estados de saldo da conta:
 
 Fluxos:
 
-- `EARN_PENDING` cria pontos pendentes;
-- `EARN_RELEASED` transfere pendentes para disponíveis;
+- `EARN_PENDING` cria pontos pendentes após pagamento;
+- `EARN_RELEASED` transfere pendentes para disponíveis quando termina o prazo da regra;
 - `REDEEM_RESERVED` reserva pontos para uma encomenda;
 - `REDEEMED` consome a reserva após pagamento;
 - `REDEEM_RELEASED` devolve uma reserva após falha/cancelamento;
-- `REVERSED` devolve pontos após reembolso;
+- `REVERSED` anula pontos ganhos após reembolso;
 - `ADJUSTMENT` regista ajustes administrativos.
+
+A libertação de pontos vencidos é executada de forma idempotente quando o cliente consulta a conta ou antes de reservar pontos no checkout.
+
+## Acumulação automática
+
+Depois de uma encomenda ficar `PAID`, a API seleciona a primeira regra ativa compatível com o canal e período.
+
+O valor elegível:
+
+- exclui a parte paga com pontos;
+- inclui a parte paga com vale-oferta, porque o vale representa dinheiro;
+- respeita o mínimo da regra;
+- aplica o multiplicador de membro do Clube quando existe subscrição válida;
+- respeita o máximo de pontos por encomenda.
+
+Os pontos entram primeiro em saldo pendente durante `pendingDays`.
 
 ## Vales-oferta
 
@@ -45,6 +61,17 @@ Fluxo de encomenda:
 3. libertação em falha/cancelamento;
 4. reposição em reembolso.
 
+## Compra pública de vales
+
+Rotas públicas:
+
+- `/vales-oferta`;
+- `/vales-oferta/comprar`;
+- `/vales-oferta/sucesso`;
+- `/vales-oferta/consultar`.
+
+A compra cria `GiftCardPurchase` em `PENDING_PAYMENT`. O vale só é emitido após confirmação do pagamento. No provider mock, a confirmação é idempotente e o código integral é apresentado uma única vez.
+
 ## Checkout
 
 A ordem de aplicação é:
@@ -59,12 +86,19 @@ A ordem de aplicação é:
 A encomenda guarda snapshots em `OrderLoyaltyApplication` e `OrderGiftCardApplication`.
 Encomendas totalmente liquidadas com pontos/vale passam diretamente a `PAID`.
 
+Em reembolso:
+
+- pontos utilizados regressam ao saldo disponível;
+- saldo consumido regressa ao vale;
+- pontos ganhos pela própria encomenda são revertidos.
+
 ## Operações
 
 Website:
 
 - `/conta/fidelizacao`;
-- utilização de pontos e vale no checkout.
+- utilização de pontos e vale no checkout;
+- compra e consulta pública de vales.
 
 Management:
 
@@ -73,6 +107,18 @@ Management:
 - `/fidelizacao/clientes/[id]`;
 - `/vales-oferta`;
 - `/vales-oferta/[id]`.
+
+## Testes
+
+O CI executa:
+
+- smoke do ledger de pontos e vales;
+- smoke integral do checkout através do `CommerceService` resolvido pelo Nest;
+- reserva de stock;
+- aplicação de 1.000 pontos e vale de 20 €;
+- pagamento mock;
+- consumo dos benefícios;
+- acumulação pendente após pagamento.
 
 ## Deployment
 
