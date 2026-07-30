@@ -168,6 +168,7 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
       result = await super.refund(id, authorId);
     }
     await this.loyaltyOrders.refund(id);
+    await this.loyaltyEarning.reverseForRefundedOrder(id);
     return result;
   }
 
