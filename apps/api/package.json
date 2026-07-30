@@ -5,7 +5,6 @@
   "scripts": {
     "dev": "nest start --watch",
     "build": "prisma generate && nest build",
-    "build:smoke": "tsc -p tsconfig.smoke.json",
     "start": "nest start",
     "start:prod": "node dist/main.js",
     "lint": "eslint \"src/**/*.ts\"",
@@ -17,7 +16,7 @@
     "validate:issue18": "tsx scripts/validate-issue-18.ts",
     "validate:club": "tsx scripts/validate-club-lifecycle.ts",
     "validate:loyalty": "tsx scripts/smoke-loyalty.ts",
-    "validate:loyalty-checkout": "pnpm build:smoke && node dist-smoke/scripts/smoke-loyalty-checkout.js"
+    "validate:loyalty-checkout": "pnpm build && node dist/smoke-loyalty-checkout.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.3",
