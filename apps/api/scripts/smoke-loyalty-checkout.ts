@@ -2,14 +2,17 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { NestFactory } from '@nestjs/core';
 import { CommerceService } from '../src/commerce/commerce.service';
+import { ManualPaymentService } from '../src/commerce/manual-payment.service';
 import { LoyaltyService } from '../src/loyalty/loyalty.service';
 import { PrismaService } from '../src/prisma.service';
 
 async function main() {
   process.env.NODE_ENV = 'test';
   process.env.AUTH_ACCESS_TOKEN_SECRET =
-    process.env.AUTH_ACCESS_TOKEN_SECRET ?? 'checkout-smoke-secret-with-more-than-32-characters';
+    process.env.AUTH_ACCESS_TOKEN_SECRET ??
+    'checkout-smoke-secret-with-more-than-32-characters';
   process.env.PAYMENT_PROVIDER = 'mock';
+  process.env.PAYMENT_FLOW_MODE = 'manual';
 
   const { AppModule } = await import('../src/app.module');
   const app = await NestFactory.createApplicationContext(AppModule, {
@@ -17,6 +20,7 @@ async function main() {
   });
   const prisma = app.get(PrismaService);
   const commerce = app.get(CommerceService);
+  const manualPayments = app.get(ManualPaymentService);
   const loyalty = app.get(LoyaltyService);
   const suffix = randomUUID().slice(0, 8).toUpperCase();
 
@@ -127,38 +131,35 @@ async function main() {
   )) as Record<string, unknown>;
 
   assert.equal(order.totalCents, 2000);
+  assert.equal(order.status, 'PROCESSING');
+  assert.equal(order.paymentStatus, 'PENDING');
+  assert.equal(order.paymentFlowMode, 'manual');
+
   const benefits = order.benefits as {
     loyalty: { status: string; points: number };
     giftCard: { status: string; amountCents: number };
   };
-  assert.equal(benefits.loyalty.status, 'RESERVED');
+  assert.equal(benefits.loyalty.status, 'CONSUMED');
   assert.equal(benefits.loyalty.points, 1000);
-  assert.equal(benefits.giftCard.status, 'RESERVED');
+  assert.equal(benefits.giftCard.status, 'CONSUMED');
   assert.equal(benefits.giftCard.amountCents, 2000);
 
-  const payment = await commerce.startPayment(
-    String(order.id),
-    user.id,
-    `checkout:${suffix}:payment`,
-  );
-  await commerce.confirmMock(payment.providerPaymentId);
+  const beforePayment = (await loyalty.account(user.id)) as Record<string, unknown>;
+  assert.equal(beforePayment.availablePoints, 0);
+  assert.equal(beforePayment.reservedPoints, 0);
+  assert.equal(beforePayment.pendingPoints, 0);
+
+  await manualPayments.markReceived(String(order.id), user.id, {
+    method: 'transferência',
+    reference: `SMOKE-${suffix}`,
+    note: 'Pagamento manual confirmado no smoke.',
+  });
 
   const paid = await prisma.order.findUniqueOrThrow({
     where: { id: String(order.id) },
   });
-  assert.equal(paid.status, 'PAID');
+  assert.equal(paid.status, 'PROCESSING');
   assert.equal(paid.paymentStatus, 'PAID');
-
-  const applications = await prisma.$queryRaw<
-    Array<{ loyaltyStatus: string; giftCardStatus: string }>
-  >`
-    SELECT ola."status"::text AS "loyaltyStatus", oga."status"::text AS "giftCardStatus"
-    FROM "OrderLoyaltyApplication" ola
-    JOIN "OrderGiftCardApplication" oga ON oga."orderId" = ola."orderId"
-    WHERE ola."orderId" = ${String(order.id)}::uuid
-  `;
-  assert.equal(applications[0]?.loyaltyStatus, 'CONSUMED');
-  assert.equal(applications[0]?.giftCardStatus, 'CONSUMED');
 
   const account = (await loyalty.account(user.id)) as Record<string, unknown>;
   assert.equal(account.availablePoints, 0);
@@ -173,7 +174,7 @@ async function main() {
   assert.equal(card.reservedCents, 0);
   assert.equal(card.status, 'DEPLETED');
 
-  console.log('Full loyalty checkout smoke passed.');
+  console.log('Manual payment loyalty checkout smoke passed.');
   await app.close();
 }
 
