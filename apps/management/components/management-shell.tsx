@@ -25,6 +25,7 @@ export function ManagementShell({ children }: { children: ReactNode }) {
           <Link href="/clube">Clube Nsabores</Link>
           <Link href="/fidelizacao">Fidelização</Link>
           <Link href="/vales-oferta">Vales-oferta</Link>
+          <Link href="/vales-oferta/pedidos">Pagamentos de vales</Link>
           <Link href="/stock">Stock</Link>
           <Link href="/stock/inventarios">Inventários</Link>
           <Link href="/fornecedores">Fornecedores</Link>
