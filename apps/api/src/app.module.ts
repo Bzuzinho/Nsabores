@@ -89,6 +89,7 @@ import { LoyaltyCommerceService } from './loyalty/loyalty-commerce.service';
 import { LoyaltyEarningService } from './loyalty/loyalty-earning.service';
 import { LoyaltyLedgerService } from './loyalty/loyalty-ledger.service';
 import { LoyaltyOrderService } from './loyalty/loyalty-order.service';
+import { LoyaltyReleaseService } from './loyalty/loyalty-release.service';
 import { LoyaltyReversalService } from './loyalty/loyalty-reversal.service';
 import { LoyaltyService } from './loyalty/loyalty.service';
 
@@ -238,6 +239,7 @@ import { LoyaltyService } from './loyalty/loyalty.service';
     LoyaltyService,
     LoyaltyLedgerService,
     LoyaltyEarningService,
+    LoyaltyReleaseService,
     LoyaltyReversalService,
     LoyaltyOrderService,
     GiftCardPurchaseService,
