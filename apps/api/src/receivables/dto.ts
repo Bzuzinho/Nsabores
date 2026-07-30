@@ -1,4 +1,11 @@
-import { IsEnum, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export enum AgreementStatusDto {
   TO_AGREE = 'TO_AGREE',
@@ -29,21 +36,66 @@ export enum ContactChannelDto {
 }
 
 export class UpdateAgreementDto {
-  @IsOptional() @IsEnum(AgreementStatusDto) status?: AgreementStatusDto;
-  @IsOptional() @IsString() @MaxLength(100) method?: string;
-  @IsOptional() @IsInt() @Min(0) expectedAmountCents?: number;
-  @IsOptional() @IsString() dueAt?: string;
-  @IsOptional() @IsString() @MaxLength(200) publicReference?: string;
-  @IsOptional() @IsString() @MaxLength(200) internalReference?: string;
-  @IsOptional() @IsString() responsibleUserId?: string;
-  @IsOptional() @IsString() @MaxLength(3000) internalNotes?: string;
+  @IsOptional()
+  @IsEnum(AgreementStatusDto)
+  status?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  method?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  expectedAmountCents?: number;
+
+  @IsOptional()
+  @IsString()
+  dueAt?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  publicReference?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  internalReference?: string;
+
+  @IsOptional()
+  @IsString()
+  responsibleUserId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(3000)
+  internalNotes?: string;
 }
 
 export class CreateContactEventDto {
-  @IsEnum(ContactTypeDto) type!: ContactTypeDto;
-  @IsOptional() @IsEnum(ContactChannelDto) channel?: ContactChannelDto;
-  @IsString() @MaxLength(2000) note!: string;
-  @IsOptional() @IsString() nextContactAt?: string;
-  @IsOptional() @IsString() promisedPaymentAt?: string;
-  @IsOptional() @IsString() @MaxLength(120) idempotencyKey?: string;
+  @IsEnum(ContactTypeDto)
+  type!: string;
+
+  @IsOptional()
+  @IsEnum(ContactChannelDto)
+  channel?: string;
+
+  @IsString()
+  @MaxLength(2000)
+  note!: string;
+
+  @IsOptional()
+  @IsString()
+  nextContactAt?: string;
+
+  @IsOptional()
+  @IsString()
+  promisedPaymentAt?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  idempotencyKey?: string;
 }
