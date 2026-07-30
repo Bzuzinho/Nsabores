@@ -14,6 +14,10 @@ import { LoyaltyEarningService } from './loyalty-earning.service';
 import { LoyaltyOrderService } from './loyalty-order.service';
 
 type CartIdentity = { userId?: string; sessionId?: string };
+type CheckoutResult = Awaited<
+  ReturnType<BundleAwareCommerceService['checkout']>
+>;
+type RefundResult = Awaited<ReturnType<BundleAwareCommerceService['refund']>>;
 
 @Injectable()
 export class LoyaltyCommerceService extends BundleAwareCommerceService {
@@ -29,14 +33,26 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
     private readonly config: ConfigService,
     private readonly receivables: ReceivablesService,
   ) {
-    super(loyaltyPrisma, payments, mail, loyaltyOperations, promotions, bundleInventory);
+    super(
+      loyaltyPrisma,
+      payments,
+      mail,
+      loyaltyOperations,
+      promotions,
+      bundleInventory,
+    );
   }
 
   private manualFlow() {
-    return (this.config.get<string>('PAYMENT_FLOW_MODE') ?? 'manual') === 'manual';
+    return (
+      (this.config.get<string>('PAYMENT_FLOW_MODE') ?? 'manual') === 'manual'
+    );
   }
 
-  override async checkout(identity: CartIdentity, body: CheckoutDto) {
+  override async checkout(
+    identity: CartIdentity,
+    body: CheckoutDto,
+  ): Promise<CheckoutResult> {
     const cart = await super.cart(identity);
     const order = await super.checkout(identity, body);
     try {
@@ -59,7 +75,9 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
           data: {
             status: OrderStatus.PROCESSING,
             paymentStatus:
-              refreshed.totalCents === 0 ? PaymentStatus.PAID : PaymentStatus.PENDING,
+              refreshed.totalCents === 0
+                ? PaymentStatus.PAID
+                : PaymentStatus.PENDING,
             statusHistory: {
               create: {
                 fromStatus: OrderStatus.PENDING_PAYMENT,
@@ -74,13 +92,15 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
         });
         await this.receivables.ensureAgreement(order.id);
         if (refreshed.totalCents === 0) {
-          await this.receivables.markPaid(
-            order.id,
-            identity.userId,
-            'beneficios-internos',
-            undefined,
-            'Encomenda integralmente liquidada com pontos e/ou vale-oferta.',
-          );
+          await this.receivables
+            .markPaid(
+              order.id,
+              identity.userId,
+              'beneficios-internos',
+              undefined,
+              'Encomenda integralmente liquidada com pontos e/ou vale-oferta.',
+            )
+            .catch(() => undefined);
           await this.loyaltyEarning.accrueForPaidOrder(order.id);
         }
       } else if (
@@ -122,10 +142,18 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
       });
       throw error;
     }
-    return this.orderWithBenefits(order.id);
+    const finalOrder = await this.orderWithBenefits(order.id);
+    return {
+      ...finalOrder,
+      discounts: order.discounts,
+    } as CheckoutResult;
   }
 
-  override async startPayment(orderId: string, userId: string | undefined, key: string) {
+  override async startPayment(
+    orderId: string,
+    userId: string | undefined,
+    key: string,
+  ) {
     if (this.manualFlow()) {
       throw new ConflictException(
         'O pagamento desta encomenda é combinado diretamente com a empresa e confirmado manualmente.',
@@ -134,7 +162,11 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
     return super.startPayment(orderId, userId, key);
   }
 
-  override async webhook(rawPayload: string, signature: string | undefined, body: MockWebhookDto) {
+  override async webhook(
+    rawPayload: string,
+    signature: string | undefined,
+    body: MockWebhookDto,
+  ) {
     const result = await super.webhook(rawPayload, signature, body);
     const payment = await this.loyaltyPrisma.payment.findUnique({
       where: { providerPaymentId: body.providerPaymentId },
@@ -167,7 +199,12 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
     return result;
   }
 
-  override async changeStatus(id: string, status: OrderStatus, authorId: string, note?: string) {
+  override async changeStatus(
+    id: string,
+    status: OrderStatus,
+    authorId: string,
+    note?: string,
+  ) {
     const result = await super.changeStatus(id, status, authorId, note);
     if (status === OrderStatus.CANCELLED) {
       if (this.manualFlow()) await this.loyaltyOrders.refund(id);
@@ -176,16 +213,18 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
     return result;
   }
 
-  override async refund(id: string, authorId: string) {
+  override async refund(id: string, authorId: string): Promise<RefundResult> {
     const order = await this.loyaltyPrisma.order.findUnique({
       where: { id },
       select: { id: true, totalCents: true, status: true, paymentStatus: true },
     });
     if (!order) throw new ConflictException('Encomenda não encontrada.');
 
-    let result;
-    if (order.totalCents === 0 && order.paymentStatus === PaymentStatus.PAID) {
-      result = await this.loyaltyPrisma.order.update({
+    if (
+      order.totalCents === 0 &&
+      order.paymentStatus === PaymentStatus.PAID
+    ) {
+      await this.loyaltyPrisma.order.update({
         where: { id },
         data: {
           status: OrderStatus.REFUNDED,
@@ -201,11 +240,11 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
         },
       });
     } else {
-      result = await super.refund(id, authorId);
+      await super.refund(id, authorId);
     }
     await this.loyaltyOrders.refund(id);
     await this.loyaltyEarning.reverseForRefundedOrder(id);
-    return result;
+    return (await this.orderWithBenefits(id)) as RefundResult;
   }
 
   private async orderWithBenefits(orderId: string) {
@@ -221,6 +260,10 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
       }),
       this.loyaltyOrders.applications(orderId),
     ]);
-    return { ...order, benefits, paymentFlowMode: this.manualFlow() ? 'manual' : 'automatic' };
+    return {
+      ...order,
+      benefits,
+      paymentFlowMode: this.manualFlow() ? 'manual' : 'automatic',
+    };
   }
 }
