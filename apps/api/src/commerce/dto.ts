@@ -70,6 +70,12 @@ export class PaymentStartDto {
   @IsString() @IsNotEmpty() @MaxLength(100) idempotencyKey!: string;
 }
 
+export class ManualPaymentDto {
+  @IsOptional() @IsString() @MaxLength(80) method?: string;
+  @IsOptional() @IsString() @MaxLength(160) reference?: string;
+  @IsOptional() @IsString() @MaxLength(1000) note?: string;
+}
+
 export class MockWebhookDto {
   @IsString() @IsNotEmpty() eventId!: string;
   @IsString() @IsNotEmpty() providerPaymentId!: string;
