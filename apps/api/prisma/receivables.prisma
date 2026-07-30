@@ -1,0 +1,64 @@
+enum PaymentAgreementStatus {
+  TO_AGREE
+  AGREED
+  AWAITING_PAYMENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentContactType {
+  CONTACT_ATTEMPT
+  CONTACT_COMPLETED
+  INSTRUCTIONS_SENT
+  PAYMENT_PROMISE
+  PROOF_RECEIVED
+  PAYMENT_CONFIRMED
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentContactChannel {
+  PHONE
+  EMAIL
+  WHATSAPP
+  IN_PERSON
+  OTHER
+}
+
+model PaymentAgreement {
+  id                  String                 @id @default(uuid()) @db.Uuid
+  orderId             String                 @unique @db.Uuid
+  status              PaymentAgreementStatus @default(TO_AGREE)
+  method              String?
+  expectedAmountCents Int
+  dueAt               DateTime?
+  publicReference     String?
+  internalReference   String?
+  responsibleUserId   String?                @db.Uuid
+  internalNotes       String?
+  agreedAt            DateTime?
+  paidAt              DateTime?
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @default(now()) @updatedAt
+
+  @@index([status, dueAt])
+  @@index([responsibleUserId, status])
+}
+
+model PaymentContactEvent {
+  id                String                @id @default(uuid()) @db.Uuid
+  agreementId       String                @db.Uuid
+  type              PaymentContactType
+  channel           PaymentContactChannel?
+  note              String
+  authorId          String?               @db.Uuid
+  nextContactAt     DateTime?
+  promisedPaymentAt DateTime?
+  metadata          Json?
+  idempotencyKey    String?               @unique
+  createdAt         DateTime              @default(now())
+
+  @@index([agreementId, createdAt])
+  @@index([nextContactAt])
+}
