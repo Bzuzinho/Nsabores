@@ -84,6 +84,7 @@ import {
   PublicGiftCardController,
 } from './loyalty/loyalty.controller';
 import { LoyaltyCommerceService } from './loyalty/loyalty-commerce.service';
+import { LoyaltyEarningService } from './loyalty/loyalty-earning.service';
 import { LoyaltyLedgerService } from './loyalty/loyalty-ledger.service';
 import { LoyaltyOrderService } from './loyalty/loyalty-order.service';
 import { LoyaltyReversalService } from './loyalty/loyalty-reversal.service';
@@ -233,6 +234,7 @@ import { LoyaltyService } from './loyalty/loyalty.service';
     ClubOperationsService,
     LoyaltyService,
     LoyaltyLedgerService,
+    LoyaltyEarningService,
     LoyaltyReversalService,
     LoyaltyOrderService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
