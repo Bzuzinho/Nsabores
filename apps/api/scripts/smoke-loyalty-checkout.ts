@@ -5,6 +5,7 @@ import { CommerceService } from '../src/commerce/commerce.service';
 import { ManualPaymentService } from '../src/commerce/manual-payment.service';
 import { LoyaltyService } from '../src/loyalty/loyalty.service';
 import { PrismaService } from '../src/prisma.service';
+import { ReceivablesService } from '../src/receivables/receivables.service';
 
 async function main() {
   process.env.NODE_ENV = 'test';
@@ -22,6 +23,7 @@ async function main() {
   const commerce = app.get(CommerceService);
   const manualPayments = app.get(ManualPaymentService);
   const loyalty = app.get(LoyaltyService);
+  const receivables = app.get(ReceivablesService);
   const suffix = randomUUID().slice(0, 8).toUpperCase();
 
   const user = await prisma.user.create({
@@ -135,6 +137,30 @@ async function main() {
   assert.equal(order.paymentStatus, 'PENDING');
   assert.equal(order.paymentFlowMode, 'manual');
 
+  const agreement = (await receivables.detail(String(order.id))) as Record<
+    string,
+    unknown
+  >;
+  assert.equal(agreement.status, 'TO_AGREE');
+  assert.equal(agreement.expectedAmountCents, 2000);
+
+  await receivables.addEvent(
+    String(order.id),
+    {
+      type: 'PAYMENT_PROMISE',
+      channel: 'PHONE',
+      note: 'Cliente comprometeu-se a pagar amanhã.',
+      promisedPaymentAt: new Date(Date.now() + 86_400_000).toISOString(),
+      idempotencyKey: `checkout:${suffix}:promise`,
+    },
+    user.id,
+  );
+  const promised = (await receivables.detail(String(order.id))) as Record<
+    string,
+    unknown
+  >;
+  assert.equal(promised.status, 'AWAITING_PAYMENT');
+
   const benefits = order.benefits as {
     loyalty: { status: string; points: number };
     giftCard: { status: string; amountCents: number };
@@ -154,12 +180,25 @@ async function main() {
     reference: `SMOKE-${suffix}`,
     note: 'Pagamento manual confirmado no smoke.',
   });
+  await manualPayments.markReceived(String(order.id), user.id, {
+    method: 'transferência',
+    reference: `SMOKE-${suffix}`,
+    note: 'Pagamento manual confirmado no smoke.',
+  });
 
   const paid = await prisma.order.findUniqueOrThrow({
     where: { id: String(order.id) },
   });
   assert.equal(paid.status, 'PROCESSING');
   assert.equal(paid.paymentStatus, 'PAID');
+
+  const paidAgreement = (await receivables.detail(String(order.id))) as Record<
+    string,
+    unknown
+  >;
+  assert.equal(paidAgreement.status, 'PAID');
+  const events = paidAgreement.events as Array<{ type: string }>;
+  assert.equal(events.filter(({ type }) => type === 'PAYMENT_CONFIRMED').length, 1);
 
   const account = (await loyalty.account(user.id)) as Record<string, unknown>;
   assert.equal(account.availablePoints, 0);
@@ -174,7 +213,7 @@ async function main() {
   assert.equal(card.reservedCents, 0);
   assert.equal(card.status, 'DEPLETED');
 
-  console.log('Manual payment loyalty checkout smoke passed.');
+  console.log('Manual payment, receivables and loyalty checkout smoke passed.');
   await app.close();
 }
 
