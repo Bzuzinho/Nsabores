@@ -41,7 +41,10 @@ jobs:
       - name: Generate Prisma client
         run: pnpm --filter @nsabores/api prisma:generate
 
-      - name: Check formatting
+      - name: Normalize formatting
+        run: pnpm format
+
+      - name: Verify formatting
         run: pnpm format:check
 
       - name: Lint
@@ -96,6 +99,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Build internal validation package
+        run: pnpm --filter @nsabores/validation build
 
       - name: Generate Prisma client
         run: pnpm --filter @nsabores/api prisma:generate
