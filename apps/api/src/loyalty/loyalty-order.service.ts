@@ -2,10 +2,13 @@ import { createHash, randomUUID } from 'node:crypto';
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { LoyaltyLedgerService } from './loyalty-ledger.service';
+import { LoyaltyReleaseService } from './loyalty-release.service';
 import { LoyaltyReversalService } from './loyalty-reversal.service';
 
-const normalizeCode = (value: string) => value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-const hashCode = (value: string) => createHash('sha256').update(normalizeCode(value)).digest('hex');
+const normalizeCode = (value: string) =>
+  value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+const hashCode = (value: string) =>
+  createHash('sha256').update(normalizeCode(value)).digest('hex');
 
 type LoyaltyApplication = {
   id: string;
@@ -30,6 +33,7 @@ export class LoyaltyOrderService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ledger: LoyaltyLedgerService,
+    private readonly releases: LoyaltyReleaseService,
     private readonly reversals: LoyaltyReversalService,
   ) {}
 
@@ -51,7 +55,11 @@ export class LoyaltyOrderService {
 
     try {
       if (requestedPoints) {
-        if (!userId) throw new ConflictException('É necessário iniciar sessão para utilizar pontos.');
+        if (!userId)
+          throw new ConflictException(
+            'É necessário iniciar sessão para utilizar pontos.',
+          );
+        await this.releases.releaseDueForUser(userId);
         loyaltyReserved = Math.min(requestedPoints, remaining);
         if (loyaltyReserved > 0) {
           await this.ledger.reservePoints(
@@ -79,12 +87,14 @@ export class LoyaltyOrderService {
         `;
         const card = cards[0];
         if (!card) throw new NotFoundException('Vale-oferta não encontrado.');
-        if (card.status !== 'ACTIVE') throw new ConflictException('O vale-oferta não está ativo.');
+        if (card.status !== 'ACTIVE')
+          throw new ConflictException('O vale-oferta não está ativo.');
         if (card.expiresAt && card.expiresAt <= new Date()) {
           throw new ConflictException('O vale-oferta expirou.');
         }
         giftCardReserved = Math.min(card.balanceCents, remaining);
-        if (giftCardReserved <= 0) throw new ConflictException('O vale-oferta não tem saldo disponível.');
+        if (giftCardReserved <= 0)
+          throw new ConflictException('O vale-oferta não tem saldo disponível.');
         giftCardId = card.id;
         codeLast4 = card.codeLast4;
         await this.ledger.reserveGiftCard(
