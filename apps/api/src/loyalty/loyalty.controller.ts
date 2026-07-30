@@ -1,17 +1,36 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { CurrentUser, Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
 import type { AuthPrincipal } from '../auth/auth.types';
-import { GiftCardBlockDto, GiftCardLookupDto, IssueGiftCardDto, LoyaltyAdjustmentDto, LoyaltyRuleDto } from './dto';
+import {
+  GiftCardBlockDto,
+  GiftCardLookupDto,
+  IssueGiftCardDto,
+  LoyaltyAdjustmentDto,
+  LoyaltyRuleDto,
+} from './dto';
+import { LoyaltyReleaseService } from './loyalty-release.service';
 import { LoyaltyService } from './loyalty.service';
 
 @UseGuards(AuthGuard)
 @Controller('v1/account/loyalty')
 export class AccountLoyaltyController {
-  constructor(private readonly loyalty: LoyaltyService) {}
+  constructor(
+    private readonly loyalty: LoyaltyService,
+    private readonly releases: LoyaltyReleaseService,
+  ) {}
 
   @Get()
-  account(@CurrentUser() user: AuthPrincipal) {
+  async account(@CurrentUser() user: AuthPrincipal) {
+    await this.releases.releaseDueForUser(user.sub);
     return this.loyalty.account(user.sub);
   }
 }
@@ -30,7 +49,10 @@ export class PublicGiftCardController {
 @Roles('STAFF', 'ADMIN')
 @Controller('v1/admin/loyalty')
 export class AdminLoyaltyController {
-  constructor(private readonly loyalty: LoyaltyService) {}
+  constructor(
+    private readonly loyalty: LoyaltyService,
+    private readonly releases: LoyaltyReleaseService,
+  ) {}
 
   @Get('rules')
   rules() {
@@ -43,7 +65,8 @@ export class AdminLoyaltyController {
   }
 
   @Get('accounts/:userId')
-  account(@Param('userId') userId: string) {
+  async account(@Param('userId') userId: string) {
+    await this.releases.releaseDueForUser(userId);
     return this.loyalty.account(userId);
   }
 
