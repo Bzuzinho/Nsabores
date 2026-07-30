@@ -1,6 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import { ConflictException, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { LoyaltyLedgerService } from './loyalty-ledger.service';
+
+const serializable = { isolationLevel: 'Serializable' as const };
 
 type RuleRow = {
   id: string;
@@ -62,7 +66,11 @@ export class LoyaltyEarningService {
 
     // Gift cards are money; redeemed loyalty points are not eligible spend.
     const eligibleCents = order.totalCents + order.giftCardAmountCents;
-    if (rule.minimumOrderCents !== null && eligibleCents < rule.minimumOrderCents) return null;
+    if (
+      rule.minimumOrderCents !== null &&
+      eligibleCents < rule.minimumOrderCents
+    )
+      return null;
 
     let points = Math.floor(eligibleCents / 100) * rule.pointsPerEuro;
     if (order.hasClub) {
@@ -81,5 +89,76 @@ export class LoyaltyEarningService {
       availableAt,
       order.id,
     );
+  }
+
+  async reverseForRefundedOrder(orderId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const duplicate = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id" FROM "LoyaltyTransaction"
+        WHERE "idempotencyKey" = ${`order:${orderId}:loyalty:earn-reversal`}
+        LIMIT 1
+      `;
+      if (duplicate[0]) return duplicate[0];
+
+      const earnings = await tx.$queryRaw<
+        Array<{ accountId: string; points: number }>
+      >`
+        SELECT "accountId", "points"
+        FROM "LoyaltyTransaction"
+        WHERE "idempotencyKey" = ${`order:${orderId}:loyalty:earn`}
+          AND "type" = 'EARN_PENDING'::"LoyaltyTransactionType"
+        LIMIT 1
+      `;
+      const earning = earnings[0];
+      if (!earning) return null;
+
+      const accounts = await tx.$queryRaw<
+        Array<{
+          availablePoints: number;
+          pendingPoints: number;
+          reservedPoints: number;
+          lifetimeEarnedPoints: number;
+        }>
+      >`
+        SELECT "availablePoints", "pendingPoints", "reservedPoints", "lifetimeEarnedPoints"
+        FROM "LoyaltyAccount" WHERE "id" = ${earning.accountId}::uuid FOR UPDATE
+      `;
+      const account = accounts[0];
+      if (!account) return null;
+
+      const pendingDeduction = Math.min(account.pendingPoints, earning.points);
+      const remaining = earning.points - pendingDeduction;
+      if (account.availablePoints < remaining) {
+        throw new ConflictException(
+          'Não é possível reverter os pontos ganhos: o saldo já foi utilizado.',
+        );
+      }
+      const pending = account.pendingPoints - pendingDeduction;
+      const available = account.availablePoints - remaining;
+      const lifetime = Math.max(0, account.lifetimeEarnedPoints - earning.points);
+
+      await tx.$executeRaw`
+        UPDATE "LoyaltyAccount"
+        SET "pendingPoints" = ${pending}, "availablePoints" = ${available},
+            "lifetimeEarnedPoints" = ${lifetime}, "updatedAt" = CURRENT_TIMESTAMP
+        WHERE "id" = ${earning.accountId}::uuid
+      `;
+      const id = randomUUID();
+      await tx.$executeRaw`
+        INSERT INTO "LoyaltyTransaction" (
+          "id", "accountId", "orderId", "type", "status", "points",
+          "availableBalanceAfter", "pendingBalanceAfter", "reservedBalanceAfter",
+          "idempotencyKey", "note", "metadata", "createdAt"
+        ) VALUES (
+          ${id}::uuid, ${earning.accountId}::uuid, ${orderId}::uuid,
+          'REVERSED'::"LoyaltyTransactionType", 'COMPLETED'::"LoyaltyTransactionStatus",
+          ${-earning.points}, ${available}, ${pending}, ${account.reservedPoints},
+          ${`order:${orderId}:loyalty:earn-reversal`},
+          'Pontos ganhos revertidos após reembolso da encomenda.',
+          ${JSON.stringify({ source: 'ORDER_REFUND' })}::jsonb, CURRENT_TIMESTAMP
+        )
+      `;
+      return { id };
+    }, serializable as Prisma.TransactionOptions);
   }
 }
