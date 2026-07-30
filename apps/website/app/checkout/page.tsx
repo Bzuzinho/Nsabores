@@ -38,10 +38,7 @@ export default function CheckoutPage() {
   }, []);
 
   useEffect(() => {
-    if (!user) {
-      setLoyalty(null);
-      return;
-    }
+    if (!user) return;
     void api
       .get<LoyaltyAccount>('/v1/account/loyalty')
       .then(setLoyalty)
@@ -134,15 +131,42 @@ export default function CheckoutPage() {
           confirmado pela empresa.
         </p>
         {!cart?.items.length && <p>O carrinho está vazio.</p>}
-        <label>Email<input name="email" type="email" defaultValue={user?.email} required /></label>
-        <label>Telefone<input name="phone" type="tel" defaultValue={user?.phone ?? ''} required /></label>
-        <label>Nome<input name="firstName" defaultValue={user?.firstName} required /></label>
-        <label>Apelido<input name="lastName" defaultValue={user?.lastName} required /></label>
-        <label>Morada<input name="line1" required /></label>
-        <label>Complemento<input name="line2" /></label>
-        <label>Código postal<input name="postalCode" pattern="\d{4}-\d{3}" placeholder="0000-000" required /></label>
-        <label>Localidade<input name="city" required /></label>
-        <label>NIF (opcional)<input name="taxNumber" pattern="\d{9}" /></label>
+        <label>
+          Email
+          <input name="email" type="email" defaultValue={user?.email} required />
+        </label>
+        <label>
+          Telefone
+          <input name="phone" type="tel" defaultValue={user?.phone ?? ''} required />
+        </label>
+        <label>
+          Nome
+          <input name="firstName" defaultValue={user?.firstName} required />
+        </label>
+        <label>
+          Apelido
+          <input name="lastName" defaultValue={user?.lastName} required />
+        </label>
+        <label>
+          Morada
+          <input name="line1" required />
+        </label>
+        <label>
+          Complemento
+          <input name="line2" />
+        </label>
+        <label>
+          Código postal
+          <input name="postalCode" pattern="\d{4}-\d{3}" placeholder="0000-000" required />
+        </label>
+        <label>
+          Localidade
+          <input name="city" required />
+        </label>
+        <label>
+          NIF (opcional)
+          <input name="taxNumber" pattern="\d{9}" />
+        </label>
         <label>
           Método de entrega
           <select
@@ -150,7 +174,11 @@ export default function CheckoutPage() {
             required
             onChange={(event) => {
               const method = methods.find(({ id }) => id === event.target.value);
-              if (method) setMethods([method, ...methods.filter(({ id }) => id !== method.id)]);
+              if (method)
+                setMethods([
+                  method,
+                  ...methods.filter(({ id }) => id !== method.id),
+                ]);
             }}
           >
             {methods.map((method) => (
@@ -169,9 +197,13 @@ export default function CheckoutPage() {
               min="0"
               max={Math.min(loyalty.availablePoints, estimatedBeforeBenefits)}
               value={points}
-              onChange={(event) => setPoints(Math.max(0, Number(event.target.value) || 0))}
+              onChange={(event) =>
+                setPoints(Math.max(0, Number(event.target.value) || 0))
+              }
             />
-            <small>Disponíveis: {loyalty.availablePoints}. 1 ponto corresponde a 1 cêntimo.</small>
+            <small>
+              Disponíveis: {loyalty.availablePoints}. 1 ponto corresponde a 1 cêntimo.
+            </small>
           </label>
         )}
 
@@ -186,10 +218,22 @@ export default function CheckoutPage() {
           <small>O saldo e a validade são confirmados no servidor.</small>
         </label>
 
-        <label>Notas<textarea name="customerNotes" /></label>
-        <label><input name="termsAccepted" type="checkbox" required /> Aceito os <a href="/termos">termos e condições</a>.</label>
-        <label><input name="privacyAccepted" type="checkbox" required /> Li a <a href="/privacidade">política de privacidade</a>.</label>
-        <label><input name="marketingConsent" type="checkbox" /> Quero receber novidades (opcional).</label>
+        <label>
+          Notas
+          <textarea name="customerNotes" />
+        </label>
+        <label>
+          <input name="termsAccepted" type="checkbox" required /> Aceito os{' '}
+          <a href="/termos">termos e condições</a>.
+        </label>
+        <label>
+          <input name="privacyAccepted" type="checkbox" required /> Li a{' '}
+          <a href="/privacidade">política de privacidade</a>.
+        </label>
+        <label>
+          <input name="marketingConsent" type="checkbox" /> Quero receber novidades
+          (opcional).
+        </label>
 
         <div className="checkout-summary">
           <p>Subtotal: {formatPrice(cart?.subtotalCents ?? 0)}</p>
@@ -197,18 +241,32 @@ export default function CheckoutPage() {
             .filter((discount) => !discount.freeShipping)
             .map((discount, index) => (
               <p key={`${discount.promotionId ?? discount.label}-${index}`}>
-                {discount.label}{discount.code ? ` (${discount.code})` : ''}: −{formatPrice(discount.amountCents)}
+                {discount.label}
+                {discount.code ? ` (${discount.code})` : ''}: −
+                {formatPrice(discount.amountCents)}
               </p>
             ))}
           <p>Entrega: {hasFreeShippingPromotion ? 'Grátis' : formatPrice(shipping)}</p>
-          {requestedPoints > 0 && <p>Pontos solicitados: −{formatPrice(requestedPoints)}</p>}
-          {giftCardCode.trim() && <p>Vale-oferta: valor confirmado no servidor</p>}
-          <p><strong>Total estimado: {formatPrice(estimatedTotal)}</strong></p>
-          <small>O valor final é confirmado no servidor. O pagamento não é cobrado automaticamente.</small>
+          {requestedPoints > 0 && (
+            <p>Pontos solicitados: −{formatPrice(requestedPoints)}</p>
+          )}
+          {giftCardCode.trim() && (
+            <p>Vale-oferta: valor confirmado no servidor</p>
+          )}
+          <p>
+            <strong>Total estimado: {formatPrice(estimatedTotal)}</strong>
+          </p>
+          <small>
+            O valor final é confirmado no servidor. O pagamento não é cobrado
+            automaticamente.
+          </small>
         </div>
 
         {error && <p role="alert">{error}</p>}
-        <button className="button button-primary" disabled={submitting || !cart?.items.length}>
+        <button
+          className="button button-primary"
+          disabled={submitting || !cart?.items.length}
+        >
           {submitting ? 'A confirmar encomenda…' : 'Confirmar encomenda'}
         </button>
       </form>
