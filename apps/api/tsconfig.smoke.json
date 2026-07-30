@@ -3,7 +3,9 @@
   "compilerOptions": {
     "outDir": "dist-smoke",
     "rootDir": ".",
-    "sourceMap": false
+    "sourceMap": false,
+    "module": "CommonJS",
+    "moduleResolution": "Node"
   },
   "include": ["src/**/*.ts", "scripts/smoke-loyalty-checkout.ts"],
   "exclude": ["node_modules", "dist", "dist-smoke"]
