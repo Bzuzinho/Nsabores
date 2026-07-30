@@ -44,10 +44,32 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
         body.loyaltyPoints,
         body.giftCardCode,
       );
+      const refreshed = await this.loyaltyPrisma.order.findUniqueOrThrow({
+        where: { id: order.id },
+        select: { totalCents: true, status: true },
+      });
+      if (refreshed.totalCents === 0 && refreshed.status === OrderStatus.PENDING_PAYMENT) {
+        await this.loyaltyOrders.consume(order.id);
+        await this.loyaltyPrisma.order.update({
+          where: { id: order.id },
+          data: {
+            status: OrderStatus.PAID,
+            paymentStatus: PaymentStatus.PAID,
+            statusHistory: {
+              create: {
+                fromStatus: OrderStatus.PENDING_PAYMENT,
+                toStatus: OrderStatus.PAID,
+                note: 'Encomenda liquidada integralmente com pontos e/ou vale-oferta.',
+              },
+            },
+          },
+        });
+      }
     } catch (error) {
       await this.loyaltyOperations
         .releaseOrder(order.id, 'Reserva de fidelização/vale falhou.')
         .catch(() => undefined);
+      await this.loyaltyOrders.release(order.id).catch(() => undefined);
       await this.loyaltyPrisma.$transaction(async (tx) => {
         await tx.order.deleteMany({ where: { id: order.id } });
         await tx.cart.updateMany({
