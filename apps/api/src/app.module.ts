@@ -82,7 +82,9 @@ import {
   AdminLoyaltyController,
   PublicGiftCardController,
 } from './loyalty/loyalty.controller';
+import { LoyaltyCommerceService } from './loyalty/loyalty-commerce.service';
 import { LoyaltyLedgerService } from './loyalty/loyalty-ledger.service';
+import { LoyaltyOrderService } from './loyalty/loyalty-order.service';
 import { LoyaltyService } from './loyalty/loyalty.service';
 
 @Module({
@@ -205,12 +207,10 @@ import { LoyaltyService } from './loyalty/loyalty.service';
     AuthGuard,
     RolesGuard,
     MailProvider,
-    BundleAwareCommerceService,
-    {
-      provide: PromotionalCommerceService,
-      useExisting: BundleAwareCommerceService,
-    },
-    { provide: CommerceService, useExisting: BundleAwareCommerceService },
+    LoyaltyCommerceService,
+    { provide: BundleAwareCommerceService, useExisting: LoyaltyCommerceService },
+    { provide: PromotionalCommerceService, useExisting: LoyaltyCommerceService },
+    { provide: CommerceService, useExisting: LoyaltyCommerceService },
     PaymentProvider,
     CommerceMailProvider,
     OperationsService,
@@ -230,6 +230,7 @@ import { LoyaltyService } from './loyalty/loyalty.service';
     ClubOperationsService,
     LoyaltyService,
     LoyaltyLedgerService,
+    LoyaltyOrderService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
