@@ -12,12 +12,13 @@ concurrency:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   quality:
     name: Quality checks
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
@@ -38,31 +39,57 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Generate Prisma client
-        run: pnpm --filter @nsabores/api prisma:generate
+      - name: Run quality gates
+        id: quality
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          LOG="$RUNNER_TEMP/quality.log"
+          : > "$LOG"
 
-      - name: Normalize formatting
-        run: pnpm format
+          run_gate() {
+            echo "\n===== $1 =====" | tee -a "$LOG"
+            shift
+            "$@" 2>&1 | tee -a "$LOG"
+            return ${PIPESTATUS[0]}
+          }
 
-      - name: Verify formatting
-        run: pnpm format:check
+          failed=0
+          run_gate "Prisma generate" pnpm --filter @nsabores/api prisma:generate || failed=1
+          run_gate "Formatting" pnpm format:check || failed=1
+          run_gate "Lint" pnpm lint || failed=1
+          run_gate "Typecheck" pnpm typecheck || failed=1
+          run_gate "Tests" pnpm test || failed=1
+          run_gate "Build" pnpm build || failed=1
 
-      - name: Lint
-        run: pnpm lint
+          if [ "$failed" -ne 0 ]; then
+            tail -n 500 "$LOG" > "$RUNNER_TEMP/quality-tail.log"
+            body=$(cat <<EOF
+          Automated CI diagnostic for commit \`${GITHUB_SHA}\`.
 
-      - name: Typecheck
-        run: pnpm typecheck
+          <details><summary>Quality checks log (last 500 lines)</summary>
 
-      - name: Test
-        run: pnpm test
-
-      - name: Build
-        run: pnpm build
+          \`\`\`
+          $(cat "$RUNNER_TEMP/quality-tail.log")
+          \`\`\`
+          </details>
+          EOF
+          )
+            existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search 'CI diagnostics in:title' --json number --jq '.[0].number // empty')
+            if [ -n "$existing" ]; then
+              gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+            else
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "CI diagnostics" --body "$body"
+            fi
+            exit 1
+          fi
 
   migrations:
     name: Clean database migrations
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nsabores
 
@@ -100,26 +127,50 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build internal validation package
-        run: pnpm --filter @nsabores/validation build
+      - name: Validate clean PostgreSQL lifecycle
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          LOG="$RUNNER_TEMP/migrations.log"
+          : > "$LOG"
 
-      - name: Generate Prisma client
-        run: pnpm --filter @nsabores/api prisma:generate
+          run_gate() {
+            echo "\n===== $1 =====" | tee -a "$LOG"
+            shift
+            "$@" 2>&1 | tee -a "$LOG"
+            return ${PIPESTATUS[0]}
+          }
 
-      - name: Apply migration history to clean database
-        run: pnpm --filter @nsabores/api prisma:migrate:deploy
+          failed=0
+          run_gate "Build validation package" pnpm --filter @nsabores/validation build || failed=1
+          run_gate "Prisma generate" pnpm --filter @nsabores/api prisma:generate || failed=1
+          run_gate "Apply migrations" pnpm --filter @nsabores/api prisma:migrate:deploy || failed=1
+          run_gate "Migration status" pnpm --filter @nsabores/api exec prisma migrate status || failed=1
+          run_gate "Seed" pnpm --filter @nsabores/api prisma:seed || failed=1
+          run_gate "Club lifecycle" pnpm --filter @nsabores/api validate:club || failed=1
+          run_gate "Loyalty and gift cards" pnpm --filter @nsabores/api validate:loyalty || failed=1
+          run_gate "Full loyalty checkout" pnpm --filter @nsabores/api validate:loyalty-checkout || failed=1
 
-      - name: Verify migration status
-        run: pnpm --filter @nsabores/api exec prisma migrate status
+          if [ "$failed" -ne 0 ]; then
+            tail -n 500 "$LOG" > "$RUNNER_TEMP/migrations-tail.log"
+            body=$(cat <<EOF
+          Automated migration diagnostic for commit \`${GITHUB_SHA}\`.
 
-      - name: Seed clean database
-        run: pnpm --filter @nsabores/api prisma:seed
+          <details><summary>Migration/smoke log (last 500 lines)</summary>
 
-      - name: Validate Club lifecycle
-        run: pnpm --filter @nsabores/api validate:club
-
-      - name: Validate loyalty and gift cards
-        run: pnpm --filter @nsabores/api validate:loyalty
-
-      - name: Validate full loyalty checkout
-        run: pnpm --filter @nsabores/api validate:loyalty-checkout
+          \`\`\`
+          $(cat "$RUNNER_TEMP/migrations-tail.log")
+          \`\`\`
+          </details>
+          EOF
+          )
+            existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search 'CI diagnostics in:title' --json number --jq '.[0].number // empty')
+            if [ -n "$existing" ]; then
+              gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+            else
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "CI diagnostics" --body "$body"
+            fi
+            exit 1
+          fi
