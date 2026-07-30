@@ -90,16 +90,20 @@ export class ReceivablesService {
         "updatedAt" = CURRENT_TIMESTAMP
       WHERE "orderId" = ${orderId}::uuid
     `;
-    await this.addEvent(orderId, {
-      type: status === 'CANCELLED' ? 'CANCELLED' : 'CONTACT_COMPLETED',
-      channel: 'OTHER',
-      note: `Acordo atualizado para ${status}.`,
-      idempotencyKey: `agreement:${orderId}:${status}:${Date.now()}`,
-    }, authorId);
+    await this.addEvent(
+      orderId,
+      {
+        type: status === 'CANCELLED' ? 'CANCELLED' : 'CONTACT_COMPLETED',
+        channel: 'OTHER',
+        note: `Acordo atualizado para ${status}.`,
+        idempotencyKey: `agreement:${orderId}:${status}:${Date.now()}`,
+      },
+      authorId,
+    );
     return this.detail(orderId);
   }
 
-  async addEvent(orderId: string, body: CreateContactEventDto, authorId: string) {
+  async addEvent(orderId: string, body: CreateContactEventDto, authorId?: string) {
     const agreement = await this.ensureAgreement(orderId);
     const key = body.idempotencyKey?.trim() || null;
     if (key) {
@@ -115,7 +119,7 @@ export class ReceivablesService {
         "nextContactAt", "promisedPaymentAt", "idempotencyKey", "createdAt"
       ) VALUES (
         ${id}::uuid, ${agreement.id as string}::uuid, ${body.type}::"PaymentContactType",
-        ${body.channel ?? null}::"PaymentContactChannel", ${body.note.trim()}, ${authorId}::uuid,
+        ${body.channel ?? null}::"PaymentContactChannel", ${body.note.trim()}, ${authorId ?? null}::uuid,
         ${body.nextContactAt ? new Date(body.nextContactAt) : null},
         ${body.promisedPaymentAt ? new Date(body.promisedPaymentAt) : null}, ${key}, CURRENT_TIMESTAMP
       )
@@ -133,18 +137,29 @@ export class ReceivablesService {
     return rows[0];
   }
 
-  async markPaid(orderId: string, authorId: string, method?: string, reference?: string, note?: string) {
+  async markPaid(
+    orderId: string,
+    authorId?: string,
+    method?: string,
+    reference?: string,
+    note?: string,
+  ) {
     await this.ensureAgreement(orderId);
     await this.prisma.$executeRaw`
       UPDATE "PaymentAgreement" SET "status" = 'PAID', "method" = COALESCE(${method ?? null}, "method"),
         "internalReference" = COALESCE(${reference ?? null}, "internalReference"), "paidAt" = CURRENT_TIMESTAMP,
         "updatedAt" = CURRENT_TIMESTAMP WHERE "orderId" = ${orderId}::uuid
     `;
-    await this.addEvent(orderId, {
-      type: 'PAYMENT_CONFIRMED', channel: 'OTHER',
-      note: note?.trim() || 'Pagamento confirmado manualmente.',
-      idempotencyKey: `agreement:${orderId}:paid`,
-    }, authorId);
+    await this.addEvent(
+      orderId,
+      {
+        type: 'PAYMENT_CONFIRMED',
+        channel: 'OTHER',
+        note: note?.trim() || 'Pagamento confirmado manualmente.',
+        idempotencyKey: `agreement:${orderId}:paid`,
+      },
+      authorId,
+    );
   }
 
   productionQueue() {
