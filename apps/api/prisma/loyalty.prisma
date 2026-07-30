@@ -47,6 +47,12 @@ enum GiftCardTransactionStatus {
   CANCELLED
 }
 
+enum GiftCardPurchaseStatus {
+  PENDING_PAYMENT
+  PAID
+  CANCELLED
+}
+
 model LoyaltyAccount {
   id                     String               @id @default(uuid()) @db.Uuid
   userId                 String               @unique @db.Uuid
@@ -86,23 +92,23 @@ model LoyaltyRule {
 }
 
 model LoyaltyTransaction {
-  id                   String                   @id @default(uuid()) @db.Uuid
-  accountId            String                   @db.Uuid
-  orderId              String?                  @db.Uuid
-  ruleId               String?                  @db.Uuid
-  type                 LoyaltyTransactionType
-  status               LoyaltyTransactionStatus
-  points               Int
+  id                    String                   @id @default(uuid()) @db.Uuid
+  accountId             String                   @db.Uuid
+  orderId               String?                  @db.Uuid
+  ruleId                String?                  @db.Uuid
+  type                  LoyaltyTransactionType
+  status                LoyaltyTransactionStatus
+  points                Int
   availableBalanceAfter Int
-  pendingBalanceAfter  Int
-  reservedBalanceAfter Int
-  availableAt          DateTime?
-  expiresAt            DateTime?
-  parentTransactionId  String?                  @db.Uuid
-  idempotencyKey       String                   @unique
-  note                 String?
-  metadata             Json?
-  createdAt            DateTime                 @default(now())
+  pendingBalanceAfter   Int
+  reservedBalanceAfter  Int
+  availableAt           DateTime?
+  expiresAt             DateTime?
+  parentTransactionId   String?                  @db.Uuid
+  idempotencyKey        String                   @unique
+  note                  String?
+  metadata              Json?
+  createdAt             DateTime                 @default(now())
 
   @@index([accountId, createdAt])
   @@index([status, availableAt])
@@ -110,45 +116,66 @@ model LoyaltyTransaction {
 }
 
 model GiftCard {
-  id                String         @id @default(uuid()) @db.Uuid
-  codeHash          String         @unique
-  codeLast4         String         @db.Char(4)
-  pinHash           String?
-  status            GiftCardStatus @default(ACTIVE)
+  id                 String         @id @default(uuid()) @db.Uuid
+  codeHash           String         @unique
+  codeLast4          String         @db.Char(4)
+  pinHash            String?
+  status             GiftCardStatus @default(ACTIVE)
   initialAmountCents Int
-  balanceCents      Int
-  reservedCents     Int            @default(0)
-  currency          String         @default("EUR") @db.Char(3)
-  purchaserUserId   String?        @db.Uuid
-  recipientEmail    String?
-  recipientName     String?
-  message           String?
-  expiresAt         DateTime?
-  activatedAt       DateTime       @default(now())
-  blockedAt         DateTime?
-  blockReason       String?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @default(now()) @updatedAt
+  balanceCents       Int
+  reservedCents      Int            @default(0)
+  currency           String         @default("EUR") @db.Char(3)
+  purchaserUserId    String?        @db.Uuid
+  recipientEmail     String?
+  recipientName      String?
+  message            String?
+  expiresAt          DateTime?
+  activatedAt        DateTime       @default(now())
+  blockedAt          DateTime?
+  blockReason        String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @default(now()) @updatedAt
 
   @@index([status, expiresAt])
   @@index([purchaserUserId, createdAt])
 }
 
 model GiftCardTransaction {
-  id                    String                    @id @default(uuid()) @db.Uuid
-  giftCardId            String                    @db.Uuid
-  orderId               String?                   @db.Uuid
-  type                  GiftCardTransactionType
-  status                GiftCardTransactionStatus
-  amountCents           Int
-  balanceAfterCents     Int
-  reservedAfterCents    Int
-  idempotencyKey        String                    @unique
-  parentTransactionId   String?                   @db.Uuid
-  note                  String?
-  metadata              Json?
-  createdAt             DateTime                  @default(now())
+  id                  String                    @id @default(uuid()) @db.Uuid
+  giftCardId          String                    @db.Uuid
+  orderId             String?                   @db.Uuid
+  type                GiftCardTransactionType
+  status              GiftCardTransactionStatus
+  amountCents         Int
+  balanceAfterCents   Int
+  reservedAfterCents  Int
+  idempotencyKey      String                    @unique
+  parentTransactionId String?                   @db.Uuid
+  note                String?
+  metadata            Json?
+  createdAt           DateTime                  @default(now())
 
   @@index([giftCardId, createdAt])
   @@index([orderId])
+}
+
+model GiftCardPurchase {
+  id                String                 @id @default(uuid()) @db.Uuid
+  purchaserUserId   String?                @db.Uuid
+  purchaserEmail    String
+  recipientEmail    String
+  recipientName     String?
+  message           String?
+  amountCents       Int
+  currency          String                 @default("EUR") @db.Char(3)
+  status            GiftCardPurchaseStatus @default(PENDING_PAYMENT)
+  provider          String                 @default("mock")
+  providerPaymentId String?
+  giftCardId        String?                @unique @db.Uuid
+  idempotencyKey    String                 @unique
+  paidAt            DateTime?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @default(now()) @updatedAt
+
+  @@index([status, createdAt])
 }
