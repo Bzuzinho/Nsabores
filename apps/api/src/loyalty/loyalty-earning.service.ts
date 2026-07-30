@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 import { ConflictException, Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { LoyaltyLedgerService } from './loyalty-ledger.service';
 
@@ -64,7 +63,6 @@ export class LoyaltyEarningService {
     const rule = rules[0];
     if (!rule || rule.pointsPerEuro <= 0) return null;
 
-    // Gift cards are money; redeemed loyalty points are not eligible spend.
     const eligibleCents = order.totalCents + order.giftCardAmountCents;
     if (
       rule.minimumOrderCents !== null &&
@@ -159,6 +157,6 @@ export class LoyaltyEarningService {
         )
       `;
       return { id };
-    }, serializable as Prisma.TransactionOptions);
+    }, serializable);
   }
 }
