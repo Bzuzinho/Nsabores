@@ -85,6 +85,7 @@ import {
 import { LoyaltyCommerceService } from './loyalty/loyalty-commerce.service';
 import { LoyaltyLedgerService } from './loyalty/loyalty-ledger.service';
 import { LoyaltyOrderService } from './loyalty/loyalty-order.service';
+import { LoyaltyReversalService } from './loyalty/loyalty-reversal.service';
 import { LoyaltyService } from './loyalty/loyalty.service';
 
 @Module({
@@ -230,6 +231,7 @@ import { LoyaltyService } from './loyalty/loyalty.service';
     ClubOperationsService,
     LoyaltyService,
     LoyaltyLedgerService,
+    LoyaltyReversalService,
     LoyaltyOrderService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
