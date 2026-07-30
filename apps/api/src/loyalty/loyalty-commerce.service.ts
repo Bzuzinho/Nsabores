@@ -72,15 +72,15 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
             },
           },
         });
-        const agreement = await this.receivables.ensureAgreement(order.id);
+        await this.receivables.ensureAgreement(order.id);
         if (refreshed.totalCents === 0) {
           await this.receivables.markPaid(
             order.id,
-            identity.userId ?? String(agreement.responsibleUserId ?? identity.userId),
+            identity.userId,
             'beneficios-internos',
             undefined,
             'Encomenda integralmente liquidada com pontos e/ou vale-oferta.',
-          ).catch(() => undefined);
+          );
           await this.loyaltyEarning.accrueForPaidOrder(order.id);
         }
       } else if (
