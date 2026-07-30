@@ -24,6 +24,7 @@ import {
   CustomerOrdersController,
 } from './commerce/commerce.controller';
 import { CommerceService } from './commerce/commerce.service';
+import { ManualPaymentService } from './commerce/manual-payment.service';
 import { PaymentProvider } from './commerce/payment.provider';
 import { CommerceMailProvider } from './commerce/mail.provider';
 import {
@@ -127,6 +128,7 @@ import { LoyaltyService } from './loyalty/loyalty.service';
         AUTH_COOKIE_SECURE: Joi.boolean().default(false),
         WEBSITE_URL: Joi.string().uri().default('http://localhost:3000'),
         MANAGEMENT_URL: Joi.string().uri().default('http://localhost:3001'),
+        PAYMENT_FLOW_MODE: Joi.string().valid('manual', 'automatic').default('manual'),
         PAYMENT_PROVIDER: Joi.string().valid('mock', 'stripe').default('mock'),
         PAYMENT_SECRET_KEY: Joi.string().allow('').optional(),
         PAYMENT_WEBHOOK_SECRET: Joi.string()
@@ -219,6 +221,7 @@ import { LoyaltyService } from './loyalty/loyalty.service';
     { provide: BundleAwareCommerceService, useExisting: LoyaltyCommerceService },
     { provide: PromotionalCommerceService, useExisting: LoyaltyCommerceService },
     { provide: CommerceService, useExisting: LoyaltyCommerceService },
+    ManualPaymentService,
     PaymentProvider,
     CommerceMailProvider,
     OperationsService,
