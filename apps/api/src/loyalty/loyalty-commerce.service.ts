@@ -12,7 +12,7 @@ import { PromotionsService } from '../promotions/promotions.service';
 import { LoyaltyEarningService } from './loyalty-earning.service';
 import { LoyaltyOrderService } from './loyalty-order.service';
 
- type CartIdentity = { userId?: string; sessionId?: string };
+type CartIdentity = { userId?: string; sessionId?: string };
 
 @Injectable()
 export class LoyaltyCommerceService extends BundleAwareCommerceService {
@@ -175,7 +175,13 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
     note?: string,
   ) {
     const result = await super.changeStatus(id, status, authorId, note);
-    if (status === OrderStatus.CANCELLED) await this.loyaltyOrders.release(id);
+    if (status === OrderStatus.CANCELLED) {
+      if (this.manualFlow()) {
+        await this.loyaltyOrders.refund(id);
+      } else {
+        await this.loyaltyOrders.release(id);
+      }
+    }
     return result;
   }
 
@@ -224,6 +230,10 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
       }),
       this.loyaltyOrders.applications(orderId),
     ]);
-    return { ...order, benefits, paymentFlowMode: this.manualFlow() ? 'manual' : 'automatic' };
+    return {
+      ...order,
+      benefits,
+      paymentFlowMode: this.manualFlow() ? 'manual' : 'automatic',
+    };
   }
 }
