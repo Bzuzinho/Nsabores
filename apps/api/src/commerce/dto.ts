@@ -61,6 +61,8 @@ export class CheckoutDto {
   @IsBoolean() privacyAccepted!: boolean;
   @IsOptional() @IsBoolean() marketingConsent?: boolean;
   @IsOptional() @IsString() @MaxLength(1000) customerNotes?: string;
+  @IsOptional() @IsInt() @Min(1) loyaltyPoints?: number;
+  @IsOptional() @IsString() @MaxLength(120) giftCardCode?: string;
   @IsString() @IsNotEmpty() @MaxLength(100) idempotencyKey!: string;
 }
 
