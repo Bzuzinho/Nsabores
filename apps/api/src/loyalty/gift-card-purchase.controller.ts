@@ -1,4 +1,6 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Roles } from '../auth/auth.decorators';
+import { AuthGuard, RolesGuard } from '../auth/auth.guards';
 import {
   ConfirmGiftCardPurchaseDto,
   CreateGiftCardPurchaseDto,
@@ -25,5 +27,22 @@ export class GiftCardPurchaseController {
     @Body() body: ConfirmGiftCardPurchaseDto,
   ) {
     return this.purchases.confirmMock(id, body);
+  }
+}
+
+@UseGuards(AuthGuard, RolesGuard)
+@Roles('STAFF', 'ADMIN')
+@Controller('v1/admin/gift-card-purchases')
+export class AdminGiftCardPurchaseController {
+  constructor(private readonly purchases: GiftCardPurchaseService) {}
+
+  @Get()
+  list() {
+    return this.purchases.list();
+  }
+
+  @Post(':id/mark-paid')
+  markPaid(@Param('id') id: string) {
+    return this.purchases.markPaid(id);
   }
 }
