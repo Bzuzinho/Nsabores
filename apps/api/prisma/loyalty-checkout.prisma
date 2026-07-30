@@ -1,0 +1,32 @@
+enum OrderBenefitStatus {
+  RESERVED
+  CONSUMED
+  RELEASED
+  REFUNDED
+}
+
+model OrderLoyaltyApplication {
+  id          String             @id @default(uuid()) @db.Uuid
+  orderId     String             @unique @db.Uuid
+  userId      String             @db.Uuid
+  points      Int
+  amountCents Int
+  status      OrderBenefitStatus @default(RESERVED)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @default(now()) @updatedAt
+
+  @@index([userId, status])
+}
+
+model OrderGiftCardApplication {
+  id          String             @id @default(uuid()) @db.Uuid
+  orderId     String             @unique @db.Uuid
+  giftCardId  String             @db.Uuid
+  codeLast4   String             @db.Char(4)
+  amountCents Int
+  status      OrderBenefitStatus @default(RESERVED)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @default(now()) @updatedAt
+
+  @@index([giftCardId, status])
+}
