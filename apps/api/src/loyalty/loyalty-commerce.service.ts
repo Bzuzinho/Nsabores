@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { OrderStatus, PaymentStatus } from '@prisma/client';
 import { BundleAwareCommerceService } from '../bundles/bundle-aware-commerce.service';
 import { BundleInventoryService } from '../bundles/bundle-inventory.service';
@@ -48,7 +48,10 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
         where: { id: order.id },
         select: { totalCents: true, status: true },
       });
-      if (refreshed.totalCents === 0 && refreshed.status === OrderStatus.PENDING_PAYMENT) {
+      if (
+        refreshed.totalCents === 0 &&
+        refreshed.status === OrderStatus.PENDING_PAYMENT
+      ) {
         await this.loyaltyOrders.consume(order.id);
         await this.loyaltyPrisma.order.update({
           where: { id: order.id },
@@ -127,6 +130,37 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
   ) {
     const result = await super.changeStatus(id, status, authorId, note);
     if (status === OrderStatus.CANCELLED) await this.loyaltyOrders.release(id);
+    return result;
+  }
+
+  override async refund(id: string, authorId: string) {
+    const order = await this.loyaltyPrisma.order.findUnique({
+      where: { id },
+      select: { id: true, totalCents: true, status: true, paymentStatus: true },
+    });
+    if (!order) throw new ConflictException('Encomenda não encontrada.');
+
+    let result;
+    if (order.totalCents === 0 && order.paymentStatus === PaymentStatus.PAID) {
+      result = await this.loyaltyPrisma.order.update({
+        where: { id },
+        data: {
+          status: OrderStatus.REFUNDED,
+          paymentStatus: PaymentStatus.REFUNDED,
+          statusHistory: {
+            create: {
+              fromStatus: order.status,
+              toStatus: OrderStatus.REFUNDED,
+              authorId,
+              note: 'Benefícios internos devolvidos; não existia pagamento externo.',
+            },
+          },
+        },
+      });
+    } else {
+      result = await super.refund(id, authorId);
+    }
+    await this.loyaltyOrders.refund(id);
     return result;
   }
 
