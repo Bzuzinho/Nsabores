@@ -18,6 +18,10 @@ type LoyaltyAccount = {
   reservedPoints: number;
 };
 
+type CheckoutOrder = CommerceOrder & {
+  paymentFlowMode?: 'manual' | 'automatic';
+};
+
 export default function CheckoutPage() {
   const { user } = useAuth();
   const { cart, refreshCart } = useShop();
@@ -60,7 +64,7 @@ export default function CheckoutPage() {
       taxNumber: String(data.get('taxNumber') ?? '') || undefined,
     };
     try {
-      const order = await api.post<CommerceOrder>('/v1/checkout', {
+      const order = await api.post<CheckoutOrder>('/v1/checkout', {
         email: String(data.get('email')),
         customerName: `${address.firstName} ${address.lastName}`,
         phone: String(data.get('phone')),
@@ -75,15 +79,18 @@ export default function CheckoutPage() {
         giftCardCode: giftCardCode.trim() || undefined,
         idempotencyKey: crypto.randomUUID(),
       });
+      await refreshCart();
+      if (order.paymentFlowMode === 'manual' || order.status === 'PROCESSING') {
+        router.push(`/checkout/sucesso?orderId=${order.id}&manual=1`);
+        return;
+      }
       if (order.totalCents > 0) {
         const payment = await api.post<{ redirectUrl: string }>(
           `/v1/orders/${order.id}/payment`,
           { idempotencyKey: crypto.randomUUID() },
         );
-        await refreshCart();
         router.push(payment.redirectUrl);
       } else {
-        await refreshCart();
         router.push(`/checkout/sucesso?orderId=${order.id}`);
       }
     } catch (reason) {
@@ -119,74 +126,31 @@ export default function CheckoutPage() {
   return (
     <main id="conteudo" className="account-page">
       <form className="account-card auth-form" onSubmit={submit}>
-        <p className="eyebrow">Checkout seguro</p>
+        <p className="eyebrow">Pedido de encomenda</p>
         <h1>Dados de entrega</h1>
+        <p>
+          A encomenda segue para preparação assim que for confirmada. O pagamento
+          será combinado diretamente entre a Nsabores e o cliente e posteriormente
+          confirmado pela empresa.
+        </p>
         {!cart?.items.length && <p>O carrinho está vazio.</p>}
-        <label>
-          Email
-          <input
-            name="email"
-            type="email"
-            defaultValue={user?.email}
-            required
-          />
-        </label>
-        <label>
-          Telefone
-          <input
-            name="phone"
-            type="tel"
-            defaultValue={user?.phone ?? ''}
-            required
-          />
-        </label>
-        <label>
-          Nome
-          <input name="firstName" defaultValue={user?.firstName} required />
-        </label>
-        <label>
-          Apelido
-          <input name="lastName" defaultValue={user?.lastName} required />
-        </label>
-        <label>
-          Morada
-          <input name="line1" required />
-        </label>
-        <label>
-          Complemento
-          <input name="line2" />
-        </label>
-        <label>
-          Código postal
-          <input
-            name="postalCode"
-            pattern="\d{4}-\d{3}"
-            placeholder="0000-000"
-            required
-          />
-        </label>
-        <label>
-          Localidade
-          <input name="city" required />
-        </label>
-        <label>
-          NIF (opcional)
-          <input name="taxNumber" pattern="\d{9}" />
-        </label>
+        <label>Email<input name="email" type="email" defaultValue={user?.email} required /></label>
+        <label>Telefone<input name="phone" type="tel" defaultValue={user?.phone ?? ''} required /></label>
+        <label>Nome<input name="firstName" defaultValue={user?.firstName} required /></label>
+        <label>Apelido<input name="lastName" defaultValue={user?.lastName} required /></label>
+        <label>Morada<input name="line1" required /></label>
+        <label>Complemento<input name="line2" /></label>
+        <label>Código postal<input name="postalCode" pattern="\d{4}-\d{3}" placeholder="0000-000" required /></label>
+        <label>Localidade<input name="city" required /></label>
+        <label>NIF (opcional)<input name="taxNumber" pattern="\d{9}" /></label>
         <label>
           Método de entrega
           <select
             name="deliveryMethodId"
             required
             onChange={(event) => {
-              const method = methods.find(
-                ({ id }) => id === event.target.value,
-              );
-              if (method)
-                setMethods([
-                  method,
-                  ...methods.filter(({ id }) => id !== method.id),
-                ]);
+              const method = methods.find(({ id }) => id === event.target.value);
+              if (method) setMethods([method, ...methods.filter(({ id }) => id !== method.id)]);
             }}
           >
             {methods.map((method) => (
@@ -207,9 +171,7 @@ export default function CheckoutPage() {
               value={points}
               onChange={(event) => setPoints(Math.max(0, Number(event.target.value) || 0))}
             />
-            <small>
-              Disponíveis: {loyalty.availablePoints}. Nesta fase, 1 ponto corresponde a 1 cêntimo.
-            </small>
+            <small>Disponíveis: {loyalty.availablePoints}. 1 ponto corresponde a 1 cêntimo.</small>
           </label>
         )}
 
@@ -224,22 +186,10 @@ export default function CheckoutPage() {
           <small>O saldo e a validade são confirmados no servidor.</small>
         </label>
 
-        <label>
-          Notas
-          <textarea name="customerNotes" />
-        </label>
-        <label>
-          <input name="termsAccepted" type="checkbox" required /> Aceito os{' '}
-          <a href="/termos">termos e condições</a>.
-        </label>
-        <label>
-          <input name="privacyAccepted" type="checkbox" required /> Li a{' '}
-          <a href="/privacidade">política de privacidade</a>.
-        </label>
-        <label>
-          <input name="marketingConsent" type="checkbox" /> Quero receber
-          novidades (opcional).
-        </label>
+        <label>Notas<textarea name="customerNotes" /></label>
+        <label><input name="termsAccepted" type="checkbox" required /> Aceito os <a href="/termos">termos e condições</a>.</label>
+        <label><input name="privacyAccepted" type="checkbox" required /> Li a <a href="/privacidade">política de privacidade</a>.</label>
+        <label><input name="marketingConsent" type="checkbox" /> Quero receber novidades (opcional).</label>
 
         <div className="checkout-summary">
           <p>Subtotal: {formatPrice(cart?.subtotalCents ?? 0)}</p>
@@ -247,41 +197,19 @@ export default function CheckoutPage() {
             .filter((discount) => !discount.freeShipping)
             .map((discount, index) => (
               <p key={`${discount.promotionId ?? discount.label}-${index}`}>
-                {discount.label}
-                {discount.code ? ` (${discount.code})` : ''}: −
-                {formatPrice(discount.amountCents)}
+                {discount.label}{discount.code ? ` (${discount.code})` : ''}: −{formatPrice(discount.amountCents)}
               </p>
             ))}
-          <p>
-            Entrega:{' '}
-            {hasFreeShippingPromotion ? (
-              <>
-                <s>{formatPrice(selected?.priceCents ?? 0)}</s> Grátis
-              </>
-            ) : (
-              formatPrice(shipping)
-            )}
-          </p>
-          {requestedPoints > 0 && (
-            <p>Pontos solicitados: −{formatPrice(requestedPoints)}</p>
-          )}
-          {giftCardCode.trim() && (
-            <p>Vale-oferta: valor confirmado no servidor</p>
-          )}
-          <p>
-            <strong>Total estimado: {formatPrice(estimatedTotal)}</strong>
-          </p>
-          <small>
-            O total final, os pontos e o saldo do vale são recalculados no servidor antes do pagamento.
-          </small>
+          <p>Entrega: {hasFreeShippingPromotion ? 'Grátis' : formatPrice(shipping)}</p>
+          {requestedPoints > 0 && <p>Pontos solicitados: −{formatPrice(requestedPoints)}</p>}
+          {giftCardCode.trim() && <p>Vale-oferta: valor confirmado no servidor</p>}
+          <p><strong>Total estimado: {formatPrice(estimatedTotal)}</strong></p>
+          <small>O valor final é confirmado no servidor. O pagamento não é cobrado automaticamente.</small>
         </div>
 
         {error && <p role="alert">{error}</p>}
-        <button
-          className="button button-primary"
-          disabled={submitting || !cart?.items.length}
-        >
-          {submitting ? 'A iniciar pagamento…' : 'Pagar encomenda'}
+        <button className="button button-primary" disabled={submitting || !cart?.items.length}>
+          {submitting ? 'A confirmar encomenda…' : 'Confirmar encomenda'}
         </button>
       </form>
     </main>
