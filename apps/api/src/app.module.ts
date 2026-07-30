@@ -96,6 +96,8 @@ import { LoyaltyOrderService } from './loyalty/loyalty-order.service';
 import { LoyaltyReleaseService } from './loyalty/loyalty-release.service';
 import { LoyaltyReversalService } from './loyalty/loyalty-reversal.service';
 import { LoyaltyService } from './loyalty/loyalty.service';
+import { ReceivablesController } from './receivables/receivables.controller';
+import { ReceivablesService } from './receivables/receivables.service';
 
 @Module({
   imports: [
@@ -211,6 +213,7 @@ import { LoyaltyService } from './loyalty/loyalty.service';
     AdminGiftCardPurchaseController,
     AdminLoyaltyController,
     AdminLoyaltyAccountsController,
+    ReceivablesController,
   ],
   providers: [
     PrismaService,
@@ -221,6 +224,7 @@ import { LoyaltyService } from './loyalty/loyalty.service';
     AuthGuard,
     RolesGuard,
     MailProvider,
+    ReceivablesService,
     LoyaltyCommerceService,
     { provide: BundleAwareCommerceService, useExisting: LoyaltyCommerceService },
     { provide: PromotionalCommerceService, useExisting: LoyaltyCommerceService },
