@@ -96,6 +96,7 @@ import { LoyaltyOrderService } from './loyalty/loyalty-order.service';
 import { LoyaltyReleaseService } from './loyalty/loyalty-release.service';
 import { LoyaltyReversalService } from './loyalty/loyalty-reversal.service';
 import { LoyaltyService } from './loyalty/loyalty.service';
+import { AccountReceivablesController } from './receivables/account-receivables.controller';
 import { ReceivablesController } from './receivables/receivables.controller';
 import { ReceivablesService } from './receivables/receivables.service';
 
@@ -184,6 +185,7 @@ import { ReceivablesService } from './receivables/receivables.service';
     CartController,
     CheckoutController,
     CustomerOrdersController,
+    AccountReceivablesController,
     AdminOrdersController,
     PublicOperationsController,
     BusinessOperationsController,
