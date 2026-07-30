@@ -1,7 +1,8 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PaymentStatus } from '@prisma/client';
-import { PrismaService } from '../prisma.service';
 import { LoyaltyEarningService } from '../loyalty/loyalty-earning.service';
+import { PrismaService } from '../prisma.service';
+import { ReceivablesService } from '../receivables/receivables.service';
 import type { ManualPaymentDto } from './dto';
 
 @Injectable()
@@ -9,6 +10,7 @@ export class ManualPaymentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly earning: LoyaltyEarningService,
+    private readonly receivables: ReceivablesService,
   ) {}
 
   async markReceived(orderId: string, authorId: string, body: ManualPaymentDto) {
@@ -59,6 +61,13 @@ export class ManualPaymentService {
         });
       });
     }
+    await this.receivables.markPaid(
+      orderId,
+      authorId,
+      body.method?.trim() || 'manual',
+      body.reference?.trim(),
+      body.note?.trim(),
+    );
     await this.earning.accrueForPaidOrder(orderId);
     return this.prisma.order.findUniqueOrThrow({
       where: { id: orderId },
