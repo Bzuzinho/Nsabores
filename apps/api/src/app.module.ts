@@ -77,6 +77,7 @@ import { ClubBillingProvider } from './club/billing.provider';
 import { ClubOperationsService } from './club/club-operations.service';
 import { ClubPromotionsService } from './club/club-promotions.service';
 import { ClubService } from './club/club.service';
+import { AdminLoyaltyAccountsController } from './loyalty/loyalty-admin.controller';
 import {
   AccountLoyaltyController,
   AdminLoyaltyController,
@@ -198,6 +199,7 @@ import { LoyaltyService } from './loyalty/loyalty.service';
     AccountLoyaltyController,
     PublicGiftCardController,
     AdminLoyaltyController,
+    AdminLoyaltyAccountsController,
   ],
   providers: [
     PrismaService,
