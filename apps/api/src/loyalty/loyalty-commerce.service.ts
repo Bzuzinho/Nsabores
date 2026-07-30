@@ -8,6 +8,7 @@ import { PaymentProvider } from '../commerce/payment.provider';
 import { OperationsService } from '../operations/operations.service';
 import { PrismaService } from '../prisma.service';
 import { PromotionsService } from '../promotions/promotions.service';
+import { LoyaltyEarningService } from './loyalty-earning.service';
 import { LoyaltyOrderService } from './loyalty-order.service';
 
 type CartIdentity = { userId?: string; sessionId?: string };
@@ -22,6 +23,7 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
     promotions: PromotionsService,
     bundleInventory: BundleInventoryService,
     private readonly loyaltyOrders: LoyaltyOrderService,
+    private readonly loyaltyEarning: LoyaltyEarningService,
   ) {
     super(
       loyaltyPrisma,
@@ -67,6 +69,7 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
             },
           },
         });
+        await this.loyaltyEarning.accrueForPaidOrder(order.id);
       }
     } catch (error) {
       await this.loyaltyOperations
@@ -102,6 +105,7 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
     if (payment) {
       if (body.status === PaymentStatus.PAID) {
         await this.loyaltyOrders.consume(payment.orderId);
+        await this.loyaltyEarning.accrueForPaidOrder(payment.orderId);
       } else if (
         body.status === PaymentStatus.FAILED ||
         body.status === PaymentStatus.CANCELLED
@@ -118,7 +122,10 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
       where: { providerPaymentId },
       select: { orderId: true },
     });
-    if (payment) await this.loyaltyOrders.consume(payment.orderId);
+    if (payment) {
+      await this.loyaltyOrders.consume(payment.orderId);
+      await this.loyaltyEarning.accrueForPaidOrder(payment.orderId);
+    }
     return result;
   }
 
