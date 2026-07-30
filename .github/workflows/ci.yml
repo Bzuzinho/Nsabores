@@ -114,3 +114,6 @@ jobs:
 
       - name: Validate loyalty and gift cards
         run: pnpm --filter @nsabores/api validate:loyalty
+
+      - name: Validate full loyalty checkout
+        run: pnpm --filter @nsabores/api validate:loyalty-checkout
