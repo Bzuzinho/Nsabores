@@ -12,16 +12,37 @@ const api = new ApiClient(
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000',
 );
 
+type LoyaltyAccount = {
+  availablePoints: number;
+  pendingPoints: number;
+  reservedPoints: number;
+};
+
 export default function CheckoutPage() {
   const { user } = useAuth();
   const { cart, refreshCart } = useShop();
   const router = useRouter();
   const [methods, setMethods] = useState<DeliveryMethod[]>([]);
+  const [loyalty, setLoyalty] = useState<LoyaltyAccount | null>(null);
+  const [points, setPoints] = useState(0);
+  const [giftCardCode, setGiftCardCode] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
   useEffect(() => {
     void api.get<DeliveryMethod[]>('/v1/delivery-methods').then(setMethods);
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setLoyalty(null);
+      return;
+    }
+    void api
+      .get<LoyaltyAccount>('/v1/account/loyalty')
+      .then(setLoyalty)
+      .catch(() => setLoyalty(null));
+  }, [user]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -50,14 +71,21 @@ export default function CheckoutPage() {
         privacyAccepted: data.get('privacyAccepted') === 'on',
         marketingConsent: data.get('marketingConsent') === 'on',
         customerNotes: String(data.get('customerNotes') ?? ''),
+        loyaltyPoints: points > 0 ? points : undefined,
+        giftCardCode: giftCardCode.trim() || undefined,
         idempotencyKey: crypto.randomUUID(),
       });
-      const payment = await api.post<{ redirectUrl: string }>(
-        `/v1/orders/${order.id}/payment`,
-        { idempotencyKey: crypto.randomUUID() },
-      );
-      await refreshCart();
-      router.push(payment.redirectUrl);
+      if (order.totalCents > 0) {
+        const payment = await api.post<{ redirectUrl: string }>(
+          `/v1/orders/${order.id}/payment`,
+          { idempotencyKey: crypto.randomUUID() },
+        );
+        await refreshCart();
+        router.push(payment.redirectUrl);
+      } else {
+        await refreshCart();
+        router.push(`/checkout/sucesso?orderId=${order.id}`);
+      }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Checkout falhou.');
       setSubmitting(false);
@@ -77,10 +105,16 @@ export default function CheckoutPage() {
       : 0;
   const productDiscount =
     cart?.productDiscountCents ?? cart?.discountCents ?? 0;
-  const estimatedTotal = Math.max(
+  const estimatedBeforeBenefits = Math.max(
     0,
     (cart?.subtotalCents ?? 0) + shipping - productDiscount,
   );
+  const requestedPoints = Math.min(
+    points,
+    loyalty?.availablePoints ?? 0,
+    estimatedBeforeBenefits,
+  );
+  const estimatedTotal = Math.max(0, estimatedBeforeBenefits - requestedPoints);
 
   return (
     <main id="conteudo" className="account-page">
@@ -162,6 +196,34 @@ export default function CheckoutPage() {
             ))}
           </select>
         </label>
+
+        {user && loyalty && (
+          <label>
+            Pontos a utilizar
+            <input
+              type="number"
+              min="0"
+              max={Math.min(loyalty.availablePoints, estimatedBeforeBenefits)}
+              value={points}
+              onChange={(event) => setPoints(Math.max(0, Number(event.target.value) || 0))}
+            />
+            <small>
+              Disponíveis: {loyalty.availablePoints}. Nesta fase, 1 ponto corresponde a 1 cêntimo.
+            </small>
+          </label>
+        )}
+
+        <label>
+          Vale-oferta
+          <input
+            value={giftCardCode}
+            onChange={(event) => setGiftCardCode(event.target.value)}
+            placeholder="NS-XXXXXXXXXXXX"
+            autoComplete="off"
+          />
+          <small>O saldo e a validade são confirmados no servidor.</small>
+        </label>
+
         <label>
           Notas
           <textarea name="customerNotes" />
@@ -200,11 +262,17 @@ export default function CheckoutPage() {
               formatPrice(shipping)
             )}
           </p>
+          {requestedPoints > 0 && (
+            <p>Pontos solicitados: −{formatPrice(requestedPoints)}</p>
+          )}
+          {giftCardCode.trim() && (
+            <p>Vale-oferta: valor confirmado no servidor</p>
+          )}
           <p>
             <strong>Total estimado: {formatPrice(estimatedTotal)}</strong>
           </p>
           <small>
-            O total final é recalculado no servidor antes do pagamento.
+            O total final, os pontos e o saldo do vale são recalculados no servidor antes do pagamento.
           </small>
         </div>
 
