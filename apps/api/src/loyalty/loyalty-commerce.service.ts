@@ -1,4 +1,5 @@
 import { ConflictException, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { OrderStatus, PaymentStatus } from '@prisma/client';
 import { BundleAwareCommerceService } from '../bundles/bundle-aware-commerce.service';
 import { BundleInventoryService } from '../bundles/bundle-inventory.service';
@@ -11,7 +12,7 @@ import { PromotionsService } from '../promotions/promotions.service';
 import { LoyaltyEarningService } from './loyalty-earning.service';
 import { LoyaltyOrderService } from './loyalty-order.service';
 
-type CartIdentity = { userId?: string; sessionId?: string };
+ type CartIdentity = { userId?: string; sessionId?: string };
 
 @Injectable()
 export class LoyaltyCommerceService extends BundleAwareCommerceService {
@@ -24,6 +25,7 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
     bundleInventory: BundleInventoryService,
     private readonly loyaltyOrders: LoyaltyOrderService,
     private readonly loyaltyEarning: LoyaltyEarningService,
+    private readonly config: ConfigService,
   ) {
     super(
       loyaltyPrisma,
@@ -33,6 +35,10 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
       promotions,
       bundleInventory,
     );
+  }
+
+  private manualFlow() {
+    return (this.config.get<string>('PAYMENT_FLOW_MODE') ?? 'manual') === 'manual';
   }
 
   override async checkout(identity: CartIdentity, body: CheckoutDto) {
@@ -50,7 +56,31 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
         where: { id: order.id },
         select: { totalCents: true, status: true },
       });
-      if (
+
+      if (this.manualFlow()) {
+        await this.loyaltyOrders.consume(order.id);
+        await this.loyaltyPrisma.order.update({
+          where: { id: order.id },
+          data: {
+            status: OrderStatus.PROCESSING,
+            paymentStatus:
+              refreshed.totalCents === 0 ? PaymentStatus.PAID : PaymentStatus.PENDING,
+            statusHistory: {
+              create: {
+                fromStatus: OrderStatus.PENDING_PAYMENT,
+                toStatus: OrderStatus.PROCESSING,
+                note:
+                  refreshed.totalCents === 0
+                    ? 'Encomenda aceite para produção e liquidada com benefícios internos.'
+                    : 'Encomenda aceite para produção. Pagamento a combinar e confirmar manualmente.',
+              },
+            },
+          },
+        });
+        if (refreshed.totalCents === 0) {
+          await this.loyaltyEarning.accrueForPaidOrder(order.id);
+        }
+      } else if (
         refreshed.totalCents === 0 &&
         refreshed.status === OrderStatus.PENDING_PAYMENT
       ) {
@@ -90,6 +120,15 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
       throw error;
     }
     return this.orderWithBenefits(order.id);
+  }
+
+  override async startPayment(orderId: string, userId: string | undefined, key: string) {
+    if (this.manualFlow()) {
+      throw new ConflictException(
+        'O pagamento desta encomenda é combinado diretamente com a empresa e confirmado manualmente.',
+      );
+    }
+    return super.startPayment(orderId, userId, key);
   }
 
   override async webhook(
@@ -185,6 +224,6 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
       }),
       this.loyaltyOrders.applications(orderId),
     ]);
-    return { ...order, benefits };
+    return { ...order, benefits, paymentFlowMode: this.manualFlow() ? 'manual' : 'automatic' };
   }
 }
