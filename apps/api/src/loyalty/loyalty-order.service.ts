@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { LoyaltyLedgerService } from './loyalty-ledger.service';
+import { LoyaltyReversalService } from './loyalty-reversal.service';
 
 const normalizeCode = (value: string) => value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
 const hashCode = (value: string) => createHash('sha256').update(normalizeCode(value)).digest('hex');
@@ -29,6 +30,7 @@ export class LoyaltyOrderService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ledger: LoyaltyLedgerService,
+    private readonly reversals: LoyaltyReversalService,
   ) {}
 
   async reserve(
@@ -192,6 +194,29 @@ export class LoyaltyOrderService {
         orderId,
       );
       await this.updateGiftCardStatus(orderId, 'RELEASED');
+    }
+    return this.applications(orderId);
+  }
+
+  async refund(orderId: string) {
+    const applications = await this.applications(orderId);
+    if (applications.loyalty?.status === 'CONSUMED') {
+      await this.reversals.refundPoints(
+        applications.loyalty.userId,
+        applications.loyalty.points,
+        `order:${orderId}:loyalty:refund`,
+        orderId,
+      );
+      await this.updateLoyaltyStatus(orderId, 'REFUNDED');
+    }
+    if (applications.giftCard?.status === 'CONSUMED') {
+      await this.reversals.refundGiftCard(
+        applications.giftCard.giftCardId,
+        applications.giftCard.amountCents,
+        `order:${orderId}:gift-card:refund`,
+        orderId,
+      );
+      await this.updateGiftCardStatus(orderId, 'REFUNDED');
     }
     return this.applications(orderId);
   }
