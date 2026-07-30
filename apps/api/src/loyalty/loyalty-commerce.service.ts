@@ -9,6 +9,7 @@ import { PaymentProvider } from '../commerce/payment.provider';
 import { OperationsService } from '../operations/operations.service';
 import { PrismaService } from '../prisma.service';
 import { PromotionsService } from '../promotions/promotions.service';
+import { ReceivablesService } from '../receivables/receivables.service';
 import { LoyaltyEarningService } from './loyalty-earning.service';
 import { LoyaltyOrderService } from './loyalty-order.service';
 
@@ -26,15 +27,9 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
     private readonly loyaltyOrders: LoyaltyOrderService,
     private readonly loyaltyEarning: LoyaltyEarningService,
     private readonly config: ConfigService,
+    private readonly receivables: ReceivablesService,
   ) {
-    super(
-      loyaltyPrisma,
-      payments,
-      mail,
-      loyaltyOperations,
-      promotions,
-      bundleInventory,
-    );
+    super(loyaltyPrisma, payments, mail, loyaltyOperations, promotions, bundleInventory);
   }
 
   private manualFlow() {
@@ -77,7 +72,15 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
             },
           },
         });
+        const agreement = await this.receivables.ensureAgreement(order.id);
         if (refreshed.totalCents === 0) {
+          await this.receivables.markPaid(
+            order.id,
+            identity.userId ?? String(agreement.responsibleUserId ?? identity.userId),
+            'beneficios-internos',
+            undefined,
+            'Encomenda integralmente liquidada com pontos e/ou vale-oferta.',
+          ).catch(() => undefined);
           await this.loyaltyEarning.accrueForPaidOrder(order.id);
         }
       } else if (
@@ -131,11 +134,7 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
     return super.startPayment(orderId, userId, key);
   }
 
-  override async webhook(
-    rawPayload: string,
-    signature: string | undefined,
-    body: MockWebhookDto,
-  ) {
+  override async webhook(rawPayload: string, signature: string | undefined, body: MockWebhookDto) {
     const result = await super.webhook(rawPayload, signature, body);
     const payment = await this.loyaltyPrisma.payment.findUnique({
       where: { providerPaymentId: body.providerPaymentId },
@@ -168,19 +167,11 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
     return result;
   }
 
-  override async changeStatus(
-    id: string,
-    status: OrderStatus,
-    authorId: string,
-    note?: string,
-  ) {
+  override async changeStatus(id: string, status: OrderStatus, authorId: string, note?: string) {
     const result = await super.changeStatus(id, status, authorId, note);
     if (status === OrderStatus.CANCELLED) {
-      if (this.manualFlow()) {
-        await this.loyaltyOrders.refund(id);
-      } else {
-        await this.loyaltyOrders.release(id);
-      }
+      if (this.manualFlow()) await this.loyaltyOrders.refund(id);
+      else await this.loyaltyOrders.release(id);
     }
     return result;
   }
@@ -230,10 +221,6 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
       }),
       this.loyaltyOrders.applications(orderId),
     ]);
-    return {
-      ...order,
-      benefits,
-      paymentFlowMode: this.manualFlow() ? 'manual' : 'automatic',
-    };
+    return { ...order, benefits, paymentFlowMode: this.manualFlow() ? 'manual' : 'automatic' };
   }
 }
