@@ -40,7 +40,6 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run quality gates
-        id: quality
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -58,7 +57,8 @@ jobs:
 
           failed=0
           run_gate "Prisma generate" pnpm --filter @nsabores/api prisma:generate || failed=1
-          run_gate "Formatting" pnpm format:check || failed=1
+          run_gate "Normalize formatting" pnpm format || failed=1
+          run_gate "Verify formatting" pnpm format:check || failed=1
           run_gate "Lint" pnpm lint || failed=1
           run_gate "Typecheck" pnpm typecheck || failed=1
           run_gate "Tests" pnpm test || failed=1
@@ -144,6 +144,7 @@ jobs:
           }
 
           failed=0
+          run_gate "Build types package" pnpm --filter @nsabores/types build || failed=1
           run_gate "Build validation package" pnpm --filter @nsabores/validation build || failed=1
           run_gate "Prisma generate" pnpm --filter @nsabores/api prisma:generate || failed=1
           run_gate "Apply migrations" pnpm --filter @nsabores/api prisma:migrate:deploy || failed=1
