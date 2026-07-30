@@ -19,6 +19,8 @@ export function ManagementShell({ children }: { children: ReactNode }) {
           <Link href="/catalogo/produtos">Produtos</Link>
           <Link href="/catalogo/categorias">Categorias</Link>
           <Link href="/encomendas">Encomendas</Link>
+          <Link href="/operacoes/producao">Produção</Link>
+          <Link href="/recebimentos">Recebimentos</Link>
           <Link href="/promocoes">Promoções</Link>
           <Link href="/cupoes">Cupões</Link>
           <Link href="/cabazes">Cabazes</Link>
