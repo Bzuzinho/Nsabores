@@ -1,0 +1,126 @@
+import { Injectable } from '@nestjs/common';
+import { OrderStatus, PaymentStatus } from '@prisma/client';
+import { BundleAwareCommerceService } from '../bundles/bundle-aware-commerce.service';
+import { BundleInventoryService } from '../bundles/bundle-inventory.service';
+import type { CheckoutDto, MockWebhookDto } from '../commerce/dto';
+import { CommerceMailProvider } from '../commerce/mail.provider';
+import { PaymentProvider } from '../commerce/payment.provider';
+import { OperationsService } from '../operations/operations.service';
+import { PrismaService } from '../prisma.service';
+import { PromotionsService } from '../promotions/promotions.service';
+import { LoyaltyOrderService } from './loyalty-order.service';
+
+type CartIdentity = { userId?: string; sessionId?: string };
+
+@Injectable()
+export class LoyaltyCommerceService extends BundleAwareCommerceService {
+  constructor(
+    private readonly loyaltyPrisma: PrismaService,
+    payments: PaymentProvider,
+    mail: CommerceMailProvider,
+    private readonly loyaltyOperations: OperationsService,
+    promotions: PromotionsService,
+    bundleInventory: BundleInventoryService,
+    private readonly loyaltyOrders: LoyaltyOrderService,
+  ) {
+    super(
+      loyaltyPrisma,
+      payments,
+      mail,
+      loyaltyOperations,
+      promotions,
+      bundleInventory,
+    );
+  }
+
+  override async checkout(identity: CartIdentity, body: CheckoutDto) {
+    const cart = await super.cart(identity);
+    const order = await super.checkout(identity, body);
+    try {
+      await this.loyaltyOrders.reserve(
+        order.id,
+        identity.userId,
+        order.totalCents,
+        body.loyaltyPoints,
+        body.giftCardCode,
+      );
+    } catch (error) {
+      await this.loyaltyOperations
+        .releaseOrder(order.id, 'Reserva de fidelização/vale falhou.')
+        .catch(() => undefined);
+      await this.loyaltyPrisma.$transaction(async (tx) => {
+        await tx.order.deleteMany({ where: { id: order.id } });
+        await tx.cart.updateMany({
+          where: { id: cart.id },
+          data: {
+            status: 'ACTIVE',
+            userId: identity.userId,
+            sessionId: identity.userId ? null : identity.sessionId,
+          },
+        });
+      });
+      throw error;
+    }
+    return this.orderWithBenefits(order.id);
+  }
+
+  override async webhook(
+    rawPayload: string,
+    signature: string | undefined,
+    body: MockWebhookDto,
+  ) {
+    const result = await super.webhook(rawPayload, signature, body);
+    const payment = await this.loyaltyPrisma.payment.findUnique({
+      where: { providerPaymentId: body.providerPaymentId },
+      select: { orderId: true },
+    });
+    if (payment) {
+      if (body.status === PaymentStatus.PAID) {
+        await this.loyaltyOrders.consume(payment.orderId);
+      } else if (
+        body.status === PaymentStatus.FAILED ||
+        body.status === PaymentStatus.CANCELLED
+      ) {
+        await this.loyaltyOrders.release(payment.orderId);
+      }
+    }
+    return result;
+  }
+
+  override async confirmMock(providerPaymentId: string) {
+    const result = await super.confirmMock(providerPaymentId);
+    const payment = await this.loyaltyPrisma.payment.findUnique({
+      where: { providerPaymentId },
+      select: { orderId: true },
+    });
+    if (payment) await this.loyaltyOrders.consume(payment.orderId);
+    return result;
+  }
+
+  override async changeStatus(
+    id: string,
+    status: OrderStatus,
+    authorId: string,
+    note?: string,
+  ) {
+    const result = await super.changeStatus(id, status, authorId, note);
+    if (status === OrderStatus.CANCELLED) await this.loyaltyOrders.release(id);
+    return result;
+  }
+
+  private async orderWithBenefits(orderId: string) {
+    const [order, benefits] = await Promise.all([
+      this.loyaltyPrisma.order.findUniqueOrThrow({
+        where: { id: orderId },
+        include: {
+          items: true,
+          payments: true,
+          deliveryMethod: true,
+          statusHistory: { orderBy: { createdAt: 'asc' } },
+        },
+      }),
+      this.loyaltyOrders.applications(orderId),
+    ]);
+    return { ...order, benefits };
+  }
+}
