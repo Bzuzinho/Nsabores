@@ -50,7 +50,9 @@ export class ReceivablesService {
     return { data: rows, metrics: metrics[0] ?? {} };
   }
 
-  async detail(orderId: string) {
+  async detail(
+    orderId: string,
+  ): Promise<Record<string, unknown> & { events: Record<string, unknown>[] }> {
     await this.refreshOverdue();
     const rows = await this.prisma.$queryRaw<Array<Record<string, unknown>>>`
       SELECT pa.*, o."number", o."customerName", o."email", o."phone", o."paymentStatus",
@@ -60,7 +62,8 @@ export class ReceivablesService {
       WHERE pa."orderId" = ${orderId}::uuid LIMIT 1
     `;
     const agreement = rows[0];
-    if (!agreement) throw new NotFoundException('Acordo de pagamento não encontrado.');
+    if (!agreement)
+      throw new NotFoundException('Acordo de pagamento não encontrado.');
     const events = await this.prisma.$queryRaw<Array<Record<string, unknown>>>`
       SELECT pce.*, u."firstName", u."lastName"
       FROM "PaymentContactEvent" pce
@@ -75,7 +78,9 @@ export class ReceivablesService {
     const current = await this.ensureAgreement(orderId);
     const status = body.status ?? String(current.status);
     const dueAt = body.dueAt ? new Date(body.dueAt) : null;
-    const agreedAt = ['AGREED', 'AWAITING_PAYMENT'].includes(status) ? new Date() : null;
+    const agreedAt = ['AGREED', 'AWAITING_PAYMENT'].includes(status)
+      ? new Date()
+      : null;
     await this.prisma.$executeRaw`
       UPDATE "PaymentAgreement" SET
         "status" = ${status}::"PaymentAgreementStatus",
@@ -103,11 +108,17 @@ export class ReceivablesService {
     return this.detail(orderId);
   }
 
-  async addEvent(orderId: string, body: CreateContactEventDto, authorId?: string) {
+  async addEvent(
+    orderId: string,
+    body: CreateContactEventDto,
+    authorId?: string,
+  ) {
     const agreement = await this.ensureAgreement(orderId);
     const key = body.idempotencyKey?.trim() || null;
     if (key) {
-      const duplicate = await this.prisma.$queryRaw<Array<Record<string, unknown>>>`
+      const duplicate = await this.prisma.$queryRaw<
+        Array<Record<string, unknown>>
+      >`
         SELECT * FROM "PaymentContactEvent" WHERE "idempotencyKey" = ${key} LIMIT 1
       `;
       if (duplicate[0]) return duplicate[0];
