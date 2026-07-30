@@ -77,6 +77,8 @@ import { ClubBillingProvider } from './club/billing.provider';
 import { ClubOperationsService } from './club/club-operations.service';
 import { ClubPromotionsService } from './club/club-promotions.service';
 import { ClubService } from './club/club.service';
+import { GiftCardPurchaseController } from './loyalty/gift-card-purchase.controller';
+import { GiftCardPurchaseService } from './loyalty/gift-card-purchase.service';
 import { AdminLoyaltyAccountsController } from './loyalty/loyalty-admin.controller';
 import {
   AccountLoyaltyController,
@@ -199,6 +201,7 @@ import { LoyaltyService } from './loyalty/loyalty.service';
     ClubWebhookController,
     AccountLoyaltyController,
     PublicGiftCardController,
+    GiftCardPurchaseController,
     AdminLoyaltyController,
     AdminLoyaltyAccountsController,
   ],
@@ -237,6 +240,7 @@ import { LoyaltyService } from './loyalty/loyalty.service';
     LoyaltyEarningService,
     LoyaltyReversalService,
     LoyaltyOrderService,
+    GiftCardPurchaseService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
