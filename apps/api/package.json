@@ -15,7 +15,8 @@
     "prisma:seed": "prisma db seed",
     "validate:issue18": "tsx scripts/validate-issue-18.ts",
     "validate:club": "tsx scripts/validate-club-lifecycle.ts",
-    "validate:loyalty": "tsx scripts/smoke-loyalty.ts"
+    "validate:loyalty": "tsx scripts/smoke-loyalty.ts",
+    "validate:loyalty-checkout": "tsx scripts/smoke-loyalty-checkout.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.3",
