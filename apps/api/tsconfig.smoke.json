@@ -5,6 +5,6 @@
     "rootDir": ".",
     "sourceMap": false
   },
-  "include": ["src/**/*.ts", "scripts/**/*.ts"],
+  "include": ["src/**/*.ts", "scripts/smoke-loyalty-checkout.ts"],
   "exclude": ["node_modules", "dist", "dist-smoke"]
 }
