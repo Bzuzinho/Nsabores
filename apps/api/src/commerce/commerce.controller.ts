@@ -28,11 +28,13 @@ import {
   CheckoutDto,
   DeliveryMethodDto,
   InternalNoteDto,
+  ManualPaymentDto,
   MockWebhookDto,
   OrderQueryDto,
   OrderStatusDto,
   PaymentStartDto,
 } from './dto';
+import { ManualPaymentService } from './manual-payment.service';
 
 class CommerceIdentity {
   constructor(
@@ -232,7 +234,10 @@ export class CustomerOrdersController {
 @Roles(UserRole.STAFF, UserRole.ADMIN)
 @Controller('v1/admin')
 export class AdminOrdersController {
-  constructor(private readonly commerce: CommerceService) {}
+  constructor(
+    private readonly commerce: CommerceService,
+    private readonly manualPayments: ManualPaymentService,
+  ) {}
 
   @Get('orders')
   list(@Query() query: OrderQueryDto) {
@@ -256,6 +261,15 @@ export class AdminOrdersController {
   @Patch('orders/:id/notes')
   note(@Param('id') id: string, @Body() body: InternalNoteDto) {
     return this.commerce.updateInternalNote(id, body.note);
+  }
+
+  @Post('orders/:id/mark-paid')
+  markPaid(
+    @CurrentUser() user: AuthPrincipal,
+    @Param('id') id: string,
+    @Body() body: ManualPaymentDto,
+  ) {
+    return this.manualPayments.markReceived(id, user.sub, body);
   }
 
   @Post('orders/:id/cancel')
