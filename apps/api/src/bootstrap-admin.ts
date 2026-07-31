@@ -1,14 +1,11 @@
 import argon2 from 'argon2';
 import { PrismaService } from './prisma.service';
 
-async function main() {
+export async function bootstrapAdmin() {
   const email = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase();
   const password = process.env.BOOTSTRAP_ADMIN_PASSWORD;
 
-  if (!email || !password) {
-    console.log('Admin bootstrap skipped: credentials not configured.');
-    return;
-  }
+  if (!email || !password) return;
 
   const prisma = new PrismaService();
   try {
@@ -40,8 +37,3 @@ async function main() {
     await prisma.$disconnect();
   }
 }
-
-void main().catch((error) => {
-  console.error('Admin bootstrap failed.', error);
-  process.exitCode = 1;
-});
