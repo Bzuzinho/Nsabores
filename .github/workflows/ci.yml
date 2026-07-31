@@ -156,3 +156,6 @@ jobs:
 
       - name: Validate Sprint 10 acceptance
         run: pnpm --filter @nsabores/api validate:sprint10
+
+      - name: Validate fiscal issuance lifecycle
+        run: pnpm --filter @nsabores/api validate:fiscal
