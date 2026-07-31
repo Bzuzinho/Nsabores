@@ -1,71 +1,47 @@
-# Clube Nsabores — planos, subscrições e billing
+# Clube Nsabores — planos, subscrições e pagamentos
 
-Última revisão: 2026-07-29
+Última revisão: 2026-07-31
 
 ## Estado
 
-A Sprint 8 está em implementação em `main`.
+O Clube suporta dois modos financeiros, controlados por `PAYMENT_FLOW_MODE`:
 
-Já existe suporte para:
+```text
+manual | automatic
+```
 
-- planos configuráveis mensais, trimestrais e anuais;
-- trial opcional;
-- subscrições recorrentes separadas das encomendas;
-- provider de billing `mock` determinístico e idempotente;
-- cobranças recorrentes próprias do Clube;
-- eventos auditáveis de lifecycle;
-- cancelamento no fim do período e retoma;
-- alteração de plano;
-- renovação;
-- `PAST_DUE` após falha de pagamento;
-- webhook de billing idempotente;
-- benefício percentual do Clube integrado no pricing;
-- website e área de conta;
-- management de planos e subscrições.
+O modo manual é o fluxo operacional por defeito. O modo automático mantém a abstração de provider e webhooks para ativação futura.
 
 ## Modelo
 
 ### ClubPlan
 
-Define o produto comercial recorrente:
+Define o produto recorrente:
 
 - nome e código;
 - preço em cêntimos;
 - moeda;
 - periodicidade `MONTHLY`, `QUARTERLY` ou `YEARLY`;
 - trial opcional;
-- benefícios em snapshot estruturado;
+- benefícios estruturados;
 - estado e visibilidade pública.
 
 ### ClubSubscription
 
-Uma subscrição guarda sempre o snapshot comercial com que foi contratada:
+Guarda o snapshot comercial contratado:
 
 - plano;
 - preço;
 - moeda;
 - periodicidade;
-- benefícios.
-
-Alterar posteriormente o plano administrativo não modifica silenciosamente uma subscrição existente. Uma alteração explícita de plano atualiza o snapshot da subscrição.
-
-A base de dados impede mais de uma subscrição simultaneamente ativa por utilizador para os estados operacionais do Clube.
-
-### ClubSubscriptionCharge
-
-As cobranças recorrentes são separadas de `Payment` de encomendas. Cada cobrança tem período, montante, estado, referência do provider e chave de idempotência.
-
-A faturação fiscal/certificada não faz parte desta sprint.
-
-### ClubSubscriptionEvent
-
-Regista a evolução da subscrição e ações administrativas/provider. Eventos provenientes do provider usam `providerEventId` único para evitar processamento duplicado.
-
-## Ciclo de vida
+- benefícios;
+- período corrente;
+- estado operacional.
 
 Estados suportados:
 
 ```text
+PENDING_ACTIVATION
 TRIALING
 ACTIVE
 PAST_DUE
@@ -75,88 +51,86 @@ CANCELLED
 EXPIRED
 ```
 
-Fluxo base sem trial:
+`PENDING_ACTIVATION` significa que a adesão existe, mas os benefícios financeiros ainda não foram ativados porque o pagamento não foi confirmado.
+
+### ClubSubscriptionCharge
+
+Cada cobrança tem:
+
+- subscrição e período;
+- montante e moeda;
+- estado `PENDING`, `PAID`, `FAILED`, `CANCELLED` ou `REFUNDED`;
+- provider/referência;
+- chave de idempotência;
+- timestamps e metadata de auditoria.
+
+As cobranças do Clube são independentes dos pagamentos de encomendas.
+
+### ClubSubscriptionEvent
+
+Regista alterações de estado e ações administrativas. A confirmação manual guarda o autor, a cobrança, a referência e a nota associada.
+
+## Fluxo manual
+
+### Adesão sem trial
 
 ```text
-adesão
-→ ACTIVE
-→ cobrança inicial PAID
-→ renovações
-→ ACTIVE
+pedido de adesão
+→ PENDING_ACTIVATION
+→ cobrança PENDING
+→ confirmação por STAFF/ADMIN
+→ cobrança PAID
+→ subscrição ACTIVE
 ```
 
-Com trial:
+Não há ativação de benefícios antes da confirmação.
+
+### Renovação
 
 ```text
-adesão
-→ TRIALING
-→ fim do trial / primeira renovação
-→ cobrança
-→ ACTIVE
+pedido de renovação
+→ nova cobrança PENDING
+→ confirmação por STAFF/ADMIN
+→ cobrança PAID
+→ período da subscrição atualizado
+→ subscrição ACTIVE
 ```
 
-Cancelamento normal:
+Criar novamente a mesma renovação não duplica a cobrança, porque a chave de idempotência é baseada na subscrição e no início do período.
 
-```text
-ACTIVE/TRIALING
-→ CANCEL_AT_PERIOD_END
-→ benefícios mantidos até currentPeriodEnd
-→ CANCELLED no limite do período
-```
+Confirmar duas vezes a mesma cobrança também é idempotente: uma cobrança já `PAID` não gera nova ativação nem novo período.
 
-A retoma antes do fim do período remove o cancelamento agendado.
+### Trial
 
-## Alteração de plano
+Planos com trial continuam a iniciar em `TRIALING`, sem cobrança inicial. A primeira cobrança é criada quando a renovação é solicitada.
 
-No provider `mock`, a alteração de plano é imediata e sem prorrata.
+## Fluxo automático
 
-A operação:
+Quando `PAYMENT_FLOW_MODE=automatic`, a adesão e renovação continuam a usar `ClubBillingProvider` e os webhooks existentes.
 
-- troca `planId`;
-- atualiza preço/moeda/periodicidade do snapshot;
-- atualiza os benefícios do snapshot;
-- preserva o período corrente;
-- grava `PLAN_CHANGED`.
-
-A próxima renovação utiliza o novo snapshot.
-
-Prorrata real fica dependente do provider de billing que vier a substituir o mock.
-
-## Períodos recorrentes
-
-O calendário é tratado por meses civis, não por número fixo de dias.
-
-Exemplos:
-
-- 31 janeiro mensal → último dia válido de fevereiro;
-- 29 fevereiro anual → 28 fevereiro no ano não bissexto;
-- trimestral → +3 meses civis.
-
-Isto evita deriva de datas em subscrições iniciadas no fim do mês.
+A abstração atual inclui provider mock e preparação para Stripe. Nenhum segredo de provider é guardado no repositório.
 
 ## Benefícios no pricing
 
-O primeiro benefício comercial implementado é:
+Os benefícios são aplicados apenas quando a subscrição está em:
+
+- `TRIALING`;
+- `ACTIVE`;
+- `CANCEL_AT_PERIOD_END`, enquanto o período ainda não terminou.
+
+Não são aplicados em `PENDING_ACTIVATION`, `PAST_DUE`, `PAUSED`, `CANCELLED` ou `EXPIRED`.
+
+O benefício percentual mantém o formato:
 
 ```json
 { "discountPercent": 10 }
 ```
 
-O desconto é aplicado no servidor apenas quando a subscrição está em:
-
-- `TRIALING`;
-- `ACTIVE`;
-- `CANCEL_AT_PERIOD_END` enquanto o período ainda não terminou.
-
-Não é aplicado a `PAST_DUE`, `PAUSED`, `CANCELLED` ou `EXPIRED`.
-
-O cálculo ocorre depois dos descontos promocionais de produto, portanto o benefício do Clube incide sobre o subtotal ainda elegível e nunca leva o total abaixo de zero.
-
-O benefício é gravado em `OrderDiscount` com `source = CLUB` e snapshot da subscrição/plano, sem depender de uma `Promotion` artificial.
+O cálculo é feito no servidor e gravado no snapshot da encomenda.
 
 ## Website
 
-Rotas:
+Rotas principais:
 
 ```text
 /clube
@@ -165,72 +139,65 @@ Rotas:
 /conta/clube
 ```
 
-A conta permite:
-
-- consultar estado e plano;
-- consultar período/trial;
-- consultar cobranças;
-- alterar plano;
-- agendar cancelamento no fim do período;
-- retomar quando permitido.
+No modo manual, a conta apresenta a adesão pendente e as cobranças sem expor notas internas ou dados de auditoria administrativa.
 
 ## Management
 
 Rotas:
 
 ```text
-/clube
 /clube/planos
 /clube/planos/[id]
 /clube/subscricoes
 /clube/subscricoes/[id]
+/clube/cobrancas
 ```
 
-Inclui:
+`/clube/cobrancas` apresenta todas as cobranças `PENDING` e permite:
 
-- criação/edição de planos;
-- benefício percentual configurável;
-- métricas operacionais e MRR estimado;
-- listagem/detalhe de subscrições;
-- cobranças e histórico;
-- renovação mock manual;
-- cancelamento e retoma administrativa auditáveis.
+- consultar cliente, plano, período e valor;
+- confirmar o pagamento;
+- guardar referência/comprovativo opcional;
+- guardar nota interna;
+- abrir o detalhe da subscrição.
 
-## Webhook
+Todas as ações financeiras exigem `STAFF` ou `ADMIN`.
 
-Endpoint:
+## API administrativa
 
 ```text
-POST /v1/webhooks/club
+GET  /v1/admin/club/pending-charges
+POST /v1/admin/club/subscriptions/:id/renew
+POST /v1/admin/club/subscriptions/:id/charges/:chargeId/confirm
 ```
 
-Eventos mock suportados:
+A confirmação é transacional: atualiza cobrança, período, estado da subscrição e histórico na mesma transação.
 
-- `renewal.succeeded`;
-- `payment.failed`;
-- `subscription.cancelled`.
+## Segurança e auditoria
 
-O endpoint usa `x-club-signature` e `CLUB_BILLING_WEBHOOK_SECRET` para HMAC no contrato mock. Isto não representa ainda a implementação do protocolo Stripe; Stripe apenas está previsto na abstração do provider.
+- valores sempre em cêntimos;
+- sem dados bancários ou de cartão;
+- confirmação apenas por `STAFF`/`ADMIN`;
+- autor e timestamps persistidos;
+- referências opcionais, sem segredos;
+- criação e confirmação idempotentes;
+- modo manual e automático separados por configuração.
 
 ## Deployment e migrations
 
-As migrations continuam deliberadamente fora de `start:prod`.
+As migrations não são executadas automaticamente no arranque.
 
-O CI valida o histórico numa instância PostgreSQL limpa. A aplicação de migrations a produção continua uma operação controlada:
+A migration do fluxo manual é:
+
+```text
+20260731143000_manual_club_payments
+```
+
+Aplicação controlada:
 
 ```bash
 pnpm --filter @nsabores/api prisma:migrate:deploy
+pnpm --filter @nsabores/api exec prisma migrate status
 ```
 
-O código do Clube tem compatibilidade pré-migration limitada: enquanto as tabelas do Clube ainda não existirem, planos públicos/listagens devolvem vazio, a conta devolve ausência de subscrição e o motor de pricing ignora benefícios do Clube. Outros erros de base de dados não são mascarados.
-
-## Próximos passos
-
-Antes de fechar a Sprint 8:
-
-- alinhar os modelos do Clube no `schema.prisma`;
-- testar lifecycle completo numa PostgreSQL limpa com a migration da Sprint 8;
-- testar webhook/idempotência sobre dados reais de teste;
-- completar filtros operacionais do management;
-- avaliar benefícios adicionais como portes grátis/acesso antecipado sem duplicar o motor promocional;
-- validar todos os quality gates.
+Depois do deployment, a base deve apresentar 18 migrations e `Database schema is up to date!`.
