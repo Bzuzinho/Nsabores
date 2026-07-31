@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { managementApi } from './management-auth';
 
 type Row = {
@@ -104,16 +104,27 @@ export function ProductionAdmin() {
 export function ProductionDetail({ orderId }: { orderId: string }) {
   const [work, setWork] = useState<Detail | null>(null);
   const [error, setError] = useState('');
-  const reload = useCallback(
-    () =>
-      managementApi
-        .get<Detail>(`/v1/admin/production/${orderId}`)
-        .then(setWork),
-    [orderId],
-  );
+
   useEffect(() => {
-    void reload();
-  }, [reload]);
+    let cancelled = false;
+    void managementApi
+      .get<Detail>(`/v1/admin/production/${orderId}`)
+      .then((result) => {
+        if (!cancelled) setWork(result);
+      })
+      .catch((reason: unknown) => {
+        if (!cancelled) {
+          setError(
+            reason instanceof Error
+              ? reason.message
+              : 'Não foi possível carregar a produção.',
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [orderId]);
 
   async function save(payload: Record<string, unknown>) {
     setError('');
