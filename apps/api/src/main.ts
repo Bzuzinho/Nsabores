@@ -1,12 +1,15 @@
 import 'reflect-metadata';
-import { NestFactory } from '@nestjs/core';
-import { ConfigService } from '@nestjs/config';
-import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
 import type { NextFunction, Request, Response } from 'express';
+import { AppModule } from './app.module';
+import { bootstrapAdmin } from './bootstrap-admin';
 
 async function bootstrap() {
+  await bootstrapAdmin();
+
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
   app.use(cookieParser());
