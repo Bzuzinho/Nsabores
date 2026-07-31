@@ -5,6 +5,12 @@ import { createHealthResponse } from '@nsabores/validation';
 export class HealthController {
   @Get()
   health() {
-    return createHealthResponse('api');
+    return {
+      ...createHealthResponse('api'),
+      commit:
+        process.env.RAILWAY_GIT_COMMIT_SHA ??
+        process.env.GITHUB_SHA ??
+        'unknown',
+    };
   }
 }
