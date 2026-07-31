@@ -145,6 +145,9 @@ jobs:
       - name: Validate Club lifecycle
         run: pnpm --filter @nsabores/api validate:club
 
+      - name: Validate manual Club payments
+        run: pnpm --filter @nsabores/api validate:club-manual
+
       - name: Validate loyalty and gift cards
         run: pnpm --filter @nsabores/api validate:loyalty
 
