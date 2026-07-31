@@ -8,6 +8,15 @@ async function main() {
   const provider = new FiscalProviderService(prisma);
   const documentIds: string[] = [];
   const year = new Date().getUTCFullYear();
+  const author = await prisma.user.create({
+    data: {
+      email: `fiscal-provider-smoke-${randomUUID()}@example.test`,
+      passwordHash: 'smoke-not-used',
+      firstName: 'Fiscal',
+      lastName: 'Provider Smoke',
+      role: 'ADMIN',
+    },
+  });
 
   try {
     const series = await prisma.fiscalSeries.upsert({
@@ -43,15 +52,11 @@ async function main() {
     });
     documentIds.push(manualDocument.id);
 
-    const registered = await provider.registerManual(
-      manualDocument.id,
-      randomUUID(),
-      {
-        externalNumber: 'EXT-2026-001',
-        externalDocumentUrl: 'https://example.test/documents/EXT-2026-001',
-        providerReference: 'manual-smoke',
-      },
-    );
+    const registered = await provider.registerManual(manualDocument.id, author.id, {
+      externalNumber: 'EXT-2026-001',
+      externalDocumentUrl: 'https://example.test/documents/EXT-2026-001',
+      providerReference: 'manual-smoke',
+    });
     assert.equal(registered.status, 'ISSUED');
     assert.equal(registered.externalNumber, 'EXT-2026-001');
     assert.equal(registered.provider, 'manual');
@@ -73,15 +78,11 @@ async function main() {
     documentIds.push(mockDocument.id);
 
     process.env.FISCAL_PROVIDER = 'mock';
-    const failed = await provider.processMock(mockDocument.id, randomUUID(), true);
+    const failed = await provider.processMock(mockDocument.id, author.id, true);
     assert.equal(failed.status, 'FAILED');
     assert.ok(failed.providerError);
 
-    const reprocessed = await provider.processMock(
-      mockDocument.id,
-      randomUUID(),
-      false,
-    );
+    const reprocessed = await provider.processMock(mockDocument.id, author.id, false);
     assert.equal(reprocessed.status, 'ISSUED');
     assert.equal(reprocessed.provider, 'mock');
     assert.equal(reprocessed.providerError, null);
@@ -95,6 +96,7 @@ async function main() {
     await prisma.fiscalSeries.deleteMany({
       where: { code: `PROVIDER-SMOKE-${year}` },
     });
+    await prisma.user.delete({ where: { id: author.id } });
     await prisma.$disconnect();
   }
 }
