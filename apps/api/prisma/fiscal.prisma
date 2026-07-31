@@ -1,0 +1,116 @@
+enum FiscalDocumentType {
+  INVOICE
+  INVOICE_RECEIPT
+  RECEIPT
+  CREDIT_NOTE
+  PROFORMA
+}
+
+enum FiscalDocumentStatus {
+  DRAFT
+  ISSUED
+  CANCELLED
+  CREDITED
+  FAILED
+}
+
+enum FiscalSourceType {
+  ORDER
+  GIFT_CARD_PURCHASE
+  CLUB_CHARGE
+  MANUAL
+}
+
+enum FiscalEventType {
+  CREATED
+  ISSUED
+  PROVIDER_FAILED
+  REPROCESSED
+  CANCELLED
+  CREDITED
+}
+
+model FiscalSeries {
+  id             String             @id @default(uuid()) @db.Uuid
+  code           String
+  documentType   FiscalDocumentType
+  prefix         String
+  year           Int
+  nextNumber     Int                @default(1)
+  isActive       Boolean            @default(true)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @default(now()) @updatedAt
+
+  @@unique([code, documentType, year])
+  @@index([documentType, isActive, year])
+}
+
+model FiscalDocument {
+  id                   String               @id @default(uuid()) @db.Uuid
+  seriesId             String               @db.Uuid
+  type                 FiscalDocumentType
+  status               FiscalDocumentStatus @default(DRAFT)
+  sourceType           FiscalSourceType
+  sourceId             String?              @db.Uuid
+  customerUserId       String?              @db.Uuid
+  parentDocumentId     String?              @db.Uuid
+  sequentialNumber     Int?
+  number               String?
+  currency             String               @default("EUR") @db.Char(3)
+  subtotalCents        Int
+  discountCents        Int                  @default(0)
+  taxCents             Int                  @default(0)
+  totalCents           Int
+  customerSnapshot     Json
+  billingSnapshot      Json
+  metadata             Json?
+  externalNumber       String?
+  externalDocumentUrl  String?
+  provider             String               @default("manual")
+  providerReference    String?
+  providerError        String?
+  issuedAt             DateTime?
+  cancelledAt          DateTime?
+  createdById          String?              @db.Uuid
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @default(now()) @updatedAt
+
+  @@unique([seriesId, sequentialNumber])
+  @@unique([sourceType, sourceId, type])
+  @@index([status, createdAt])
+  @@index([customerUserId, issuedAt])
+  @@index([sourceType, sourceId])
+  @@index([parentDocumentId])
+}
+
+model FiscalDocumentLine {
+  id                String   @id @default(uuid()) @db.Uuid
+  documentId        String   @db.Uuid
+  position          Int
+  description       String
+  sku               String?
+  quantity          Int
+  unitPriceCents    Int
+  discountCents     Int      @default(0)
+  taxRateBasisPoints Int     @default(0)
+  taxCents          Int      @default(0)
+  totalCents        Int
+  sourceLineId      String?  @db.Uuid
+  snapshot          Json?
+  createdAt         DateTime @default(now())
+
+  @@unique([documentId, position])
+  @@index([documentId])
+}
+
+model FiscalDocumentEvent {
+  id          String          @id @default(uuid()) @db.Uuid
+  documentId  String          @db.Uuid
+  type        FiscalEventType
+  authorId    String?         @db.Uuid
+  note        String?
+  payload     Json?
+  createdAt   DateTime        @default(now())
+
+  @@index([documentId, createdAt])
+}
