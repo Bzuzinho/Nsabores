@@ -1,7 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import type { CreateContactEventDto, UpdateAgreementDto } from './dto';
+import {
+  ContactChannelDto,
+  ContactTypeDto,
+  type CreateContactEventDto,
+  type UpdateAgreementDto,
+} from './dto';
 
 @Injectable()
 export class ReceivablesService {
@@ -98,8 +103,11 @@ export class ReceivablesService {
     await this.addEvent(
       orderId,
       {
-        type: status === 'CANCELLED' ? 'CANCELLED' : 'CONTACT_COMPLETED',
-        channel: 'OTHER',
+        type:
+          status === 'CANCELLED'
+            ? ContactTypeDto.CANCELLED
+            : ContactTypeDto.CONTACT_COMPLETED,
+        channel: ContactChannelDto.OTHER,
         note: `Acordo atualizado para ${status}.`,
         idempotencyKey: `agreement:${orderId}:${status}:${Date.now()}`,
       },
@@ -135,7 +143,7 @@ export class ReceivablesService {
         ${body.promisedPaymentAt ? new Date(body.promisedPaymentAt) : null}, ${key}, CURRENT_TIMESTAMP
       )
     `;
-    if (body.type === 'PAYMENT_PROMISE') {
+    if (body.type === ContactTypeDto.PAYMENT_PROMISE) {
       await this.prisma.$executeRaw`
         UPDATE "PaymentAgreement" SET "status" = 'AWAITING_PAYMENT',
           "dueAt" = COALESCE(${body.promisedPaymentAt ? new Date(body.promisedPaymentAt) : null}, "dueAt"),
@@ -164,8 +172,8 @@ export class ReceivablesService {
     await this.addEvent(
       orderId,
       {
-        type: 'PAYMENT_CONFIRMED',
-        channel: 'OTHER',
+        type: ContactTypeDto.PAYMENT_CONFIRMED,
+        channel: ContactChannelDto.OTHER,
         note: note?.trim() || 'Pagamento confirmado manualmente.',
         idempotencyKey: `agreement:${orderId}:paid`,
       },
