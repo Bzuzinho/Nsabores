@@ -16,6 +16,7 @@
     "validate:issue18": "tsx scripts/validate-issue-18.ts",
     "validate:club": "tsx scripts/validate-club-lifecycle.ts",
     "validate:club-manual": "pnpm build && node dist/smoke-manual-club.js",
+    "validate:sprint10": "tsx scripts/validate-sprint10-acceptance.ts",
     "validate:loyalty": "tsx scripts/smoke-loyalty.ts",
     "validate:loyalty-checkout": "pnpm build && node dist/smoke-loyalty-checkout.js"
   },
@@ -44,7 +45,7 @@
     "@eslint/js": "^9.39.5",
     "@nestjs/cli": "^11.0.7",
     "@types/node": "^26.1.1",
-    "@types/cookie-parser": "^1.4.10",
+    "@types/cookie-parser": "^5.0.5",
     "@types/express": "^5.0.5",
     "@types/pg": "^8.15.5",
     "eslint": "^9.39.5",
