@@ -40,6 +40,7 @@ model FiscalSeries {
   isActive       Boolean            @default(true)
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @default(now()) @updatedAt
+  documents      FiscalDocument[]
 
   @@unique([code, documentType, year])
   @@index([documentType, isActive, year])
@@ -74,6 +75,11 @@ model FiscalDocument {
   createdById          String?              @db.Uuid
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @default(now()) @updatedAt
+  series               FiscalSeries         @relation(fields: [seriesId], references: [id], onDelete: Restrict)
+  parentDocument       FiscalDocument?       @relation("FiscalDocumentCredits", fields: [parentDocumentId], references: [id], onDelete: Restrict)
+  creditDocuments      FiscalDocument[]      @relation("FiscalDocumentCredits")
+  lines                FiscalDocumentLine[]
+  events               FiscalDocumentEvent[]
 
   @@unique([seriesId, sequentialNumber])
   @@unique([sourceType, sourceId, type])
@@ -84,20 +90,21 @@ model FiscalDocument {
 }
 
 model FiscalDocumentLine {
-  id                String   @id @default(uuid()) @db.Uuid
-  documentId        String   @db.Uuid
-  position          Int
-  description       String
-  sku               String?
-  quantity          Int
-  unitPriceCents    Int
-  discountCents     Int      @default(0)
-  taxRateBasisPoints Int     @default(0)
-  taxCents          Int      @default(0)
-  totalCents        Int
-  sourceLineId      String?  @db.Uuid
-  snapshot          Json?
-  createdAt         DateTime @default(now())
+  id                  String         @id @default(uuid()) @db.Uuid
+  documentId          String         @db.Uuid
+  position            Int
+  description         String
+  sku                 String?
+  quantity            Int
+  unitPriceCents      Int
+  discountCents       Int            @default(0)
+  taxRateBasisPoints  Int            @default(0)
+  taxCents            Int            @default(0)
+  totalCents          Int
+  sourceLineId        String?        @db.Uuid
+  snapshot            Json?
+  createdAt           DateTime       @default(now())
+  document            FiscalDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@unique([documentId, position])
   @@index([documentId])
@@ -111,6 +118,7 @@ model FiscalDocumentEvent {
   note        String?
   payload     Json?
   createdAt   DateTime        @default(now())
+  document    FiscalDocument  @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@index([documentId, createdAt])
 }
