@@ -4,34 +4,29 @@
 
 ## Estado
 
-A Sprint 11 introduz um registo documental interno e auditável para encomendas e, progressivamente, para vales-oferta e cobranças do Clube.
+A Sprint 11 introduz um registo documental interno e auditável para encomendas, vales-oferta e cobranças do Clube.
 
-Este módulo não declara certificação fiscal. O modo atual é `manual` e serve para:
+Este módulo não declara certificação fiscal. Serve para:
 
 - garantir idempotência e rastreabilidade;
 - preservar snapshots comerciais;
 - preparar integração futura com software certificado;
-- associar pagamentos confirmados a documentos comerciais.
+- associar pagamentos confirmados a documentos comerciais;
+- registar documentos externos emitidos por um sistema certificado.
 
 ## Momento de emissão
 
-Uma encomenda só pode originar um documento depois de o pagamento estar confirmado com `paymentStatus = PAID`.
+Uma origem só pode gerar documento depois da confirmação financeira:
+
+- encomenda com `paymentStatus = PAID`;
+- vale-oferta com `GiftCardPurchase.status = PAID`;
+- Clube com `ClubSubscriptionCharge.status = PAID`.
 
 Produção, preparação e expedição continuam independentes da emissão documental.
 
-Fluxo atual:
+## Tipos e estados
 
-```text
-Encomenda criada
-→ produção pode avançar
-→ pagamento confirmado
-→ emissão documental autorizada
-→ snapshot imutável
-```
-
-## Tipos
-
-Tipos suportados pelo modelo:
+Tipos suportados:
 
 - `INVOICE`;
 - `INVOICE_RECEIPT`;
@@ -49,48 +44,87 @@ Estados:
 
 ## Séries e numeração
 
-Cada tipo documental utiliza uma série anual.
-
-A emissão:
-
-1. seleciona ou cria a série;
-2. incrementa `nextNumber` na mesma transação;
-3. atribui o número sequencial;
-4. cria o documento, linhas e eventos;
-5. confirma a transação.
+Cada tipo documental utiliza uma série anual. A emissão seleciona ou cria a série, incrementa `nextNumber` na mesma transação e cria documento, linhas e eventos com isolamento `SERIALIZABLE`.
 
 Exemplo:
 
 ```text
 FR 2026/000001
 FR 2026/000002
+NC 2026/000001
 ```
 
-A constraint `(seriesId, sequentialNumber)` impede duplicações. A emissão é executada com isolamento `SERIALIZABLE`.
+A constraint `(seriesId, sequentialNumber)` impede duplicações.
 
 ## Idempotência
 
-Existe unicidade por:
+A emissão comercial usa unicidade por:
 
 ```text
 sourceType + sourceId + documentType
 ```
 
-Repetir uma emissão para a mesma origem e tipo devolve o documento existente e não consome um novo número.
+Notas de crédito usam `idempotencyKey` própria, permitindo várias notas parciais sem repetir a mesma operação.
 
 ## Snapshots
 
 Após emissão, o documento preserva:
 
 - identificação e contacto do cliente;
-- morada de faturação;
+- morada de faturação quando disponível;
 - moeda;
 - subtotal, descontos, imposto e total;
 - linhas, quantidades, preços e SKU;
 - origem comercial;
 - data e autor da emissão.
 
-Alterações posteriores na encomenda, catálogo ou perfil do cliente não alteram o documento emitido.
+Alterações posteriores no catálogo, encomenda, subscrição ou perfil não alteram o documento emitido.
+
+## Notas de crédito
+
+São suportadas notas de crédito totais e parciais.
+
+O fluxo:
+
+1. calcula as quantidades já creditadas por linha;
+2. impede crédito superior ao saldo disponível;
+3. emite uma nova nota na série `NC`;
+4. preserva o documento original;
+5. marca o original como `CREDITED` apenas quando o valor total ficou creditado;
+6. grava eventos auditáveis em ambos os documentos.
+
+## Providers
+
+A variável operacional é:
+
+```text
+FISCAL_PROVIDER=manual|mock
+```
+
+Sem configuração explícita, o sistema usa `manual`.
+
+### Manual
+
+Permite registar:
+
+- número externo;
+- URL do documento;
+- referência do provider.
+
+O registo não finge certificação. Serve para associar ao registo interno um documento emitido noutro sistema.
+
+Um documento em `FAILED` pode ser reprocessado manualmente. A operação limpa `providerError`, regressa a `ISSUED` e grava `REPROCESSED`.
+
+### Mock
+
+Usado para desenvolvimento e testes. Permite:
+
+- processamento determinístico com referência mock;
+- falha simulada, que coloca o documento em `FAILED`;
+- reprocessamento posterior com sucesso;
+- eventos `PROVIDER_FAILED` e `REPROCESSED`.
+
+O mock não é um provider fiscal certificado.
 
 ## Management
 
@@ -99,22 +133,23 @@ Rotas:
 ```text
 /documentos
 /documentos/[id]
+/documentos/[id]/nota-credito
 ```
 
-Permitem:
+O detalhe inclui o painel do provider, número externo, URL, erro atual e ações de processamento/reprocessamento.
 
-- listar e filtrar documentos;
-- emitir um documento a partir de uma encomenda paga;
-- consultar série, snapshots, linhas e eventos;
-- identificar claramente o provider `manual`;
-- distinguir a representação interna de faturação certificada.
-
-Endpoints:
+Endpoints principais:
 
 ```text
 GET  /v1/admin/fiscal/documents
 GET  /v1/admin/fiscal/documents/:id
+GET  /v1/admin/fiscal/provider
 POST /v1/admin/fiscal/orders/:orderId/issue
+POST /v1/admin/fiscal/gift-card-purchases/:purchaseId/issue
+POST /v1/admin/fiscal/club-charges/:chargeId/issue
+POST /v1/admin/fiscal/documents/:id/provider/manual
+POST /v1/admin/fiscal/documents/:id/provider/mock
+POST /v1/admin/fiscal/documents/:id/credit-notes
 ```
 
 Acesso limitado a `STAFF` e `ADMIN`.
@@ -130,31 +165,35 @@ Rotas:
 
 A conta mostra apenas documentos cujo `customerUserId` corresponde ao utilizador autenticado.
 
-Não são expostos:
+Não são expostos erros do provider, notas internas, eventos administrativos ou referências de outros clientes.
 
-- erros do provider;
-- notas internas;
-- eventos administrativos;
-- referências de outros clientes.
+## Validação obrigatória
+
+A CI PostgreSQL executa:
+
+```text
+validate:fiscal
+validate:fiscal-sources
+validate:fiscal-provider
+```
+
+Os smokes cobrem emissão, numeração, idempotência, notas de crédito, origens de vale/Clube, falha do provider e reprocessamento.
 
 ## Limitações legais
 
-O provider atual é manual. A representação HTML disponibilizada no management e na conta:
+A representação atual:
 
 - não é declarada como fatura certificada;
 - não substitui um documento emitido por software homologado;
 - não implementa assinatura fiscal, hash legal ou comunicação à AT;
 - não produz ainda SAF-T certificado.
 
-Uma futura integração certificada deve implementar `FiscalProvider` sem alterar os snapshots históricos nem a numeração interna já atribuída.
+Uma futura integração certificada deve implementar o contrato de provider sem alterar snapshots históricos nem a numeração interna já atribuída.
 
 ## Próximos passos
 
-- notas de crédito totais e parciais;
-- documentos para vales-oferta;
-- documentos para cobranças do Clube;
-- registo manual de número externo e URL/ficheiro;
-- reprocessamento de falhas;
 - representação PDF não certificada;
 - exportação CSV e preparação SAF-T;
-- configuração administrativa de séries e provider.
+- configuração administrativa de séries;
+- pesquisa de pagamentos sem documento e documentos sem pagamento;
+- provider certificado futuro.
