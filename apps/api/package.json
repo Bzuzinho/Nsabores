@@ -20,6 +20,7 @@
     "validate:fiscal": "pnpm build && node dist/smoke-fiscal.js",
     "validate:fiscal-sources": "pnpm build && node dist/smoke-fiscal-sources.js",
     "validate:fiscal-provider": "pnpm build && node dist/smoke-fiscal-provider.js",
+    "validate:fiscal-reconciliation": "pnpm build && node dist/smoke-fiscal-reconciliation.js",
     "validate:loyalty": "tsx scripts/smoke-loyalty.ts",
     "validate:loyalty-checkout": "pnpm build && node dist/smoke-loyalty-checkout.js"
   },
