@@ -12,6 +12,7 @@ enum ClubBillingInterval {
 }
 
 enum ClubSubscriptionStatus {
+  PENDING_ACTIVATION
   TRIALING
   ACTIVE
   PAST_DUE
@@ -26,6 +27,7 @@ enum ClubSubscriptionEventType {
   TRIAL_STARTED
   ACTIVATED
   RENEWED
+  PAYMENT_CONFIRMED
   PAYMENT_FAILED
   PLAN_CHANGED
   CANCEL_SCHEDULED
