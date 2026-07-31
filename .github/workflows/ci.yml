@@ -162,3 +162,6 @@ jobs:
 
       - name: Validate gift card and Club fiscal documents
         run: pnpm --filter @nsabores/api validate:fiscal-sources
+
+      - name: Validate fiscal provider lifecycle
+        run: pnpm --filter @nsabores/api validate:fiscal-provider
