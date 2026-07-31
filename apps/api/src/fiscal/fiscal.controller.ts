@@ -6,18 +6,21 @@ import type { AuthPrincipal } from '../auth/auth.types';
 import { PrismaService } from '../prisma.service';
 import { CreditNoteService, type CreditNoteLineInput } from './credit-note.service';
 import { FiscalService } from './fiscal.service';
+import { SourceFiscalService } from './source-fiscal.service';
 
 @UseGuards(AuthGuard, RolesGuard)
 @Roles(UserRole.STAFF, UserRole.ADMIN)
 @Controller('v1/admin/fiscal')
 export class FiscalController {
   private readonly creditNotes: CreditNoteService;
+  private readonly sources: SourceFiscalService;
 
   constructor(
     private readonly fiscal: FiscalService,
     prisma: PrismaService,
   ) {
     this.creditNotes = new CreditNoteService(prisma);
+    this.sources = new SourceFiscalService(prisma);
   }
 
   @Get('documents')
@@ -41,6 +44,22 @@ export class FiscalController {
       user.sub,
       body.type ?? FiscalDocumentType.INVOICE_RECEIPT,
     );
+  }
+
+  @Post('gift-card-purchases/:purchaseId/issue')
+  issueGiftCardPurchase(
+    @Param('purchaseId') purchaseId: string,
+    @CurrentUser() user: AuthPrincipal,
+  ) {
+    return this.sources.issueGiftCardPurchase(purchaseId, user.sub);
+  }
+
+  @Post('club-charges/:chargeId/issue')
+  issueClubCharge(
+    @Param('chargeId') chargeId: string,
+    @CurrentUser() user: AuthPrincipal,
+  ) {
+    return this.sources.issueClubCharge(chargeId, user.sub);
   }
 
   @Post('documents/:id/credit-notes')
