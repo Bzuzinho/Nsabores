@@ -5,6 +5,7 @@ import { AuthGuard, RolesGuard } from '../auth/auth.guards';
 import type { AuthPrincipal } from '../auth/auth.types';
 import { PrismaService } from '../prisma.service';
 import { CreditNoteService, type CreditNoteLineInput } from './credit-note.service';
+import { FiscalProviderService } from './fiscal-provider.service';
 import { FiscalService } from './fiscal.service';
 import { SourceFiscalService } from './source-fiscal.service';
 
@@ -14,6 +15,7 @@ import { SourceFiscalService } from './source-fiscal.service';
 export class FiscalController {
   private readonly creditNotes: CreditNoteService;
   private readonly sources: SourceFiscalService;
+  private readonly provider: FiscalProviderService;
 
   constructor(
     private readonly fiscal: FiscalService,
@@ -21,11 +23,17 @@ export class FiscalController {
   ) {
     this.creditNotes = new CreditNoteService(prisma);
     this.sources = new SourceFiscalService(prisma);
+    this.provider = new FiscalProviderService(prisma);
   }
 
   @Get('documents')
   list() {
     return this.fiscal.list();
+  }
+
+  @Get('provider')
+  providerMode() {
+    return { mode: this.provider.mode() };
   }
 
   @Get('documents/:id')
@@ -60,6 +68,29 @@ export class FiscalController {
     @CurrentUser() user: AuthPrincipal,
   ) {
     return this.sources.issueClubCharge(chargeId, user.sub);
+  }
+
+  @Post('documents/:id/provider/manual')
+  registerManual(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthPrincipal,
+    @Body()
+    body: {
+      externalNumber: string;
+      externalDocumentUrl?: string;
+      providerReference?: string;
+    },
+  ) {
+    return this.provider.registerManual(id, user.sub, body);
+  }
+
+  @Post('documents/:id/provider/mock')
+  processMock(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthPrincipal,
+    @Body() body: { simulateFailure?: boolean },
+  ) {
+    return this.provider.processMock(id, user.sub, body.simulateFailure === true);
   }
 
   @Post('documents/:id/credit-notes')
