@@ -99,6 +99,8 @@ import { LoyaltyService } from './loyalty/loyalty.service';
 import { AccountReceivablesController } from './receivables/account-receivables.controller';
 import { ReceivablesController } from './receivables/receivables.controller';
 import { ReceivablesService } from './receivables/receivables.service';
+import { FiscalController } from './fiscal/fiscal.controller';
+import { FiscalService } from './fiscal/fiscal.service';
 
 @Module({
   imports: [
@@ -216,6 +218,7 @@ import { ReceivablesService } from './receivables/receivables.service';
     AdminLoyaltyController,
     AdminLoyaltyAccountsController,
     ReceivablesController,
+    FiscalController,
   ],
   providers: [
     PrismaService,
@@ -227,6 +230,7 @@ import { ReceivablesService } from './receivables/receivables.service';
     RolesGuard,
     MailProvider,
     ReceivablesService,
+    FiscalService,
     LoyaltyCommerceService,
     { provide: BundleAwareCommerceService, useExisting: LoyaltyCommerceService },
     { provide: PromotionalCommerceService, useExisting: LoyaltyCommerceService },
