@@ -7,16 +7,16 @@ import { FiscalService } from './fiscal.service';
 
 @UseGuards(AuthGuard, RolesGuard)
 @Roles(UserRole.STAFF, UserRole.ADMIN)
-@Controller('v1/admin/fiscal-documents')
+@Controller('v1/admin/fiscal')
 export class FiscalController {
   constructor(private readonly fiscal: FiscalService) {}
 
-  @Get()
+  @Get('documents')
   list() {
     return this.fiscal.list();
   }
 
-  @Get(':id')
+  @Get('documents/:id')
   detail(@Param('id') id: string) {
     return this.fiscal.detail(id);
   }
