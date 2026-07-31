@@ -165,3 +165,6 @@ jobs:
 
       - name: Validate fiscal provider lifecycle
         run: pnpm --filter @nsabores/api validate:fiscal-provider
+
+      - name: Validate fiscal reconciliation reports
+        run: pnpm --filter @nsabores/api validate:fiscal-reconciliation
