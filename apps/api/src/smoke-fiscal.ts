@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { ConflictException } from '@nestjs/common';
 import { FiscalDocumentType, PaymentStatus } from '@prisma/client';
+import { CreditNoteService } from './fiscal/credit-note.service';
 import { FiscalService } from './fiscal/fiscal.service';
 import { PrismaService } from './prisma.service';
 
@@ -26,11 +27,11 @@ async function createOrder(prisma: PrismaService, suffix: string, paid: boolean)
       phone: '910000000',
       status: 'PROCESSING',
       paymentStatus: paid ? PaymentStatus.PAID : PaymentStatus.PENDING,
-      subtotalCents: 1000,
+      subtotalCents: 2000,
       shippingCents: 0,
       discountCents: 0,
       taxCents: 0,
-      totalCents: 1000,
+      totalCents: 2000,
       currency: 'EUR',
       billingAddress: {
         firstName: 'Cliente',
@@ -55,8 +56,8 @@ async function createOrder(prisma: PrismaService, suffix: string, paid: boolean)
           productName: `Produto ${suffix}`,
           sku: `SKU-${suffix}`,
           unitPriceCents: 1000,
-          quantity: 1,
-          totalCents: 1000,
+          quantity: 2,
+          totalCents: 2000,
         },
       },
     },
@@ -66,7 +67,18 @@ async function createOrder(prisma: PrismaService, suffix: string, paid: boolean)
 async function main() {
   const prisma = new PrismaService();
   const fiscal = new FiscalService(prisma);
+  const creditNotes = new CreditNoteService(prisma);
   const orderIds: string[] = [];
+  const author = await prisma.user.create({
+    data: {
+      email: `fiscal-smoke-${randomUUID()}@example.test`,
+      passwordHash: 'not-used-in-smoke',
+      firstName: 'Fiscal',
+      lastName: 'Smoke',
+      role: 'ADMIN',
+      isActive: true,
+    },
+  });
 
   try {
     const pending = await createOrder(prisma, 'PENDING', false);
@@ -84,12 +96,12 @@ async function main() {
 
     const first = await fiscal.issueOrder(
       pending.id,
-      undefined,
+      author.id,
       FiscalDocumentType.INVOICE_RECEIPT,
     );
     const duplicate = await fiscal.issueOrder(
       pending.id,
-      undefined,
+      author.id,
       FiscalDocumentType.INVOICE_RECEIPT,
     );
 
@@ -99,9 +111,59 @@ async function main() {
     assert.ok(first.number);
     assert.ok(first.sequentialNumber);
 
+    const originalLine = first.lines[0];
+    assert.ok(originalLine);
+    const partialKey = `fiscal-credit-partial:${randomUUID()}`;
+    const partial = await creditNotes.create(
+      first.id,
+      author.id,
+      partialKey,
+      'Crédito parcial de teste.',
+      [{ lineId: originalLine.id, quantity: 1 }],
+    );
+    const partialDuplicate = await creditNotes.create(
+      first.id,
+      author.id,
+      partialKey,
+      'Crédito parcial de teste.',
+      [{ lineId: originalLine.id, quantity: 1 }],
+    );
+    assert.equal(partial.id, partialDuplicate.id);
+    assert.equal(partial.totalCents, 1000);
+
+    const afterPartial = await prisma.fiscalDocument.findUniqueOrThrow({
+      where: { id: first.id },
+    });
+    assert.equal(afterPartial.status, 'ISSUED');
+
+    await assert.rejects(
+      () =>
+        creditNotes.create(
+          first.id,
+          author.id,
+          `fiscal-credit-excess:${randomUUID()}`,
+          'Tentativa excessiva.',
+          [{ lineId: originalLine.id, quantity: 2 }],
+        ),
+      (error: unknown) => error instanceof ConflictException,
+    );
+
+    const remaining = await creditNotes.create(
+      first.id,
+      author.id,
+      `fiscal-credit-remaining:${randomUUID()}`,
+      'Crédito do saldo restante.',
+    );
+    assert.equal(remaining.totalCents, 1000);
+
+    const fullyCredited = await prisma.fiscalDocument.findUniqueOrThrow({
+      where: { id: first.id },
+    });
+    assert.equal(fullyCredited.status, 'CREDITED');
+
     const secondOrder = await createOrder(prisma, 'SECOND', true);
     orderIds.push(secondOrder.id);
-    const second = await fiscal.issueOrder(secondOrder.id);
+    const second = await fiscal.issueOrder(secondOrder.id, author.id);
 
     assert.equal(
       second.sequentialNumber,
@@ -118,13 +180,26 @@ async function main() {
     });
     assert.equal(documentCount, 2);
 
-    console.log('Fiscal issuance smoke passed.');
+    const creditCount = await prisma.fiscalDocument.count({
+      where: { parentDocumentId: first.id, type: FiscalDocumentType.CREDIT_NOTE },
+    });
+    assert.equal(creditCount, 2);
+
+    console.log('Fiscal issuance and credit note smoke passed.');
   } finally {
+    const originals = await prisma.fiscalDocument.findMany({
+      where: { sourceType: 'ORDER', sourceId: { in: orderIds } },
+      select: { id: true },
+    });
+    await prisma.fiscalDocument.deleteMany({
+      where: { parentDocumentId: { in: originals.map((document) => document.id) } },
+    });
     await prisma.fiscalDocument.deleteMany({
       where: { sourceType: 'ORDER', sourceId: { in: orderIds } },
     });
     await prisma.order.deleteMany({ where: { id: { in: orderIds } } });
     await prisma.deliveryMethod.deleteMany({ where: { code: 'FISCAL-SMOKE' } });
+    await prisma.user.delete({ where: { id: author.id } });
     await prisma.$disconnect();
   }
 }
