@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { CurrentUser, Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
 import type { AuthPrincipal } from '../auth/auth.types';
@@ -26,8 +35,9 @@ export class ReceivablesController {
     @Query('search') search?: string,
     @Query('status') status?: string,
     @Query('method') method?: string,
+    @Query('due') due?: string,
   ) {
-    return this.receivables.list(search, status, method);
+    return this.receivables.list(search, status, method, due);
   }
 
   @Get('receivables/:orderId')
