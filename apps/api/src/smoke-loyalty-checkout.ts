@@ -19,7 +19,7 @@ async function main() {
   process.env.PAYMENT_PROVIDER = 'mock';
   process.env.PAYMENT_FLOW_MODE = 'manual';
 
-  const { AppModule } = await import('./app.module');
+  const { AppModule } = await import('./app.module.js');
   const app = await NestFactory.createApplicationContext(AppModule, {
     logger: false,
   });
