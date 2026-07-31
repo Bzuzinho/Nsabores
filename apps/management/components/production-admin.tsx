@@ -31,7 +31,7 @@ type Detail = Row & {
     quantity: number;
     productName: string;
     sku: string;
-    personalization: unknown;
+    personalization: string | null;
   }>;
 };
 
