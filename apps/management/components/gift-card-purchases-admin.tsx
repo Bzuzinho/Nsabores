@@ -33,8 +33,25 @@ export function GiftCardPurchasesAdmin() {
   }, []);
 
   useEffect(() => {
-    void reload();
-  }, [reload]);
+    let cancelled = false;
+    void managementApi
+      .get<Purchase[]>('/v1/admin/gift-card-purchases')
+      .then((result) => {
+        if (!cancelled) setPurchases(result);
+      })
+      .catch((reason: unknown) => {
+        if (!cancelled) {
+          setError(
+            reason instanceof Error
+              ? reason.message
+              : 'Não foi possível carregar os pedidos de vales.',
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function markPaid(id: string) {
     if (!window.confirm('Confirmar que o pagamento deste vale foi recebido?')) {
