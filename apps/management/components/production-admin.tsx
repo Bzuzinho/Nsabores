@@ -222,7 +222,7 @@ export function ProductionDetail({ orderId }: { orderId: string }) {
               {item.quantity} × {item.productName}
             </strong>
             <small>{item.sku}</small>
-            {item.personalization != null && (
+            {item.personalization == null ? null : (
               <pre>{JSON.stringify(item.personalization, null, 2)}</pre>
             )}
           </div>
