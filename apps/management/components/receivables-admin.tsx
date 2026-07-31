@@ -41,8 +41,11 @@ type Result = {
   metrics: {
     outstandingCents: number;
     overdueCents: number;
+    upcomingCents: number;
     toAgreeCount: number;
     overdueCount: number;
+    upcomingCount: number;
+    withoutDueDateCount: number;
   };
 };
 
@@ -50,15 +53,19 @@ export function ReceivablesAdmin() {
   const [result, setResult] = useState<Result | null>(null);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
+  const [method, setMethod] = useState('');
+  const [due, setDue] = useState('');
 
   useEffect(() => {
     const query = new URLSearchParams();
     if (search) query.set('search', search);
     if (status) query.set('status', status);
+    if (method) query.set('method', method);
+    if (due) query.set('due', due);
     void managementApi
       .get<Result>(`/v1/admin/receivables?${query}`)
       .then(setResult);
-  }, [search, status]);
+  }, [search, status, method, due]);
 
   const exportCsv = () => {
     if (!result) return;
@@ -107,12 +114,16 @@ export function ReceivablesAdmin() {
             <span>Vencido</span>
           </article>
           <article>
+            <strong>{money(result.metrics.upcomingCents)}</strong>
+            <span>A vencer em 7 dias</span>
+          </article>
+          <article>
             <strong>{result.metrics.toAgreeCount}</strong>
             <span>Sem acordo</span>
           </article>
           <article>
-            <strong>{result.metrics.overdueCount}</strong>
-            <span>Em atraso</span>
+            <strong>{result.metrics.withoutDueDateCount}</strong>
+            <span>Sem prazo</span>
           </article>
         </div>
       )}
@@ -137,6 +148,18 @@ export function ReceivablesAdmin() {
           ].map((value) => (
             <option key={value}>{value}</option>
           ))}
+        </select>
+        <input
+          placeholder="Método de pagamento"
+          value={method}
+          onChange={(event) => setMethod(event.target.value)}
+        />
+        <select value={due} onChange={(event) => setDue(event.target.value)}>
+          <option value="">Todos os prazos</option>
+          <option value="WITHOUT_DUE_DATE">Sem prazo definido</option>
+          <option value="OVERDUE">Vencido</option>
+          <option value="NEXT_7_DAYS">Vence em 7 dias</option>
+          <option value="FUTURE">Prazo superior a 7 dias</option>
         </select>
       </div>
       <div className="admin-table-wrap">
@@ -200,8 +223,8 @@ export function ReceivableDetail({ orderId }: { orderId: string }) {
     let cancelled = false;
     void managementApi
       .get<Agreement>(`/v1/admin/receivables/${orderId}`)
-      .then((result) => {
-        if (!cancelled) setItem(result);
+      .then((response) => {
+        if (!cancelled) setItem(response);
       })
       .catch((reason: unknown) => {
         if (!cancelled) {
