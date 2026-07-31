@@ -21,6 +21,10 @@ type PendingCharge = {
   createdAt: string;
 };
 
+type FiscalDocument = {
+  id: string;
+};
+
 const money = (cents: number, currency: string) =>
   new Intl.NumberFormat('pt-PT', { style: 'currency', currency }).format(
     cents / 100,
@@ -60,7 +64,7 @@ export function ClubPendingCharges() {
     };
   }, []);
 
-  async function confirm(charge: PendingCharge) {
+  async function confirmAndIssue(charge: PendingCharge) {
     const reference = window.prompt(
       'Referência ou comprovativo do pagamento (opcional):',
       '',
@@ -79,15 +83,19 @@ export function ClubPendingCharges() {
         `/v1/admin/club/subscriptions/${charge.subscriptionId}/charges/${charge.id}/confirm`,
         { reference: reference || undefined, note: note || undefined },
       );
-      await load();
+      const document = await managementApi.post<FiscalDocument>(
+        `/v1/admin/fiscal/club-charges/${charge.id}/issue`,
+        {},
+      );
+      window.location.assign(`/documentos/${document.id}`);
     } catch (reason) {
       setError(
         reason instanceof Error
           ? reason.message
-          : 'Não foi possível confirmar o pagamento.',
+          : 'Não foi possível confirmar o pagamento e emitir o documento.',
       );
-    } finally {
       setBusyId(null);
+      await load().catch(() => undefined);
     }
   }
 
@@ -140,11 +148,11 @@ export function ClubPendingCharges() {
                   <button
                     className="admin-primary"
                     disabled={busyId === charge.id}
-                    onClick={() => void confirm(charge)}
+                    onClick={() => void confirmAndIssue(charge)}
                   >
                     {busyId === charge.id
-                      ? 'A confirmar…'
-                      : 'Confirmar pagamento'}
+                      ? 'A confirmar e emitir…'
+                      : 'Confirmar e emitir documento'}
                   </button>{' '}
                   <Link href={`/clube/subscricoes/${charge.subscriptionId}`}>
                     Abrir
