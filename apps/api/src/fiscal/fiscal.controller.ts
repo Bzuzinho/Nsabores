@@ -3,6 +3,7 @@ import { FiscalDocumentType, UserRole } from '@prisma/client';
 import { CurrentUser, Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
 import type { AuthPrincipal } from '../auth/auth.types';
+import { PrismaService } from '../prisma.service';
 import { CreditNoteService, type CreditNoteLineInput } from './credit-note.service';
 import { FiscalService } from './fiscal.service';
 
@@ -10,10 +11,14 @@ import { FiscalService } from './fiscal.service';
 @Roles(UserRole.STAFF, UserRole.ADMIN)
 @Controller('v1/admin/fiscal')
 export class FiscalController {
+  private readonly creditNotes: CreditNoteService;
+
   constructor(
     private readonly fiscal: FiscalService,
-    private readonly creditNotes: CreditNoteService,
-  ) {}
+    prisma: PrismaService,
+  ) {
+    this.creditNotes = new CreditNoteService(prisma);
+  }
 
   @Get('documents')
   list() {
