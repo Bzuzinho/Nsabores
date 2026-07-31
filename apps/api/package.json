@@ -17,6 +17,7 @@
     "validate:club": "tsx scripts/validate-club-lifecycle.ts",
     "validate:club-manual": "pnpm build && node dist/smoke-manual-club.js",
     "validate:sprint10": "tsx scripts/validate-sprint10-acceptance.ts",
+    "validate:fiscal": "pnpm build && node dist/smoke-fiscal.js",
     "validate:loyalty": "tsx scripts/smoke-loyalty.ts",
     "validate:loyalty-checkout": "pnpm build && node dist/smoke-loyalty-checkout.js"
   },
