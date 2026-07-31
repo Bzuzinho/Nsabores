@@ -35,6 +35,12 @@ type Detail = Row & {
   }>;
 };
 
+function formatPersonalization(value: unknown): string | null {
+  if (value == null) return null;
+  if (typeof value === 'string') return value;
+  return JSON.stringify(value, null, 2);
+}
+
 export function ProductionAdmin() {
   const [rows, setRows] = useState<Row[]>([]);
   useEffect(() => {
@@ -216,17 +222,18 @@ export function ProductionDetail({ orderId }: { orderId: string }) {
           <strong>Morada:</strong> {JSON.stringify(work.shippingAddress)}
         </p>
         <h2>Itens a preparar</h2>
-        {work.items.map((item) => (
-          <div key={item.id} className="account-card">
-            <strong>
-              {item.quantity} × {item.productName}
-            </strong>
-            <small>{item.sku}</small>
-            {item.personalization == null ? null : (
-              <pre>{JSON.stringify(item.personalization, null, 2)}</pre>
-            )}
-          </div>
-        ))}
+        {work.items.map((item) => {
+          const personalization = formatPersonalization(item.personalization);
+          return (
+            <div key={item.id} className="account-card">
+              <strong>
+                {item.quantity} × {item.productName}
+              </strong>
+              <small>{item.sku}</small>
+              {personalization ? <pre>{personalization}</pre> : null}
+            </div>
+          );
+        })}
         <button className="admin-primary" onClick={() => void complete()}>
           Preparação concluída
         </button>
