@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma, type PaymentAgreementStatus } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import {
   ContactChannelDto,
@@ -26,30 +27,59 @@ export class ReceivablesService {
     return this.detail(orderId);
   }
 
-  async list(search?: string, status?: string, method?: string) {
+  async list(search?: string, status?: string, method?: string, due?: string) {
     await this.refreshOverdue();
     const q = search?.trim() || null;
     const s = status?.trim() || null;
     const m = method?.trim() || null;
-    const rows = await this.prisma.$queryRaw<Array<Record<string, unknown>>>`
-      SELECT pa.*, o."number", o."customerName", o."email", o."phone", o."paymentStatus",
-             o."status" AS "orderStatus", o."createdAt" AS "orderCreatedAt"
-      FROM "PaymentAgreement" pa
-      JOIN "Order" o ON o."id" = pa."orderId"
-      WHERE (${q}::text IS NULL OR o."number" ILIKE '%' || ${q} || '%'
-        OR o."customerName" ILIKE '%' || ${q} || '%'
-        OR o."email" ILIKE '%' || ${q} || '%')
-        AND (${s}::text IS NULL OR pa."status"::text = ${s})
-        AND (${m}::text IS NULL OR pa."method" = ${m})
-      ORDER BY COALESCE(pa."dueAt", pa."createdAt") ASC
-      LIMIT 250
-    `;
+    const d = due?.trim() || null;
+    const now = new Date();
+    const nextSevenDays = new Date(now.getTime() + 7 * 86_400_000);
+
+    const dueFilter =
+      d === 'WITHOUT_DUE_DATE'
+        ? Prisma.sql`AND pa."dueAt" IS NULL`
+        : d === 'OVERDUE'
+          ? Prisma.sql`AND pa."status" = 'OVERDUE'::"PaymentAgreementStatus"`
+          : d === 'NEXT_7_DAYS'
+            ? Prisma.sql`AND pa."status" NOT IN ('PAID','CANCELLED','OVERDUE')
+                AND pa."dueAt" >= ${now} AND pa."dueAt" <= ${nextSevenDays}`
+            : d === 'FUTURE'
+              ? Prisma.sql`AND pa."status" NOT IN ('PAID','CANCELLED','OVERDUE')
+                  AND pa."dueAt" > ${nextSevenDays}`
+              : Prisma.empty;
+
+    const rows = await this.prisma.$queryRaw<Array<Record<string, unknown>>>(
+      Prisma.sql`
+        SELECT pa.*, o."number", o."customerName", o."email", o."phone", o."paymentStatus",
+               o."status" AS "orderStatus", o."createdAt" AS "orderCreatedAt"
+        FROM "PaymentAgreement" pa
+        JOIN "Order" o ON o."id" = pa."orderId"
+        WHERE (${q}::text IS NULL OR o."number" ILIKE '%' || ${q} || '%'
+          OR o."customerName" ILIKE '%' || ${q} || '%'
+          OR o."email" ILIKE '%' || ${q} || '%')
+          AND (${s}::text IS NULL OR pa."status"::text = ${s})
+          AND (${m}::text IS NULL OR pa."method" = ${m})
+          ${dueFilter}
+        ORDER BY COALESCE(pa."dueAt", pa."createdAt") ASC
+        LIMIT 250
+      `,
+    );
+
     const metrics = await this.prisma.$queryRaw<Array<Record<string, unknown>>>`
       SELECT
         COALESCE(SUM(CASE WHEN pa."status" NOT IN ('PAID','CANCELLED') THEN pa."expectedAmountCents" ELSE 0 END),0)::int AS "outstandingCents",
         COALESCE(SUM(CASE WHEN pa."status" = 'OVERDUE' THEN pa."expectedAmountCents" ELSE 0 END),0)::int AS "overdueCents",
+        COALESCE(SUM(CASE WHEN pa."status" NOT IN ('PAID','CANCELLED','OVERDUE')
+          AND pa."dueAt" >= CURRENT_TIMESTAMP
+          AND pa."dueAt" <= CURRENT_TIMESTAMP + INTERVAL '7 days'
+          THEN pa."expectedAmountCents" ELSE 0 END),0)::int AS "upcomingCents",
         COUNT(*) FILTER (WHERE pa."status" = 'TO_AGREE')::int AS "toAgreeCount",
-        COUNT(*) FILTER (WHERE pa."status" = 'OVERDUE')::int AS "overdueCount"
+        COUNT(*) FILTER (WHERE pa."status" = 'OVERDUE')::int AS "overdueCount",
+        COUNT(*) FILTER (WHERE pa."status" NOT IN ('PAID','CANCELLED','OVERDUE')
+          AND pa."dueAt" >= CURRENT_TIMESTAMP
+          AND pa."dueAt" <= CURRENT_TIMESTAMP + INTERVAL '7 days')::int AS "upcomingCount",
+        COUNT(*) FILTER (WHERE pa."dueAt" IS NULL AND pa."status" NOT IN ('PAID','CANCELLED'))::int AS "withoutDueDateCount"
       FROM "PaymentAgreement" pa
     `;
     return { data: rows, metrics: metrics[0] ?? {} };
@@ -81,7 +111,7 @@ export class ReceivablesService {
 
   async update(orderId: string, body: UpdateAgreementDto, authorId: string) {
     const current = await this.ensureAgreement(orderId);
-    const status = body.status ?? String(current.status);
+    const status = (body.status ?? String(current.status)) as PaymentAgreementStatus;
     const dueAt = body.dueAt ? new Date(body.dueAt) : null;
     const agreedAt = ['AGREED', 'AWAITING_PAYMENT'].includes(status)
       ? new Date()
