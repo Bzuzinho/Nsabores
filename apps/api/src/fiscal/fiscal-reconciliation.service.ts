@@ -100,7 +100,22 @@ export class FiscalReconciliationService {
       include: { series: true },
     });
     return this.toCsv(
-      ['number','type','status','sourceType','sourceId','customerUserId','currency','subtotalCents','discountCents','taxCents','totalCents','provider','externalNumber','issuedAt'],
+      [
+        'number',
+        'type',
+        'status',
+        'sourceType',
+        'sourceId',
+        'customerUserId',
+        'currency',
+        'subtotalCents',
+        'discountCents',
+        'taxCents',
+        'totalCents',
+        'provider',
+        'externalNumber',
+        'issuedAt',
+      ],
       documents.map((document) => [
         document.number,
         document.type,
@@ -125,6 +140,7 @@ export class FiscalReconciliationService {
     const rows = [
       ...report.paymentsWithoutDocument.map((row) => [
         'PAYMENT_WITHOUT_DOCUMENT',
+        row.sourceId,
         row.sourceType,
         row.sourceId,
         row.reference,
@@ -137,6 +153,7 @@ export class FiscalReconciliationService {
       ]),
       ...report.documentsWithoutFinancialMatch.map((row) => [
         'DOCUMENT_WITHOUT_FINANCIAL_MATCH',
+        row.id,
         row.sourceType,
         row.sourceId,
         row.number,
@@ -149,16 +166,36 @@ export class FiscalReconciliationService {
       ]),
     ];
     return this.toCsv(
-      ['kind','sourceType','sourceId','reference','customer','email','amountCents','currency','date','reason'],
+      [
+        'kind',
+        'recordId',
+        'sourceType',
+        'sourceId',
+        'reference',
+        'customer',
+        'email',
+        'amountCents',
+        'currency',
+        'date',
+        'reason',
+      ],
       rows,
     );
   }
 
   private toCsv(headers: string[], rows: unknown[][]) {
     const escape = (value: unknown) => {
-      const text = value == null ? '' : value instanceof Date ? value.toISOString() : String(value);
+      const text =
+        value == null
+          ? ''
+          : value instanceof Date
+            ? value.toISOString()
+            : String(value);
       return `"${text.replaceAll('"', '""')}"`;
     };
-    return [headers.map(escape).join(','), ...rows.map((row) => row.map(escape).join(','))].join('\n');
+    return [
+      headers.map(escape).join(','),
+      ...rows.map((row) => row.map(escape).join(',')),
+    ].join('\n');
   }
 }
