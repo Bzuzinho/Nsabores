@@ -53,6 +53,7 @@ model FiscalDocument {
   status               FiscalDocumentStatus @default(DRAFT)
   sourceType           FiscalSourceType
   sourceId             String?              @db.Uuid
+  idempotencyKey       String?              @unique
   customerUserId       String?              @db.Uuid
   parentDocumentId     String?              @db.Uuid
   sequentialNumber     Int?
