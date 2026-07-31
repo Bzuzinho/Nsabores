@@ -16,6 +16,10 @@ type Purchase = {
   codeAvailable?: boolean;
 };
 
+type FiscalDocument = {
+  id: string;
+};
+
 const money = (cents: number, currency = 'EUR') =>
   new Intl.NumberFormat('pt-PT', { style: 'currency', currency }).format(
     cents / 100,
@@ -24,6 +28,7 @@ const money = (cents: number, currency = 'EUR') =>
 export function GiftCardPurchasesAdmin() {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [issuedCode, setIssuedCode] = useState('');
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState('');
 
   const reload = useCallback(async () => {
@@ -57,6 +62,7 @@ export function GiftCardPurchasesAdmin() {
     if (!window.confirm('Confirmar que o pagamento deste vale foi recebido?')) {
       return;
     }
+    setBusyId(id);
     setError('');
     setIssuedCode('');
     try {
@@ -74,6 +80,27 @@ export function GiftCardPurchasesAdmin() {
           ? reason.message
           : 'Não foi possível confirmar o pagamento.',
       );
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function issueDocument(id: string) {
+    setBusyId(id);
+    setError('');
+    try {
+      const document = await managementApi.post<FiscalDocument>(
+        `/v1/admin/fiscal/gift-card-purchases/${id}/issue`,
+        {},
+      );
+      window.location.assign(`/documentos/${document.id}`);
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível emitir o documento.',
+      );
+      setBusyId(null);
     }
   }
 
@@ -117,9 +144,21 @@ export function GiftCardPurchasesAdmin() {
             {purchase.status === 'PENDING_PAYMENT' && (
               <button
                 className="admin-primary"
+                disabled={busyId === purchase.id}
                 onClick={() => void markPaid(purchase.id)}
               >
-                Marcar pagamento como recebido
+                {busyId === purchase.id
+                  ? 'A confirmar…'
+                  : 'Marcar pagamento como recebido'}
+              </button>
+            )}
+            {purchase.status === 'PAID' && (
+              <button
+                className="admin-primary"
+                disabled={busyId === purchase.id}
+                onClick={() => void issueDocument(purchase.id)}
+              >
+                {busyId === purchase.id ? 'A emitir…' : 'Emitir documento'}
               </button>
             )}
           </article>
