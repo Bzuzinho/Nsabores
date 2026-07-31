@@ -153,3 +153,6 @@ jobs:
 
       - name: Validate manual checkout lifecycle
         run: pnpm --filter @nsabores/api validate:loyalty-checkout
+
+      - name: Validate Sprint 10 acceptance
+        run: pnpm --filter @nsabores/api validate:sprint10
