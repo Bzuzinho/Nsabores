@@ -76,7 +76,7 @@ export class AdminClubController {
 
   constructor(
     private readonly club: ClubService,
-    prisma: PrismaService,
+    private readonly prisma: PrismaService,
     config: ConfigService,
     billing: ClubBillingProvider,
   ) {
@@ -111,6 +111,22 @@ export class AdminClubController {
   @Get('subscriptions')
   subscriptions() {
     return this.club.subscriptions();
+  }
+
+  @Get('pending-charges')
+  pendingCharges() {
+    return this.prisma.$queryRaw<Array<Record<string, unknown>>>`
+      SELECT c."id", c."subscriptionId", c."periodStart", c."periodEnd",
+             c."amountCents", c."currency", c."status", c."createdAt",
+             s."status" AS "subscriptionStatus", p."name" AS "planName",
+             p."code" AS "planCode", u."email", u."firstName", u."lastName"
+      FROM "ClubSubscriptionCharge" c
+      JOIN "ClubSubscription" s ON s."id" = c."subscriptionId"
+      JOIN "ClubPlan" p ON p."id" = s."planId"
+      JOIN "User" u ON u."id" = s."userId"
+      WHERE c."status" = 'PENDING'::"ClubChargeStatus"
+      ORDER BY c."createdAt" ASC
+    `;
   }
 
   @Get('subscriptions/:id')
