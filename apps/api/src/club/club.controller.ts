@@ -7,12 +7,16 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { UserRole } from '@prisma/client';
 import { CurrentUser, Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
 import type { AuthPrincipal } from '../auth/auth.types';
+import { PrismaService } from '../prisma.service';
+import { ClubBillingProvider } from './billing.provider';
 import { ClubService } from './club.service';
 import { ClubCancelDto, ClubPlanDto, JoinClubDto } from './dto';
+import { ManualClubPaymentsService } from './manual-club-payments.service';
 
 @Controller('v1/club')
 export class PublicClubController {
@@ -27,16 +31,30 @@ export class PublicClubController {
 @UseGuards(AuthGuard)
 @Controller('v1/account/club')
 export class AccountClubController {
-  constructor(private readonly club: ClubService) {}
+  private readonly manual: ManualClubPaymentsService;
+
+  constructor(
+    private readonly club: ClubService,
+    prisma: PrismaService,
+    config: ConfigService,
+    billing: ClubBillingProvider,
+  ) {
+    this.manual = new ManualClubPaymentsService(
+      prisma,
+      config,
+      club,
+      billing,
+    );
+  }
 
   @Get()
   subscription(@CurrentUser() user: AuthPrincipal) {
-    return this.club.accountSubscription(user.sub);
+    return this.manual.accountSubscription(user.sub);
   }
 
   @Post('join')
   join(@CurrentUser() user: AuthPrincipal, @Body() body: JoinClubDto) {
-    return this.club.join(user.sub, body);
+    return this.manual.join(user.sub, body);
   }
 
   @Post('cancel')
@@ -54,7 +72,21 @@ export class AccountClubController {
 @Roles(UserRole.STAFF, UserRole.ADMIN)
 @Controller('v1/admin/club')
 export class AdminClubController {
-  constructor(private readonly club: ClubService) {}
+  private readonly manual: ManualClubPaymentsService;
+
+  constructor(
+    private readonly club: ClubService,
+    prisma: PrismaService,
+    config: ConfigService,
+    billing: ClubBillingProvider,
+  ) {
+    this.manual = new ManualClubPaymentsService(
+      prisma,
+      config,
+      club,
+      billing,
+    );
+  }
 
   @Get('plans')
   plans() {
@@ -88,6 +120,22 @@ export class AdminClubController {
 
   @Post('subscriptions/:id/renew')
   renew(@Param('id') id: string) {
-    return this.club.renew(id);
+    return this.manual.requestRenewal(id);
+  }
+
+  @Post('subscriptions/:id/charges/:chargeId/confirm')
+  confirmCharge(
+    @Param('id') id: string,
+    @Param('chargeId') chargeId: string,
+    @CurrentUser() user: AuthPrincipal,
+    @Body() body: { reference?: string; note?: string },
+  ) {
+    return this.manual.confirmCharge(
+      id,
+      chargeId,
+      user.sub,
+      body.reference,
+      body.note,
+    );
   }
 }
