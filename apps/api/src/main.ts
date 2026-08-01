@@ -7,12 +7,39 @@ import type { NextFunction, Request, Response } from 'express';
 import { AppModule } from './app.module';
 import { bootstrapAdmin } from './bootstrap-admin';
 
+function applyProductionCookiePolicy(response: Response) {
+  const cookie = response.cookie.bind(response);
+  const clearCookie = response.clearCookie.bind(response);
+
+  response.cookie = ((name, value, options = {}) =>
+    cookie(name, value, {
+      ...options,
+      secure: true,
+      sameSite: 'none',
+    })) as Response['cookie'];
+
+  response.clearCookie = ((name, options = {}) =>
+    clearCookie(name, {
+      ...options,
+      secure: true,
+      sameSite: 'none',
+    })) as Response['clearCookie'];
+}
+
 async function bootstrap() {
   await bootstrapAdmin();
 
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
+  const production = config.get<string>('NODE_ENV') === 'production';
+
   app.use(cookieParser());
+  if (production) {
+    app.use((_request: Request, response: Response, next: NextFunction) => {
+      applyProductionCookiePolicy(response);
+      next();
+    });
+  }
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -30,7 +57,6 @@ async function bootstrap() {
   app.use((request: Request, response: Response, next: NextFunction) => {
     if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) return next();
     const origin = request.header('origin');
-    const production = config.get<string>('NODE_ENV') === 'production';
     if ((!origin && production) || (origin && !origins.includes(origin))) {
       response.status(403).json({ message: 'Origem não autorizada.' });
       return;
