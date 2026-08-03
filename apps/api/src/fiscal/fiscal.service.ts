@@ -98,13 +98,14 @@ export class FiscalService {
 
           const documentId = randomUUID();
           const number = `${sequence.prefix}${String(sequence.sequentialNumber).padStart(6, '0')}`;
-          const customerSnapshot = {
+          const customerSnapshot: Prisma.InputJsonObject = {
             userId: order.userId,
             name: order.customerName,
             email: order.email,
             phone: order.phone,
           };
-          const billingSnapshot = order.billingAddress as Prisma.JsonValue;
+          const billingSnapshot =
+            order.billingAddress as Prisma.InputJsonValue;
 
           await tx.fiscalDocument.create({
             data: {
