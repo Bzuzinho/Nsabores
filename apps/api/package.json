@@ -13,7 +13,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:seed": "prisma db seed",
-    "prisma:seed:demo": "tsx prisma/demo-seed.ts && tsx prisma/demo-seed-operations.ts && tsx prisma/demo-seed-commerce.ts && tsx prisma/demo-seed-membership.ts && tsx prisma/demo-seed-validate.ts",
+    "prisma:seed:demo": "tsx prisma/demo-seed-clear-extended.ts && tsx prisma/demo-seed.ts && tsx prisma/demo-seed-operations.ts && tsx prisma/demo-seed-commerce.ts && tsx prisma/demo-seed-membership.ts && tsx prisma/demo-seed-validate.ts",
     "prisma:seed:demo:clear": "tsx prisma/demo-seed-clear-extended.ts && tsx prisma/demo-seed-clear.ts",
     "prisma:seed:demo:reset": "pnpm run prisma:seed:demo:clear && pnpm run prisma:seed:demo",
     "prisma:seed:demo:validate": "tsx prisma/demo-seed-validate.ts",
