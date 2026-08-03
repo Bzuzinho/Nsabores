@@ -1,43 +1,79 @@
-# Seed de demonstração
+# Ambiente de demonstração integral
 
-O seed de demonstração complementa o seed base com dados navegáveis para catálogo, stock, utilizadores e encomendas em estados diferentes.
+**Última revisão:** 2026-08-03
 
-## Criar dados demo
+O ambiente demo preenche todas as áreas principais do Management com dados coerentes, auditáveis e identificáveis. Não é executado automaticamente no arranque da API.
 
-```bash
-DEMO_USER_PASSWORD='<password-segura>' pnpm --filter @nsabores/api prisma:seed:demo
-```
+## Comandos
 
-A variável `DATABASE_URL` deve apontar para a base de dados pretendida.
-
-## Remover apenas os dados demo
+A variável `DATABASE_URL` deve apontar para a base pretendida. Para criar os utilizadores, é obrigatória uma destas variáveis: `DEMO_USER_PASSWORD`, `DEMO_USER_PASSWORD_HASH` ou `BOOTSTRAP_ADMIN_PASSWORD_HASH`.
 
 ```bash
-pnpm --filter @nsabores/api prisma:seed:demo:clear
+pnpm demo:install
 ```
 
-O comando remove apenas registos identificados pelo seed de demonstração:
+Cria ou atualiza os dados demo sem duplicar os registos principais.
 
-- encomendas com `source = DEMO_SEED` e respetivos itens, pagamentos e histórico;
-- utilizadores com email iniciado por `demo.` e respetivos perfis, endereços e sessões;
-- produtos com os SKUs reservados ao dataset demo e o respetivo stock.
+```bash
+pnpm demo:validate
+```
 
-Não apaga categorias, fornecedores, métodos de entrega, tabelas de preços nem dados reais.
+Confirma as contagens mínimas de todos os módulos.
 
-## Segurança
+```bash
+pnpm demo:clear
+```
 
-- A password nunca é guardada no repositório.
-- Nenhum dos comandos é executado automaticamente no arranque da API.
-- Os registos usam identificadores, origem, emails e SKUs reservados à demonstração.
-- O seed é idempotente e pode ser repetido sem duplicar os registos principais.
-- A limpeza é executada numa transação: em caso de erro, nenhuma remoção parcial é confirmada.
+Remove apenas os dados identificados como demonstração e pode ser repetido.
 
-## Cobertura inicial
+```bash
+pnpm demo:reset
+```
 
-- doze produtos adicionais;
-- stock coerente e pontos de reposição;
-- um utilizador STAFF e cinco clientes;
-- oito encomendas, cobrindo os principais estados;
-- pagamentos e histórico de estado associados.
+Executa a limpeza e volta a instalar o ambiente completo.
 
-Os restantes módulos serão acrescentados progressivamente até cumprir a issue #36.
+## Cobertura
+
+- catálogo: 6 categorias, 12 produtos, imagens, preços e estados de stock;
+- utilizadores: ADMIN, STAFF, CUSTOMER e utilizador associado a conta B2B;
+- stock: saldos, níveis mínimos, movimentos e correções de inventário;
+- fornecedores: 3 fornecedores, artigos associados, compras e receções;
+- inventários: concluído e em progresso;
+- B2B: contas aprovadas e pendentes, candidaturas, membros e tabelas de preços;
+- encomendas: B2C e B2B, principais estados e pagamentos;
+- produção: fila, prioridades, responsáveis e datas pretendidas;
+- recebimentos: acordos, estados, referências e eventos de contacto;
+- fulfillment: preparação, expedições, tracking, devoluções e apoio;
+- promoções: campanhas, cupões, alvos e auditoria de utilização;
+- cabazes: composição fixa e personalização;
+- Clube Nsabores: planos, subscrições, cobranças e eventos;
+- fidelização: regra, contas, tiers, saldos e movimentos;
+- vales-oferta: vales, movimentos e pedidos de compra;
+- documentos comerciais: séries, faturas-recibo, nota de crédito e origens de encomenda, vale e Clube.
+
+## Identificação e limpeza
+
+Os dados usam exclusivamente marcadores reservados, incluindo:
+
+- emails iniciados por `demo.`;
+- encomendas com `source = DEMO_SEED`;
+- SKUs constantes da lista demo;
+- números e códigos iniciados por `DEMO-`;
+- chaves de idempotência iniciadas por `demo:`.
+
+A limpeza remove primeiro as dependências dos módulos avançados e, no fim, os produtos, utilizadores e encomendas base. Não remove categorias partilhadas, métodos de entrega ou registos normais.
+
+## Validação no CI
+
+O workflow `Management smoke` executa numa base PostgreSQL limpa:
+
+1. migrations e seed base;
+2. `demo:reset`;
+3. nova instalação para provar idempotência;
+4. validação das contagens por módulo;
+5. smoke autenticado dos endpoints do Management;
+6. validação das páginas do menu;
+7. limpeza repetida duas vezes;
+8. confirmação de que não permanecem dados identificáveis como demo.
+
+As credenciais nunca ficam no repositório.
