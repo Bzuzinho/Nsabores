@@ -53,10 +53,10 @@ O projeto Railway contém `website`, `management`, `api` e `Postgres` no ambient
 | PostgreSQL ligado à API                     | validado     |
 | Health checks remotos                       | ativos       |
 | Migrations em base limpa e produção         | validadas    |
-| Autenticação e permissões E2E                | validadas    |
+| Autenticação e permissões E2E               | validadas    |
 | Ambiente demo integral                      | concluído    |
 | CI estrito para qualidade e regressões      | concluído    |
-| Domínios definitivos `nsabores.pt`           | por concluir |
+| Domínios definitivos `nsabores.pt`          | por concluir |
 | Providers externos de pagamentos/fiscal/etc | por concluir |
 
 ## Arranque e deployment

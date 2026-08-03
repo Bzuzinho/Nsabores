@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  type OnApplicationBootstrap,
-} from '@nestjs/common';
+import { Injectable, type OnApplicationBootstrap } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from './prisma.service';
 

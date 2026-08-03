@@ -38,7 +38,9 @@ type Report = {
 };
 
 const money = (cents: number, currency = 'EUR') =>
-  new Intl.NumberFormat('pt-PT', { style: 'currency', currency }).format(cents / 100);
+  new Intl.NumberFormat('pt-PT', { style: 'currency', currency }).format(
+    cents / 100,
+  );
 
 function downloadCsv(filename: string, rows: unknown[][]) {
   const escape = (value: unknown) => {
@@ -46,7 +48,9 @@ function downloadCsv(filename: string, rows: unknown[][]) {
     return `"${text.replaceAll('"', '""')}"`;
   };
   const content = rows.map((row) => row.map(escape).join(',')).join('\n');
-  const url = URL.createObjectURL(new Blob([content], { type: 'text/csv;charset=utf-8' }));
+  const url = URL.createObjectURL(
+    new Blob([content], { type: 'text/csv;charset=utf-8' }),
+  );
   const anchor = document.createElement('a');
   anchor.href = url;
   anchor.download = filename;
@@ -81,7 +85,18 @@ export function FiscalReconciliationAdmin() {
   const exportReport = () => {
     if (!report) return;
     downloadCsv('reconciliacao-fiscal.csv', [
-      ['tipo', 'origem', 'id_origem', 'referencia', 'cliente', 'email', 'valor_centimos', 'moeda', 'data', 'motivo'],
+      [
+        'tipo',
+        'origem',
+        'id_origem',
+        'referencia',
+        'cliente',
+        'email',
+        'valor_centimos',
+        'moeda',
+        'data',
+        'motivo',
+      ],
       ...report.paymentsWithoutDocument.map((item) => [
         'PAGAMENTO_SEM_DOCUMENTO',
         item.sourceType,
@@ -115,9 +130,16 @@ export function FiscalReconciliationAdmin() {
         <div>
           <p className="eyebrow">Faturação</p>
           <h1>Reconciliação documental</h1>
-          <p>Controlo entre pagamentos confirmados e documentos comerciais emitidos.</p>
+          <p>
+            Controlo entre pagamentos confirmados e documentos comerciais
+            emitidos.
+          </p>
         </div>
-        <button className="admin-primary" disabled={!report} onClick={exportReport}>
+        <button
+          className="admin-primary"
+          disabled={!report}
+          onClick={exportReport}
+        >
           Exportar CSV
         </button>
       </header>
@@ -154,16 +176,28 @@ export function FiscalReconciliationAdmin() {
                 <tbody>
                   {report.paymentsWithoutDocument.map((item) => (
                     <tr key={`${item.sourceType}:${item.sourceId}`}>
-                      <td>{item.sourceType}<small>{item.sourceId}</small></td>
+                      <td>
+                        {item.sourceType}
+                        <small>{item.sourceId}</small>
+                      </td>
                       <td>{item.reference}</td>
-                      <td>{item.customer}<small>{item.email}</small></td>
+                      <td>
+                        {item.customer}
+                        <small>{item.email}</small>
+                      </td>
                       <td>{money(item.amountCents, item.currency)}</td>
-                      <td>{new Date(item.createdAt).toLocaleString('pt-PT')}</td>
+                      <td>
+                        {new Date(item.createdAt).toLocaleString('pt-PT')}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {!report.paymentsWithoutDocument.length && <p className="admin-state">Sem pagamentos pendentes de documento.</p>}
+              {!report.paymentsWithoutDocument.length && (
+                <p className="admin-state">
+                  Sem pagamentos pendentes de documento.
+                </p>
+              )}
             </div>
           </section>
 
@@ -183,22 +217,38 @@ export function FiscalReconciliationAdmin() {
                 <tbody>
                   {report.documentsWithoutFinancialMatch.map((item) => (
                     <tr key={item.id}>
-                      <td>{item.number ?? 'Sem número'}<small>{item.type} · {item.status}</small></td>
-                      <td>{item.sourceType}<small>{item.sourceId ?? 'sem origem'}</small></td>
+                      <td>
+                        {item.number ?? 'Sem número'}
+                        <small>
+                          {item.type} · {item.status}
+                        </small>
+                      </td>
+                      <td>
+                        {item.sourceType}
+                        <small>{item.sourceId ?? 'sem origem'}</small>
+                      </td>
                       <td>{money(item.totalCents, item.currency)}</td>
                       <td>{item.reason}</td>
-                      <td><Link href={`/documentos/${item.id}`}>Abrir</Link></td>
+                      <td>
+                        <Link href={`/documentos/${item.id}`}>Abrir</Link>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {!report.documentsWithoutFinancialMatch.length && <p className="admin-state">Sem documentos com inconsistências financeiras.</p>}
+              {!report.documentsWithoutFinancialMatch.length && (
+                <p className="admin-state">
+                  Sem documentos com inconsistências financeiras.
+                </p>
+              )}
             </div>
           </section>
         </>
       )}
 
-      <p><Link href="/documentos">Voltar aos documentos</Link></p>
+      <p>
+        <Link href="/documentos">Voltar aos documentos</Link>
+      </p>
     </>
   );
 }

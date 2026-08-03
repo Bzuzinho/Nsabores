@@ -91,9 +91,7 @@ async function main() {
     'Confirmação idempotente repetida.',
   );
 
-  const active = subscriptionDetail(
-    await club.subscriptionDetail(joined.id),
-  );
+  const active = subscriptionDetail(await club.subscriptionDetail(joined.id));
   assert.equal(active.status, 'ACTIVE');
   assert.equal(
     active.charges.find(({ id }) => id === firstChargeId)?.status,
@@ -128,9 +126,7 @@ async function main() {
     'Renovação confirmada no smoke.',
   );
 
-  const renewed = subscriptionDetail(
-    await club.subscriptionDetail(joined.id),
-  );
+  const renewed = subscriptionDetail(await club.subscriptionDetail(joined.id));
   assert.equal(renewed.status, 'ACTIVE');
   assert.equal(
     new Date(renewed.currentPeriodStart).toISOString(),

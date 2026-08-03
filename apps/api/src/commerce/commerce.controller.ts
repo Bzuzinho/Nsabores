@@ -45,9 +45,7 @@ export class CartController {
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ) {
-    return this.commerce.cart(
-      await this.identity.resolve(request, response),
-    );
+    return this.commerce.cart(await this.identity.resolve(request, response));
   }
 
   @Post('items')
@@ -141,11 +139,7 @@ export class CheckoutController {
     @Body() body: PaymentStartDto,
   ) {
     const identity = await this.identity.resolve(request, response);
-    return this.commerce.startPayment(
-      id,
-      identity.userId,
-      body.idempotencyKey,
-    );
+    return this.commerce.startPayment(id, identity.userId, body.idempotencyKey);
   }
 
   @Post('payments/webhook')
@@ -208,12 +202,7 @@ export class AdminOrdersController {
     @Param('id') id: string,
     @Body() body: OrderStatusDto,
   ) {
-    return this.commerce.changeStatus(
-      id,
-      body.status,
-      user.sub,
-      body.note,
-    );
+    return this.commerce.changeStatus(id, body.status, user.sub, body.note);
   }
 
   @Patch('orders/:id/notes')
@@ -232,11 +221,7 @@ export class AdminOrdersController {
 
   @Post('orders/:id/cancel')
   cancel(@CurrentUser() user: AuthPrincipal, @Param('id') id: string) {
-    return this.commerce.changeStatus(
-      id,
-      OrderStatus.CANCELLED,
-      user.sub,
-    );
+    return this.commerce.changeStatus(id, OrderStatus.CANCELLED, user.sub);
   }
 
   @Post('orders/:id/refund')
@@ -250,10 +235,7 @@ export class AdminOrdersController {
   }
 
   @Patch('delivery-methods/:id')
-  updateDelivery(
-    @Param('id') id: string,
-    @Body() body: DeliveryMethodDto,
-  ) {
+  updateDelivery(@Param('id') id: string, @Body() body: DeliveryMethodDto) {
     return this.commerce.updateDeliveryMethod(id, body);
   }
 }

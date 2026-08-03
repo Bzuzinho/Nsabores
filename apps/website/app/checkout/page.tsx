@@ -126,18 +126,28 @@ export default function CheckoutPage() {
         <p className="eyebrow">Pedido de encomenda</p>
         <h1>Dados de entrega</h1>
         <p>
-          A encomenda segue para preparação assim que for confirmada. O pagamento
-          será combinado diretamente entre a Nsabores e o cliente e posteriormente
-          confirmado pela empresa.
+          A encomenda segue para preparação assim que for confirmada. O
+          pagamento será combinado diretamente entre a Nsabores e o cliente e
+          posteriormente confirmado pela empresa.
         </p>
         {!cart?.items.length && <p>O carrinho está vazio.</p>}
         <label>
           Email
-          <input name="email" type="email" defaultValue={user?.email} required />
+          <input
+            name="email"
+            type="email"
+            defaultValue={user?.email}
+            required
+          />
         </label>
         <label>
           Telefone
-          <input name="phone" type="tel" defaultValue={user?.phone ?? ''} required />
+          <input
+            name="phone"
+            type="tel"
+            defaultValue={user?.phone ?? ''}
+            required
+          />
         </label>
         <label>
           Nome
@@ -157,7 +167,12 @@ export default function CheckoutPage() {
         </label>
         <label>
           Código postal
-          <input name="postalCode" pattern="\d{4}-\d{3}" placeholder="0000-000" required />
+          <input
+            name="postalCode"
+            pattern="\d{4}-\d{3}"
+            placeholder="0000-000"
+            required
+          />
         </label>
         <label>
           Localidade
@@ -173,7 +188,9 @@ export default function CheckoutPage() {
             name="deliveryMethodId"
             required
             onChange={(event) => {
-              const method = methods.find(({ id }) => id === event.target.value);
+              const method = methods.find(
+                ({ id }) => id === event.target.value,
+              );
               if (method)
                 setMethods([
                   method,
@@ -202,7 +219,8 @@ export default function CheckoutPage() {
               }
             />
             <small>
-              Disponíveis: {loyalty.availablePoints}. 1 ponto corresponde a 1 cêntimo.
+              Disponíveis: {loyalty.availablePoints}. 1 ponto corresponde a 1
+              cêntimo.
             </small>
           </label>
         )}
@@ -231,8 +249,8 @@ export default function CheckoutPage() {
           <a href="/privacidade">política de privacidade</a>.
         </label>
         <label>
-          <input name="marketingConsent" type="checkbox" /> Quero receber novidades
-          (opcional).
+          <input name="marketingConsent" type="checkbox" /> Quero receber
+          novidades (opcional).
         </label>
 
         <div className="checkout-summary">
@@ -246,7 +264,10 @@ export default function CheckoutPage() {
                 {formatPrice(discount.amountCents)}
               </p>
             ))}
-          <p>Entrega: {hasFreeShippingPromotion ? 'Grátis' : formatPrice(shipping)}</p>
+          <p>
+            Entrega:{' '}
+            {hasFreeShippingPromotion ? 'Grátis' : formatPrice(shipping)}
+          </p>
           {requestedPoints > 0 && (
             <p>Pontos solicitados: −{formatPrice(requestedPoints)}</p>
           )}

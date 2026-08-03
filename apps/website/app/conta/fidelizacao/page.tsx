@@ -74,11 +74,13 @@ export default function LoyaltyAccountPage() {
               </article>
             </div>
             <p>
-              Total acumulado: <strong>{account.lifetimeEarnedPoints}</strong> · Total
-              utilizado: <strong>{account.lifetimeRedeemedPoints}</strong>
+              Total acumulado: <strong>{account.lifetimeEarnedPoints}</strong> ·
+              Total utilizado: <strong>{account.lifetimeRedeemedPoints}</strong>
             </p>
             <h2>Movimentos</h2>
-            {!account.transactions.length && <p>Ainda não existem movimentos.</p>}
+            {!account.transactions.length && (
+              <p>Ainda não existem movimentos.</p>
+            )}
             {account.transactions.map((movement) => (
               <article key={movement.id} className="account-card">
                 <p>

@@ -7,10 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
-import {
-  ClubBillingProvider,
-  type ClubInterval,
-} from './billing.provider';
+import { ClubBillingProvider, type ClubInterval } from './billing.provider';
 import type { JoinClubDto } from './dto';
 import { ClubService } from './club.service';
 
@@ -70,9 +67,7 @@ export class ManualClubPaymentsService {
         )
       ORDER BY "createdAt" DESC LIMIT 1
     `;
-    return rows[0]
-      ? this.club.subscriptionDetail(rows[0].id, userId)
-      : null;
+    return rows[0] ? this.club.subscriptionDetail(rows[0].id, userId) : null;
   }
 
   async join(userId: string, body: JoinClubDto) {
@@ -98,10 +93,7 @@ export class ManualClubPaymentsService {
     const subscriptionId = randomUUID();
     const chargeId = randomUUID();
     const now = new Date();
-    const periodEnd = this.billing.nextPeriod(
-      now,
-      plan.billingInterval,
-    );
+    const periodEnd = this.billing.nextPeriod(now, plan.billingInterval);
     const idempotencyKey = `club:${body.idempotencyKey}:initial`;
 
     try {
@@ -172,10 +164,7 @@ export class ManualClubPaymentsService {
     }
 
     const start = current.currentPeriodEnd;
-    const end = this.billing.nextPeriod(
-      start,
-      current.billingIntervalSnapshot,
-    );
+    const end = this.billing.nextPeriod(start, current.billingIntervalSnapshot);
     const idempotencyKey = `club:${subscriptionId}:${start.toISOString()}`;
 
     await this.prisma.$executeRaw`
@@ -203,9 +192,7 @@ export class ManualClubPaymentsService {
     note?: string,
   ) {
     if (!this.isManual()) {
-      throw new ConflictException(
-        'A confirmação manual não está ativa.',
-      );
+      throw new ConflictException('A confirmação manual não está ativa.');
     }
 
     await this.prisma.$transaction(async (tx) => {
@@ -221,15 +208,11 @@ export class ManualClubPaymentsService {
       `);
       const charge = charges[0];
       if (!charge) {
-        throw new NotFoundException(
-          'Cobrança do Clube não encontrada.',
-        );
+        throw new NotFoundException('Cobrança do Clube não encontrada.');
       }
       if (charge.status === 'PAID') return;
       if (charge.status !== 'PENDING') {
-        throw new ConflictException(
-          'A cobrança não pode ser confirmada.',
-        );
+        throw new ConflictException('A cobrança não pode ser confirmada.');
       }
 
       await tx.$executeRaw`

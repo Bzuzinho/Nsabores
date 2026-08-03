@@ -1,7 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+} from 'react';
 import { managementApi } from './management-auth';
 
 type FiscalSeries = {
@@ -180,7 +186,9 @@ export function FiscalDocumentsAdmin() {
         >
           <option value="">Todos os estados</option>
           {['DRAFT', 'ISSUED', 'CANCELLED', 'CREDITED', 'FAILED'].map(
-            (value) => <option key={value}>{value}</option>,
+            (value) => (
+              <option key={value}>{value}</option>
+            ),
           )}
         </select>
         <select value={type} onChange={(event) => setType(event.target.value)}>
@@ -201,7 +209,9 @@ export function FiscalDocumentsAdmin() {
         >
           <option value="">Todas as origens</option>
           {['ORDER', 'GIFT_CARD_PURCHASE', 'CLUB_CHARGE', 'MANUAL'].map(
-            (value) => <option key={value}>{value}</option>,
+            (value) => (
+              <option key={value}>{value}</option>
+            ),
           )}
         </select>
       </div>
@@ -304,8 +314,7 @@ export function FiscalDocumentDetail({ id }: { id: string }) {
           Origem: {document.sourceType} · {document.sourceId ?? 'manual'}
         </p>
         <p>
-          Série: {document.series?.code ?? '—'} ·{' '}
-          {document.series?.year ?? '—'}
+          Série: {document.series?.code ?? '—'} · {document.series?.year ?? '—'}
         </p>
         <p>
           Emitido em:{' '}
@@ -314,8 +323,8 @@ export function FiscalDocumentDetail({ id }: { id: string }) {
             : 'Não emitido'}
         </p>
         <p>
-          Subtotal {money(document.subtotalCents, document.currency)} · descontos{' '}
-          {money(document.discountCents, document.currency)} · imposto{' '}
+          Subtotal {money(document.subtotalCents, document.currency)} ·
+          descontos {money(document.discountCents, document.currency)} · imposto{' '}
           {money(document.taxCents, document.currency)}
         </p>
         <p>

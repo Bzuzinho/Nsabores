@@ -14,7 +14,9 @@ export class ReceivablesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async ensureAgreement(orderId: string) {
-    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+    });
     if (!order) throw new NotFoundException('Encomenda não encontrada.');
     await this.prisma.$executeRaw`
       INSERT INTO "PaymentAgreement" (
@@ -111,7 +113,8 @@ export class ReceivablesService {
 
   async update(orderId: string, body: UpdateAgreementDto, authorId: string) {
     const current = await this.ensureAgreement(orderId);
-    const status = (body.status ?? String(current.status)) as PaymentAgreementStatus;
+    const status = (body.status ??
+      String(current.status)) as PaymentAgreementStatus;
     const dueAt = body.dueAt ? new Date(body.dueAt) : null;
     const agreedAt = ['AGREED', 'AWAITING_PAYMENT'].includes(status)
       ? new Date()

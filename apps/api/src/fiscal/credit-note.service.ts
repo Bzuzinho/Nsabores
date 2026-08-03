@@ -238,8 +238,7 @@ export class CreditNoteService {
             );
           }
           const fullyCredited = original.lines.every(
-            (line) =>
-              (creditedAfter.get(line.id) ?? 0) >= line.quantity,
+            (line) => (creditedAfter.get(line.id) ?? 0) >= line.quantity,
           );
           await tx.fiscalDocument.update({
             where: { id: original.id },
@@ -317,8 +316,7 @@ export class CreditNoteService {
     }
 
     return lines.flatMap((line) => {
-      const remaining =
-        line.quantity - (alreadyCredited.get(line.id) ?? 0);
+      const remaining = line.quantity - (alreadyCredited.get(line.id) ?? 0);
       const quantity = requestedMap
         ? (requestedMap.get(line.id) ?? 0)
         : remaining;

@@ -8,7 +8,8 @@ export function FiscalExportActions() {
     const response = await fetch(`${base}/v1/admin/fiscal/documents.csv`, {
       credentials: 'include',
     });
-    if (!response.ok) throw new Error('Não foi possível exportar os documentos.');
+    if (!response.ok)
+      throw new Error('Não foi possível exportar os documentos.');
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
@@ -23,7 +24,10 @@ export function FiscalExportActions() {
       <Link className="admin-primary" href="/documentos/reconciliacao">
         Reconciliação
       </Link>
-      <button className="admin-secondary" onClick={() => void downloadDocuments()}>
+      <button
+        className="admin-secondary"
+        onClick={() => void downloadDocuments()}
+      >
         Exportar documentos CSV
       </button>
     </div>

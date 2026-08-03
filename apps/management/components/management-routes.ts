@@ -6,7 +6,11 @@ export type ManagementRoute = {
 };
 
 export const managementRoutes: ManagementRoute[] = [
-  { href: '/catalogo', label: 'Visão geral', pageFile: 'app/catalogo/page.tsx' },
+  {
+    href: '/catalogo',
+    label: 'Visão geral',
+    pageFile: 'app/catalogo/page.tsx',
+  },
   {
     href: '/catalogo/produtos',
     label: 'Produtos',

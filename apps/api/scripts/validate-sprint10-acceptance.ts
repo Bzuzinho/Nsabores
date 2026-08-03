@@ -64,8 +64,18 @@ async function main() {
     assert.equal(cancelled.paidAt, null);
 
     const paidOrderId = await createOrder(prisma, `${suffix}-PAID`);
-    await service.markPaid(paidOrderId, undefined, 'transferencia', `S10-${suffix}`);
-    await service.markPaid(paidOrderId, undefined, 'transferencia', `S10-${suffix}`);
+    await service.markPaid(
+      paidOrderId,
+      undefined,
+      'transferencia',
+      `S10-${suffix}`,
+    );
+    await service.markPaid(
+      paidOrderId,
+      undefined,
+      'transferencia',
+      `S10-${suffix}`,
+    );
     const paid = await service.detail(paidOrderId);
     assert.equal(paid.status, 'PAID');
     const paymentEvents = (paid.events as Array<{ type: string }>).filter(
@@ -73,8 +83,14 @@ async function main() {
     );
     assert.equal(paymentEvents.length, 1);
 
-    const receivableRoles = Reflect.getMetadata(ROLES_KEY, ReceivablesController) as UserRole[];
-    const clubRoles = Reflect.getMetadata(ROLES_KEY, AdminClubController) as UserRole[];
+    const receivableRoles = Reflect.getMetadata(
+      ROLES_KEY,
+      ReceivablesController,
+    ) as UserRole[];
+    const clubRoles = Reflect.getMetadata(
+      ROLES_KEY,
+      AdminClubController,
+    ) as UserRole[];
     assert.deepEqual(receivableRoles, [UserRole.STAFF, UserRole.ADMIN]);
     assert.deepEqual(clubRoles, [UserRole.STAFF, UserRole.ADMIN]);
 

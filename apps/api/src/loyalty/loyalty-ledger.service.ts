@@ -1,5 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 
@@ -24,8 +28,15 @@ type GiftCardRow = {
 export class LoyaltyLedgerService {
   constructor(private readonly prisma: PrismaService) {}
 
-  earnPending(userId: string, points: number, idempotencyKey: string, availableAt: Date, orderId?: string) {
-    if (points <= 0) throw new ConflictException('Os pontos a acumular têm de ser positivos.');
+  earnPending(
+    userId: string,
+    points: number,
+    idempotencyKey: string,
+    availableAt: Date,
+    orderId?: string,
+  ) {
+    if (points <= 0)
+      throw new ConflictException('Os pontos a acumular têm de ser positivos.');
     return this.prisma.$transaction(async (tx) => {
       const duplicate = await this.loyaltyDuplicate(tx, idempotencyKey);
       if (duplicate) return duplicate;
@@ -36,91 +47,201 @@ export class LoyaltyLedgerService {
           "lifetimeEarnedPoints" = "lifetimeEarnedPoints" + ${points}, "updatedAt" = CURRENT_TIMESTAMP
         WHERE "id" = ${account.id}::uuid
       `;
-      return this.insertLoyalty(tx, account.id, orderId, 'EARN_PENDING', 'PENDING', points,
-        account.availablePoints, pending, account.reservedPoints, idempotencyKey, availableAt);
+      return this.insertLoyalty(
+        tx,
+        account.id,
+        orderId,
+        'EARN_PENDING',
+        'PENDING',
+        points,
+        account.availablePoints,
+        pending,
+        account.reservedPoints,
+        idempotencyKey,
+        availableAt,
+      );
     }, serializable);
   }
 
-  releasePending(userId: string, points: number, idempotencyKey: string, orderId?: string) {
-    if (points <= 0) throw new ConflictException('Os pontos a libertar têm de ser positivos.');
+  releasePending(
+    userId: string,
+    points: number,
+    idempotencyKey: string,
+    orderId?: string,
+  ) {
+    if (points <= 0)
+      throw new ConflictException('Os pontos a libertar têm de ser positivos.');
     return this.prisma.$transaction(async (tx) => {
       const duplicate = await this.loyaltyDuplicate(tx, idempotencyKey);
       if (duplicate) return duplicate;
       const account = await this.lockAccount(tx, userId);
-      if (account.pendingPoints < points) throw new ConflictException('Saldo pendente insuficiente.');
+      if (account.pendingPoints < points)
+        throw new ConflictException('Saldo pendente insuficiente.');
       const pending = account.pendingPoints - points;
       const available = account.availablePoints + points;
       await tx.$executeRaw`
         UPDATE "LoyaltyAccount" SET "pendingPoints" = ${pending}, "availablePoints" = ${available},
           "updatedAt" = CURRENT_TIMESTAMP WHERE "id" = ${account.id}::uuid
       `;
-      return this.insertLoyalty(tx, account.id, orderId, 'EARN_RELEASED', 'AVAILABLE', points,
-        available, pending, account.reservedPoints, idempotencyKey);
+      return this.insertLoyalty(
+        tx,
+        account.id,
+        orderId,
+        'EARN_RELEASED',
+        'AVAILABLE',
+        points,
+        available,
+        pending,
+        account.reservedPoints,
+        idempotencyKey,
+      );
     }, serializable);
   }
 
-  reservePoints(userId: string, points: number, idempotencyKey: string, orderId?: string) {
-    if (points <= 0) throw new ConflictException('A reserva de pontos tem de ser positiva.');
+  reservePoints(
+    userId: string,
+    points: number,
+    idempotencyKey: string,
+    orderId?: string,
+  ) {
+    if (points <= 0)
+      throw new ConflictException('A reserva de pontos tem de ser positiva.');
     return this.prisma.$transaction(async (tx) => {
       const duplicate = await this.loyaltyDuplicate(tx, idempotencyKey);
       if (duplicate) return duplicate;
       const account = await this.lockAccount(tx, userId);
-      if (account.availablePoints < points) throw new ConflictException('Saldo de pontos insuficiente.');
+      if (account.availablePoints < points)
+        throw new ConflictException('Saldo de pontos insuficiente.');
       const available = account.availablePoints - points;
       const reserved = account.reservedPoints + points;
       await tx.$executeRaw`
         UPDATE "LoyaltyAccount" SET "availablePoints" = ${available}, "reservedPoints" = ${reserved},
           "updatedAt" = CURRENT_TIMESTAMP WHERE "id" = ${account.id}::uuid
       `;
-      return this.insertLoyalty(tx, account.id, orderId, 'REDEEM_RESERVED', 'RESERVED', -points,
-        available, account.pendingPoints, reserved, idempotencyKey);
+      return this.insertLoyalty(
+        tx,
+        account.id,
+        orderId,
+        'REDEEM_RESERVED',
+        'RESERVED',
+        -points,
+        available,
+        account.pendingPoints,
+        reserved,
+        idempotencyKey,
+      );
     }, serializable);
   }
 
-  settleReservedPoints(userId: string, points: number, idempotencyKey: string, orderId?: string) {
+  settleReservedPoints(
+    userId: string,
+    points: number,
+    idempotencyKey: string,
+    orderId?: string,
+  ) {
     return this.prisma.$transaction(async (tx) => {
       const duplicate = await this.loyaltyDuplicate(tx, idempotencyKey);
       if (duplicate) return duplicate;
       const account = await this.lockAccount(tx, userId);
-      if (points <= 0 || account.reservedPoints < points) throw new ConflictException('Reserva de pontos insuficiente.');
+      if (points <= 0 || account.reservedPoints < points)
+        throw new ConflictException('Reserva de pontos insuficiente.');
       const reserved = account.reservedPoints - points;
       await tx.$executeRaw`
         UPDATE "LoyaltyAccount" SET "reservedPoints" = ${reserved},
           "lifetimeRedeemedPoints" = "lifetimeRedeemedPoints" + ${points}, "updatedAt" = CURRENT_TIMESTAMP
         WHERE "id" = ${account.id}::uuid
       `;
-      return this.insertLoyalty(tx, account.id, orderId, 'REDEEMED', 'COMPLETED', -points,
-        account.availablePoints, account.pendingPoints, reserved, idempotencyKey);
+      return this.insertLoyalty(
+        tx,
+        account.id,
+        orderId,
+        'REDEEMED',
+        'COMPLETED',
+        -points,
+        account.availablePoints,
+        account.pendingPoints,
+        reserved,
+        idempotencyKey,
+      );
     }, serializable);
   }
 
-  releaseReservedPoints(userId: string, points: number, idempotencyKey: string, orderId?: string) {
+  releaseReservedPoints(
+    userId: string,
+    points: number,
+    idempotencyKey: string,
+    orderId?: string,
+  ) {
     return this.prisma.$transaction(async (tx) => {
       const duplicate = await this.loyaltyDuplicate(tx, idempotencyKey);
       if (duplicate) return duplicate;
       const account = await this.lockAccount(tx, userId);
-      if (points <= 0 || account.reservedPoints < points) throw new ConflictException('Reserva de pontos insuficiente.');
+      if (points <= 0 || account.reservedPoints < points)
+        throw new ConflictException('Reserva de pontos insuficiente.');
       const reserved = account.reservedPoints - points;
       const available = account.availablePoints + points;
       await tx.$executeRaw`
         UPDATE "LoyaltyAccount" SET "reservedPoints" = ${reserved}, "availablePoints" = ${available},
           "updatedAt" = CURRENT_TIMESTAMP WHERE "id" = ${account.id}::uuid
       `;
-      return this.insertLoyalty(tx, account.id, orderId, 'REDEEM_RELEASED', 'CANCELLED', points,
-        available, account.pendingPoints, reserved, idempotencyKey);
+      return this.insertLoyalty(
+        tx,
+        account.id,
+        orderId,
+        'REDEEM_RELEASED',
+        'CANCELLED',
+        points,
+        available,
+        account.pendingPoints,
+        reserved,
+        idempotencyKey,
+      );
     }, serializable);
   }
 
-  reserveGiftCard(giftCardId: string, amountCents: number, idempotencyKey: string, orderId?: string) {
-    return this.giftCardMove(giftCardId, amountCents, idempotencyKey, 'RESERVE', orderId);
+  reserveGiftCard(
+    giftCardId: string,
+    amountCents: number,
+    idempotencyKey: string,
+    orderId?: string,
+  ) {
+    return this.giftCardMove(
+      giftCardId,
+      amountCents,
+      idempotencyKey,
+      'RESERVE',
+      orderId,
+    );
   }
 
-  settleGiftCard(giftCardId: string, amountCents: number, idempotencyKey: string, orderId?: string) {
-    return this.giftCardMove(giftCardId, amountCents, idempotencyKey, 'REDEEM', orderId);
+  settleGiftCard(
+    giftCardId: string,
+    amountCents: number,
+    idempotencyKey: string,
+    orderId?: string,
+  ) {
+    return this.giftCardMove(
+      giftCardId,
+      amountCents,
+      idempotencyKey,
+      'REDEEM',
+      orderId,
+    );
   }
 
-  releaseGiftCard(giftCardId: string, amountCents: number, idempotencyKey: string, orderId?: string) {
-    return this.giftCardMove(giftCardId, amountCents, idempotencyKey, 'RELEASE', orderId);
+  releaseGiftCard(
+    giftCardId: string,
+    amountCents: number,
+    idempotencyKey: string,
+    orderId?: string,
+  ) {
+    return this.giftCardMove(
+      giftCardId,
+      amountCents,
+      idempotencyKey,
+      'RELEASE',
+      orderId,
+    );
   }
 
   private giftCardMove(
@@ -130,7 +251,8 @@ export class LoyaltyLedgerService {
     type: 'RESERVE' | 'REDEEM' | 'RELEASE',
     orderId?: string,
   ) {
-    if (amountCents <= 0) throw new ConflictException('O montante tem de ser positivo.');
+    if (amountCents <= 0)
+      throw new ConflictException('O montante tem de ser positivo.');
     return this.prisma.$transaction(async (tx) => {
       const duplicate = await tx.$queryRaw<Array<Record<string, unknown>>>`
         SELECT * FROM "GiftCardTransaction" WHERE "idempotencyKey" = ${idempotencyKey} LIMIT 1
@@ -142,20 +264,25 @@ export class LoyaltyLedgerService {
       `;
       const card = rows[0];
       if (!card) throw new NotFoundException('Vale-oferta não encontrado.');
-      if (card.status !== 'ACTIVE') throw new ConflictException('O vale-oferta não está ativo.');
-      if (card.expiresAt && card.expiresAt <= new Date()) throw new ConflictException('O vale-oferta expirou.');
+      if (card.status !== 'ACTIVE')
+        throw new ConflictException('O vale-oferta não está ativo.');
+      if (card.expiresAt && card.expiresAt <= new Date())
+        throw new ConflictException('O vale-oferta expirou.');
 
       let balance = card.balanceCents;
       let reserved = card.reservedCents;
       if (type === 'RESERVE') {
-        if (balance < amountCents) throw new ConflictException('Saldo do vale insuficiente.');
+        if (balance < amountCents)
+          throw new ConflictException('Saldo do vale insuficiente.');
         balance -= amountCents;
         reserved += amountCents;
       } else if (type === 'REDEEM') {
-        if (reserved < amountCents) throw new ConflictException('Reserva do vale insuficiente.');
+        if (reserved < amountCents)
+          throw new ConflictException('Reserva do vale insuficiente.');
         reserved -= amountCents;
       } else {
-        if (reserved < amountCents) throw new ConflictException('Reserva do vale insuficiente.');
+        if (reserved < amountCents)
+          throw new ConflictException('Reserva do vale insuficiente.');
         reserved -= amountCents;
         balance += amountCents;
       }
@@ -185,7 +312,10 @@ export class LoyaltyLedgerService {
     }, serializable);
   }
 
-  private async lockAccount(tx: Prisma.TransactionClient, userId: string): Promise<LoyaltyAccountRow> {
+  private async lockAccount(
+    tx: Prisma.TransactionClient,
+    userId: string,
+  ): Promise<LoyaltyAccountRow> {
     await tx.$executeRaw`
       INSERT INTO "LoyaltyAccount" ("id", "userId", "createdAt", "updatedAt")
       VALUES (${randomUUID()}::uuid, ${userId}::uuid, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -195,11 +325,15 @@ export class LoyaltyLedgerService {
       SELECT "id", "availablePoints", "pendingPoints", "reservedPoints"
       FROM "LoyaltyAccount" WHERE "userId" = ${userId}::uuid FOR UPDATE
     `;
-    if (!rows[0]) throw new NotFoundException('Conta de fidelização não encontrada.');
+    if (!rows[0])
+      throw new NotFoundException('Conta de fidelização não encontrada.');
     return rows[0];
   }
 
-  private async loyaltyDuplicate(tx: Prisma.TransactionClient, idempotencyKey: string) {
+  private async loyaltyDuplicate(
+    tx: Prisma.TransactionClient,
+    idempotencyKey: string,
+  ) {
     const rows = await tx.$queryRaw<Array<Record<string, unknown>>>`
       SELECT * FROM "LoyaltyTransaction" WHERE "idempotencyKey" = ${idempotencyKey} LIMIT 1
     `;

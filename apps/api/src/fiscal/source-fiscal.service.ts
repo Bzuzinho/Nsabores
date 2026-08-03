@@ -1,5 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   ClubChargeStatus,
   FiscalDocumentStatus,
@@ -19,7 +23,8 @@ export class SourceFiscalService {
     const purchase = await this.prisma.giftCardPurchase.findUnique({
       where: { id: purchaseId },
     });
-    if (!purchase) throw new NotFoundException('Pedido de vale-oferta não encontrado.');
+    if (!purchase)
+      throw new NotFoundException('Pedido de vale-oferta não encontrado.');
     if (purchase.status !== GiftCardPurchaseStatus.PAID) {
       throw new ConflictException(
         'O documento só pode ser emitido após confirmação do pagamento.',
@@ -27,7 +32,9 @@ export class SourceFiscalService {
     }
 
     const purchaser = purchase.purchaserUserId
-      ? await this.prisma.user.findUnique({ where: { id: purchase.purchaserUserId } })
+      ? await this.prisma.user.findUnique({
+          where: { id: purchase.purchaserUserId },
+        })
       : null;
 
     return this.issueSingleLine({
@@ -36,7 +43,9 @@ export class SourceFiscalService {
       customerUserId: purchase.purchaserUserId,
       customerSnapshot: {
         userId: purchase.purchaserUserId,
-        name: purchaser ? `${purchaser.firstName} ${purchaser.lastName}`.trim() : null,
+        name: purchaser
+          ? `${purchaser.firstName} ${purchaser.lastName}`.trim()
+          : null,
         email: purchase.purchaserEmail,
       },
       billingSnapshot: {},
@@ -57,7 +66,8 @@ export class SourceFiscalService {
     const charge = await this.prisma.clubSubscriptionCharge.findUnique({
       where: { id: chargeId },
     });
-    if (!charge) throw new NotFoundException('Cobrança do Clube não encontrada.');
+    if (!charge)
+      throw new NotFoundException('Cobrança do Clube não encontrada.');
     if (charge.status !== ClubChargeStatus.PAID) {
       throw new ConflictException(
         'O documento só pode ser emitido após confirmação do pagamento.',
@@ -67,11 +77,16 @@ export class SourceFiscalService {
     const subscription = await this.prisma.clubSubscription.findUnique({
       where: { id: charge.subscriptionId },
     });
-    if (!subscription) throw new NotFoundException('Subscrição do Clube não encontrada.');
-    const user = await this.prisma.user.findUnique({ where: { id: subscription.userId } });
+    if (!subscription)
+      throw new NotFoundException('Subscrição do Clube não encontrada.');
+    const user = await this.prisma.user.findUnique({
+      where: { id: subscription.userId },
+    });
     const planSnapshot = subscription.planSnapshot as Record<string, unknown>;
     const planName =
-      typeof planSnapshot.name === 'string' ? planSnapshot.name : 'Clube Nsabores';
+      typeof planSnapshot.name === 'string'
+        ? planSnapshot.name
+        : 'Clube Nsabores';
 
     return this.issueSingleLine({
       sourceType: FiscalSourceType.CLUB_CHARGE,
@@ -160,7 +175,8 @@ export class SourceFiscalService {
           RETURNING "nextNumber" - 1 AS "sequentialNumber", "prefix"
         `);
         const sequence = allocated[0];
-        if (!sequence) throw new ConflictException('A série fiscal não está ativa.');
+        if (!sequence)
+          throw new ConflictException('A série fiscal não está ativa.');
 
         const documentId = randomUUID();
         const number = `${sequence.prefix}${String(sequence.sequentialNumber).padStart(6, '0')}`;

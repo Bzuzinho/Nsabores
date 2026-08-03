@@ -52,11 +52,15 @@ async function main() {
     });
     documentIds.push(manualDocument.id);
 
-    const registered = await provider.registerManual(manualDocument.id, author.id, {
-      externalNumber: 'EXT-2026-001',
-      externalDocumentUrl: 'https://example.test/documents/EXT-2026-001',
-      providerReference: 'manual-smoke',
-    });
+    const registered = await provider.registerManual(
+      manualDocument.id,
+      author.id,
+      {
+        externalNumber: 'EXT-2026-001',
+        externalDocumentUrl: 'https://example.test/documents/EXT-2026-001',
+        providerReference: 'manual-smoke',
+      },
+    );
     assert.equal(registered.status, 'ISSUED');
     assert.equal(registered.externalNumber, 'EXT-2026-001');
     assert.equal(registered.provider, 'manual');
@@ -82,17 +86,25 @@ async function main() {
     assert.equal(failed.status, 'FAILED');
     assert.ok(failed.providerError);
 
-    const reprocessed = await provider.processMock(mockDocument.id, author.id, false);
+    const reprocessed = await provider.processMock(
+      mockDocument.id,
+      author.id,
+      false,
+    );
     assert.equal(reprocessed.status, 'ISSUED');
     assert.equal(reprocessed.provider, 'mock');
     assert.equal(reprocessed.providerError, null);
     assert.ok(reprocessed.providerReference);
-    assert.ok(reprocessed.events.some((event) => event.type === 'PROVIDER_FAILED'));
+    assert.ok(
+      reprocessed.events.some((event) => event.type === 'PROVIDER_FAILED'),
+    );
     assert.ok(reprocessed.events.some((event) => event.type === 'REPROCESSED'));
 
     console.log('Fiscal provider smoke passed.');
   } finally {
-    await prisma.fiscalDocument.deleteMany({ where: { id: { in: documentIds } } });
+    await prisma.fiscalDocument.deleteMany({
+      where: { id: { in: documentIds } },
+    });
     await prisma.fiscalSeries.deleteMany({
       where: { code: `PROVIDER-SMOKE-${year}` },
     });

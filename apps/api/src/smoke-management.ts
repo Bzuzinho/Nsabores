@@ -54,11 +54,7 @@ function cookieHeader(response: Response) {
   return values.map((value) => value.split(';', 1)[0]).join('; ');
 }
 
-async function login(
-  baseUrl: string,
-  email: string,
-  password: string,
-) {
+async function login(baseUrl: string, email: string, password: string) {
   const response = await fetch(`${baseUrl}/v1/auth/login`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -93,9 +89,7 @@ async function main() {
     await app.listen(0, '127.0.0.1');
     const baseUrl = await app.getUrl();
 
-    const unauthenticated = await fetch(
-      `${baseUrl}/v1/admin/products?limit=1`,
-    );
+    const unauthenticated = await fetch(`${baseUrl}/v1/admin/products?limit=1`);
     assert.equal(unauthenticated.status, 401);
 
     const publicCatalog = await fetch(`${baseUrl}/v1/products?limit=100`);
@@ -146,8 +140,7 @@ async function main() {
     };
     const categories = responses.get('/v1/admin/categories') as unknown[];
     const orders = responses.get('/v1/admin/orders') as
-      | unknown[]
-      | { data?: unknown[] };
+      unknown[] | { data?: unknown[] };
     const operations = responses.get(
       '/v1/admin/operations/dashboard',
     ) as Record<string, unknown>;

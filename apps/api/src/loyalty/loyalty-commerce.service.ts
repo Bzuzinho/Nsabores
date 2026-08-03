@@ -220,10 +220,7 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
     });
     if (!order) throw new ConflictException('Encomenda não encontrada.');
 
-    if (
-      order.totalCents === 0 &&
-      order.paymentStatus === PaymentStatus.PAID
-    ) {
+    if (order.totalCents === 0 && order.paymentStatus === PaymentStatus.PAID) {
       await this.loyaltyPrisma.order.update({
         where: { id },
         data: {

@@ -1,4 +1,10 @@
-import { IsEnum, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import {
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+} from 'class-validator';
 import { ProductionPriority, ProductionWorkStatus } from '@prisma/client';
 
 export class UpdateProductionDto {

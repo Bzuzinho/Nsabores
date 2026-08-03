@@ -90,12 +90,14 @@ export default function AccountDocumentPage() {
               {text(document.customerSnapshot.email)}
             </p>
             <p>
-              Subtotal {money(document.subtotalCents, document.currency)} · descontos{' '}
-              {money(document.discountCents, document.currency)} · imposto{' '}
-              {money(document.taxCents, document.currency)}
+              Subtotal {money(document.subtotalCents, document.currency)} ·
+              descontos {money(document.discountCents, document.currency)} ·
+              imposto {money(document.taxCents, document.currency)}
             </p>
             <p>
-              <strong>Total: {money(document.totalCents, document.currency)}</strong>
+              <strong>
+                Total: {money(document.totalCents, document.currency)}
+              </strong>
             </p>
 
             <h2>Linhas</h2>
@@ -106,7 +108,8 @@ export default function AccountDocumentPage() {
                   {line.sku ? ` · ${line.sku}` : ''}
                 </p>
                 <p>
-                  {line.quantity} × {money(line.unitPriceCents, document.currency)} ={' '}
+                  {line.quantity} ×{' '}
+                  {money(line.unitPriceCents, document.currency)} ={' '}
                   {money(line.totalCents, document.currency)}
                 </p>
               </article>

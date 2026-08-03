@@ -6,7 +6,11 @@ import { CreditNoteService } from './fiscal/credit-note.service';
 import { FiscalService } from './fiscal/fiscal.service';
 import { PrismaService } from './prisma.service';
 
-async function createOrder(prisma: PrismaService, suffix: string, paid: boolean) {
+async function createOrder(
+  prisma: PrismaService,
+  suffix: string,
+  paid: boolean,
+) {
   const delivery = await prisma.deliveryMethod.upsert({
     where: { code: 'FISCAL-SMOKE' },
     create: {
@@ -165,10 +169,7 @@ async function main() {
     orderIds.push(secondOrder.id);
     const second = await fiscal.issueOrder(secondOrder.id, author.id);
 
-    assert.equal(
-      second.sequentialNumber,
-      (first.sequentialNumber ?? 0) + 1,
-    );
+    assert.equal(second.sequentialNumber, (first.sequentialNumber ?? 0) + 1);
     assert.notEqual(second.number, first.number);
 
     const documentCount = await prisma.fiscalDocument.count({
@@ -181,7 +182,10 @@ async function main() {
     assert.equal(documentCount, 2);
 
     const creditCount = await prisma.fiscalDocument.count({
-      where: { parentDocumentId: first.id, type: FiscalDocumentType.CREDIT_NOTE },
+      where: {
+        parentDocumentId: first.id,
+        type: FiscalDocumentType.CREDIT_NOTE,
+      },
     });
     assert.equal(creditCount, 2);
 
@@ -192,7 +196,9 @@ async function main() {
       select: { id: true },
     });
     await prisma.fiscalDocument.deleteMany({
-      where: { parentDocumentId: { in: originals.map((document) => document.id) } },
+      where: {
+        parentDocumentId: { in: originals.map((document) => document.id) },
+      },
     });
     await prisma.fiscalDocument.deleteMany({
       where: { sourceType: 'ORDER', sourceId: { in: orderIds } },

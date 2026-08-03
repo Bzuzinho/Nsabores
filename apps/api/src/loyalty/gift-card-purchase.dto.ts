@@ -1,4 +1,11 @@
-import { IsEmail, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import {
+  IsEmail,
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class CreateGiftCardPurchaseDto {
   @IsEmail() purchaserEmail!: string;

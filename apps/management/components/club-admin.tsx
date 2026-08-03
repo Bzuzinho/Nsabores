@@ -83,9 +83,15 @@ export function ClubAdmin({
   }, [reload]);
 
   const metrics = useMemo(() => {
-    const active = subscriptions.filter((row) => row.status === 'ACTIVE').length;
-    const trial = subscriptions.filter((row) => row.status === 'TRIALING').length;
-    const pastDue = subscriptions.filter((row) => row.status === 'PAST_DUE').length;
+    const active = subscriptions.filter(
+      (row) => row.status === 'ACTIVE',
+    ).length;
+    const trial = subscriptions.filter(
+      (row) => row.status === 'TRIALING',
+    ).length;
+    const pastDue = subscriptions.filter(
+      (row) => row.status === 'PAST_DUE',
+    ).length;
     const cancelling = subscriptions.filter(
       (row) => row.status === 'CANCEL_AT_PERIOD_END',
     ).length;
@@ -119,7 +125,13 @@ export function ClubAdmin({
       if (statusFilter && row.status !== statusFilter) return false;
       if (planFilter && row.planCode !== planFilter) return false;
       if (!normalized) return true;
-      return [row.firstName, row.lastName, row.email, row.planName, row.planCode]
+      return [
+        row.firstName,
+        row.lastName,
+        row.email,
+        row.planName,
+        row.planCode,
+      ]
         .join(' ')
         .toLocaleLowerCase('pt-PT')
         .includes(normalized);
@@ -331,7 +343,9 @@ export function ClubAdmin({
           </section>
           <section className="user-detail">
             <h2>Subscrições</h2>
-            {!filteredSubscriptions.length && <p>Sem subscrições correspondentes.</p>}
+            {!filteredSubscriptions.length && (
+              <p>Sem subscrições correspondentes.</p>
+            )}
             {filteredSubscriptions.map((row) => (
               <article key={row.id}>
                 <p>

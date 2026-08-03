@@ -74,7 +74,9 @@ export default function AccountDocumentsPage() {
                   : 'Sem data de emissão'}
               </p>
               <p>Origem: {document.sourceType}</p>
-              <Link href={`/conta/documentos/${document.id}`}>Ver documento</Link>
+              <Link href={`/conta/documentos/${document.id}`}>
+                Ver documento
+              </Link>
             </article>
           ))
         )}

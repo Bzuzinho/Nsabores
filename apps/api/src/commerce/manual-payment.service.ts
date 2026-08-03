@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PaymentStatus } from '@prisma/client';
 import { LoyaltyEarningService } from '../loyalty/loyalty-earning.service';
 import { PrismaService } from '../prisma.service';
@@ -13,8 +17,14 @@ export class ManualPaymentService {
     private readonly receivables: ReceivablesService,
   ) {}
 
-  async markReceived(orderId: string, authorId: string, body: ManualPaymentDto) {
-    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+  async markReceived(
+    orderId: string,
+    authorId: string,
+    body: ManualPaymentDto,
+  ) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+    });
     if (!order) throw new NotFoundException('Encomenda não encontrada.');
     if (order.paymentStatus === PaymentStatus.REFUNDED) {
       throw new ConflictException('A encomenda já foi reembolsada.');

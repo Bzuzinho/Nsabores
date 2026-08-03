@@ -5,10 +5,7 @@ import { CommerceService } from './commerce/commerce.service';
 import { ManualPaymentService } from './commerce/manual-payment.service';
 import { LoyaltyService } from './loyalty/loyalty.service';
 import { PrismaService } from './prisma.service';
-import {
-  ContactChannelDto,
-  ContactTypeDto,
-} from './receivables/dto';
+import { ContactChannelDto, ContactTypeDto } from './receivables/dto';
 import { ReceivablesService } from './receivables/receivables.service';
 
 async function main() {

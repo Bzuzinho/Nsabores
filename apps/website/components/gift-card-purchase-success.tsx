@@ -52,9 +52,12 @@ export function GiftCardPurchaseSuccess({
         });
     } else if (paymentId) {
       void api
-        .post<Confirmation>(`/v1/gift-card-purchases/${purchaseId}/confirm-mock`, {
-          providerPaymentId: paymentId,
-        })
+        .post<Confirmation>(
+          `/v1/gift-card-purchases/${purchaseId}/confirm-mock`,
+          {
+            providerPaymentId: paymentId,
+          },
+        )
         .then((value) => {
           if (active) setResult(value);
         })

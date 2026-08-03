@@ -45,9 +45,15 @@ interface GiftCard {
 }
 
 const money = (cents: number, currency = 'EUR') =>
-  new Intl.NumberFormat('pt-PT', { style: 'currency', currency }).format(cents / 100);
+  new Intl.NumberFormat('pt-PT', { style: 'currency', currency }).format(
+    cents / 100,
+  );
 
-export function LoyaltyAdmin({ mode }: { mode: 'dashboard' | 'rules' | 'giftCards' }) {
+export function LoyaltyAdmin({
+  mode,
+}: {
+  mode: 'dashboard' | 'rules' | 'giftCards';
+}) {
   const [accounts, setAccounts] = useState<LoyaltyAccountRow[]>([]);
   const [rules, setRules] = useState<LoyaltyRule[]>([]);
   const [giftCards, setGiftCards] = useState<GiftCard[]>([]);
@@ -109,7 +115,9 @@ export function LoyaltyAdmin({ mode }: { mode: 'dashboard' | 'rules' | 'giftCard
         isActive: data.get('isActive') === 'on',
         channel: data.get('channel') || undefined,
         pointsPerEuro: Number(data.get('pointsPerEuro')),
-        clubMultiplierBasisPoints: Number(data.get('clubMultiplierBasisPoints')),
+        clubMultiplierBasisPoints: Number(
+          data.get('clubMultiplierBasisPoints'),
+        ),
         minimumOrderCents: data.get('minimumOrderCents')
           ? Number(data.get('minimumOrderCents'))
           : undefined,
@@ -190,8 +198,8 @@ export function LoyaltyAdmin({ mode }: { mode: 'dashboard' | 'rules' | 'giftCard
           <section className="user-detail">
             <h2>Resumo</h2>
             <p>
-              Clientes: <strong>{metrics.customers}</strong> · Pontos disponíveis:{' '}
-              <strong>{metrics.available}</strong> · Pendentes:{' '}
+              Clientes: <strong>{metrics.customers}</strong> · Pontos
+              disponíveis: <strong>{metrics.available}</strong> · Pendentes:{' '}
               <strong>{metrics.pending}</strong>
             </p>
             <p>
@@ -246,10 +254,12 @@ export function LoyaltyAdmin({ mode }: { mode: 'dashboard' | 'rules' | 'giftCard
             <h2>Nova regra</h2>
             <form className="auth-form" onSubmit={createRule}>
               <label>
-                Nome<input name="name" required />
+                Nome
+                <input name="name" required />
               </label>
               <label>
-                Código<input name="code" required />
+                Código
+                <input name="code" required />
               </label>
               <label>
                 Canal
@@ -343,13 +353,16 @@ export function LoyaltyAdmin({ mode }: { mode: 'dashboard' | 'rules' | 'giftCard
                 <input name="recipientEmail" type="email" />
               </label>
               <label>
-                Nome destinatário<input name="recipientName" />
+                Nome destinatário
+                <input name="recipientName" />
               </label>
               <label>
-                Mensagem<textarea name="message" maxLength={500} />
+                Mensagem
+                <textarea name="message" maxLength={500} />
               </label>
               <label>
-                Validade<input name="expiresAt" type="date" />
+                Validade
+                <input name="expiresAt" type="date" />
               </label>
               <button className="admin-primary" disabled={busy}>
                 Emitir vale
@@ -360,8 +373,8 @@ export function LoyaltyAdmin({ mode }: { mode: 'dashboard' | 'rules' | 'giftCard
                 <strong>Código emitido: {issuedCode}</strong>
                 <br />
                 <small>
-                  Este código completo só é apresentado agora. Guarde-o e entregue-o
-                  ao destinatário.
+                  Este código completo só é apresentado agora. Guarde-o e
+                  entregue-o ao destinatário.
                 </small>
               </p>
             )}

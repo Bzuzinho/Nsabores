@@ -110,7 +110,9 @@ export function GiftCardPurchasesAdmin() {
         <div>
           <p className="eyebrow">Vales-oferta</p>
           <h1>Pedidos e pagamentos</h1>
-          <p>Pagamentos combinados fora da plataforma e confirmados manualmente.</p>
+          <p>
+            Pagamentos combinados fora da plataforma e confirmados manualmente.
+          </p>
         </div>
       </header>
       {error && <p className="admin-error">{error}</p>}
@@ -118,8 +120,8 @@ export function GiftCardPurchasesAdmin() {
         <section className="user-detail">
           <h2>Código emitido</h2>
           <p>
-            Copie e entregue agora ao cliente. O código integral não voltará a ser
-            apresentado:
+            Copie e entregue agora ao cliente. O código integral não voltará a
+            ser apresentado:
           </p>
           <p>
             <strong>{issuedCode}</strong>
@@ -131,14 +133,15 @@ export function GiftCardPurchasesAdmin() {
         {purchases.map((purchase) => (
           <article key={purchase.id}>
             <p>
-              <strong>{money(purchase.amountCents, purchase.currency)}</strong> ·{' '}
-              {purchase.status}
+              <strong>{money(purchase.amountCents, purchase.currency)}</strong>{' '}
+              · {purchase.status}
             </p>
             <p>
               Comprador: {purchase.purchaserEmail}
               <br />
-              Destinatário: {purchase.recipientName || purchase.recipientEmail} ·{' '}
-              {purchase.recipientEmail}
+              Destinatário: {purchase.recipientName ||
+                purchase.recipientEmail}{' '}
+              · {purchase.recipientEmail}
             </p>
             <p>{new Date(purchase.createdAt).toLocaleString('pt-PT')}</p>
             {purchase.status === 'PENDING_PAYMENT' && (

@@ -61,7 +61,8 @@ async function ensureExtendedOrders() {
     const subtotalCents =
       first.priceCents * spec.firstQuantity +
       second.priceCents * spec.secondQuantity;
-    const shippingCents = spec.salesChannel === 'B2B' || subtotalCents >= 5000 ? 0 : 490;
+    const shippingCents =
+      spec.salesChannel === 'B2B' || subtotalCents >= 5000 ? 0 : 490;
     const totalCents = subtotalCents + shippingCents;
     const order = await db.order.upsert({
       where: { number: spec.number },
@@ -86,8 +87,11 @@ async function ensureExtendedOrders() {
         businessAccountId: spec.businessAccountId,
         priceListId: spec.priceListId,
         paymentTermsSnapshot:
-          spec.salesChannel === 'B2B' ? { terms: 'NET_30', label: '30 dias' } : null,
-        customerReference: spec.salesChannel === 'B2B' ? 'PO-CLIENTE-DEMO-001' : null,
+          spec.salesChannel === 'B2B'
+            ? { terms: 'NET_30', label: '30 dias' }
+            : null,
+        customerReference:
+          spec.salesChannel === 'B2B' ? 'PO-CLIENTE-DEMO-001' : null,
         requiresApproval: false,
         approvedBy: spec.salesChannel === 'B2B' ? staff.id : null,
         approvedAt: spec.salesChannel === 'B2B' ? day(-2) : null,
@@ -115,8 +119,11 @@ async function ensureExtendedOrders() {
         businessAccountId: spec.businessAccountId,
         priceListId: spec.priceListId,
         paymentTermsSnapshot:
-          spec.salesChannel === 'B2B' ? { terms: 'NET_30', label: '30 dias' } : null,
-        customerReference: spec.salesChannel === 'B2B' ? 'PO-CLIENTE-DEMO-001' : null,
+          spec.salesChannel === 'B2B'
+            ? { terms: 'NET_30', label: '30 dias' }
+            : null,
+        customerReference:
+          spec.salesChannel === 'B2B' ? 'PO-CLIENTE-DEMO-001' : null,
         requiresApproval: false,
         approvedBy: spec.salesChannel === 'B2B' ? staff.id : null,
         approvedAt: spec.salesChannel === 'B2B' ? day(-2) : null,
@@ -171,7 +178,11 @@ async function ensureExtendedOrders() {
     });
     await findOrCreate(
       db.orderStatusHistory,
-      { orderId: order.id, toStatus: spec.status, note: 'Estado demonstrativo.' },
+      {
+        orderId: order.id,
+        toStatus: spec.status,
+        note: 'Estado demonstrativo.',
+      },
       {
         orderId: order.id,
         fromStatus: null,
@@ -346,7 +357,9 @@ async function seedShipmentsReturnsAndSupport() {
     const events = [
       ['label', 'LABEL_CREATED', 'Etiqueta criada', -4],
       ['transit', 'IN_TRANSIT', 'Expedição em trânsito', -3],
-      ...(delivered ? [['delivered', 'DELIVERED', 'Entrega concluída', -1]] : []),
+      ...(delivered
+        ? [['delivered', 'DELIVERED', 'Entrega concluída', -1]]
+        : []),
     ] as const;
     for (const [eventCode, code, description, offset] of events) {
       await db.shipmentEvent.upsert({
@@ -434,7 +447,11 @@ async function seedShipmentsReturnsAndSupport() {
       });
       await findOrCreate(
         db.returnEvent,
-        { returnRequestId: rma.id, toStatus: rma.status, note: 'Evento demonstrativo.' },
+        {
+          returnRequestId: rma.id,
+          toStatus: rma.status,
+          note: 'Evento demonstrativo.',
+        },
         {
           returnRequestId: rma.id,
           fromStatus: null,
@@ -480,7 +497,10 @@ async function seedShipmentsReturnsAndSupport() {
       });
       await findOrCreate(
         db.supportCaseComment,
-        { supportCaseId: support.id, body: 'Comentário interno demonstrativo.' },
+        {
+          supportCaseId: support.id,
+          body: 'Comentário interno demonstrativo.',
+        },
         {
           supportCaseId: support.id,
           authorId: staff.id,
@@ -540,7 +560,9 @@ async function main() {
   await seedReceivables();
   await seedShipmentsReturnsAndSupport();
   await seedDiscountAudit();
-  console.log('Comércio, produção, fulfillment e recebimentos demo concluídos.');
+  console.log(
+    'Comércio, produção, fulfillment e recebimentos demo concluídos.',
+  );
 }
 
 main()

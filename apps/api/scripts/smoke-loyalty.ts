@@ -35,7 +35,11 @@ async function main() {
     assert.equal(first.id, duplicate.id);
 
     await ledger.reservePoints(user.id, 80, `loyalty:${suffix}:reserve`);
-    await ledger.releaseReservedPoints(user.id, 30, `loyalty:${suffix}:release`);
+    await ledger.releaseReservedPoints(
+      user.id,
+      30,
+      `loyalty:${suffix}:release`,
+    );
     await ledger.settleReservedPoints(user.id, 50, `loyalty:${suffix}:settle`);
     await ledger.earnPending(
       user.id,
@@ -43,7 +47,11 @@ async function main() {
       `loyalty:${suffix}:pending`,
       new Date(Date.now() - 1_000),
     );
-    await ledger.releasePending(user.id, 120, `loyalty:${suffix}:pending-release`);
+    await ledger.releasePending(
+      user.id,
+      120,
+      `loyalty:${suffix}:pending-release`,
+    );
 
     const account = (await loyalty.account(user.id)) as Record<string, unknown>;
     assert.equal(account.availablePoints, 320);
@@ -80,16 +88,30 @@ async function main() {
     const code = String(issued.code);
     assert.ok(code.startsWith('NS-'));
 
-    await ledger.reserveGiftCard(giftCardId, 2000, `gift-card:${suffix}:reserve`);
-    await ledger.releaseGiftCard(giftCardId, 500, `gift-card:${suffix}:release`);
+    await ledger.reserveGiftCard(
+      giftCardId,
+      2000,
+      `gift-card:${suffix}:reserve`,
+    );
+    await ledger.releaseGiftCard(
+      giftCardId,
+      500,
+      `gift-card:${suffix}:release`,
+    );
     await ledger.settleGiftCard(giftCardId, 1500, `gift-card:${suffix}:settle`);
 
-    const found = (await loyalty.lookupGiftCard(code)) as Record<string, unknown>;
+    const found = (await loyalty.lookupGiftCard(code)) as Record<
+      string,
+      unknown
+    >;
     assert.equal(found.balanceCents, 3500);
     assert.equal(found.reservedCents, 0);
 
     await loyalty.blockGiftCard(giftCardId, { reason: 'Smoke test.' });
-    const blocked = (await loyalty.lookupGiftCard(code)) as Record<string, unknown>;
+    const blocked = (await loyalty.lookupGiftCard(code)) as Record<
+      string,
+      unknown
+    >;
     assert.equal(blocked.status, 'BLOCKED');
 
     console.log('Loyalty and gift-card smoke passed.');

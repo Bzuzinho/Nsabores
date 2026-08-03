@@ -150,9 +150,7 @@ import { ReceivablesService } from './receivables/receivables.service';
         PAYMENT_FLOW_MODE: Joi.string()
           .valid('manual', 'automatic')
           .default('manual'),
-        PAYMENT_PROVIDER: Joi.string()
-          .valid('mock', 'stripe')
-          .default('mock'),
+        PAYMENT_PROVIDER: Joi.string().valid('mock', 'stripe').default('mock'),
         PAYMENT_SECRET_KEY: Joi.string().allow('').optional(),
         PAYMENT_WEBHOOK_SECRET: Joi.string()
           .min(16)
@@ -254,8 +252,14 @@ import { ReceivablesService } from './receivables/receivables.service';
     FiscalProviderService,
     FiscalReconciliationService,
     LoyaltyCommerceService,
-    { provide: BundleAwareCommerceService, useExisting: LoyaltyCommerceService },
-    { provide: PromotionalCommerceService, useExisting: LoyaltyCommerceService },
+    {
+      provide: BundleAwareCommerceService,
+      useExisting: LoyaltyCommerceService,
+    },
+    {
+      provide: PromotionalCommerceService,
+      useExisting: LoyaltyCommerceService,
+    },
     { provide: CommerceService, useExisting: LoyaltyCommerceService },
     CommerceIdentityService,
     ManualPaymentService,

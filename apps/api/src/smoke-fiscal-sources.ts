@@ -60,7 +60,9 @@ async function main() {
     });
 
     const giftDocument = await fiscal.issueGiftCardPurchase(purchase.id);
-    const duplicateGiftDocument = await fiscal.issueGiftCardPurchase(purchase.id);
+    const duplicateGiftDocument = await fiscal.issueGiftCardPurchase(
+      purchase.id,
+    );
     assert.equal(giftDocument.id, duplicateGiftDocument.id);
     assert.equal(giftDocument.sourceType, 'GIFT_CARD_PURCHASE');
     assert.equal(giftDocument.customerUserId, user.id);
@@ -154,7 +156,12 @@ async function main() {
       where: {
         OR: [
           ...(purchaseId
-            ? [{ sourceType: 'GIFT_CARD_PURCHASE' as const, sourceId: purchaseId }]
+            ? [
+                {
+                  sourceType: 'GIFT_CARD_PURCHASE' as const,
+                  sourceId: purchaseId,
+                },
+              ]
             : []),
           ...(chargeId
             ? [{ sourceType: 'CLUB_CHARGE' as const, sourceId: chargeId }]
@@ -163,10 +170,14 @@ async function main() {
       },
     });
     if (chargeId) {
-      await prisma.clubSubscriptionCharge.deleteMany({ where: { id: chargeId } });
+      await prisma.clubSubscriptionCharge.deleteMany({
+        where: { id: chargeId },
+      });
     }
     if (subscriptionId) {
-      await prisma.clubSubscription.deleteMany({ where: { id: subscriptionId } });
+      await prisma.clubSubscription.deleteMany({
+        where: { id: subscriptionId },
+      });
     }
     if (planId) {
       await prisma.clubPlan.deleteMany({ where: { id: planId } });

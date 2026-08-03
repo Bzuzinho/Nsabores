@@ -249,8 +249,7 @@ export function ReceivableDetail({ orderId }: { orderId: string }) {
         status: String(data.get('status')),
         method: String(data.get('method') ?? '') || undefined,
         dueAt: String(data.get('dueAt') ?? '') || undefined,
-        publicReference:
-          String(data.get('publicReference') ?? '') || undefined,
+        publicReference: String(data.get('publicReference') ?? '') || undefined,
         internalReference:
           String(data.get('internalReference') ?? '') || undefined,
         internalNotes: String(data.get('internalNotes') ?? '') || undefined,

@@ -88,10 +88,7 @@ export class AccountController {
   }
 
   @Get('documents/:id')
-  async document(
-    @CurrentUser() user: AuthPrincipal,
-    @Param('id') id: string,
-  ) {
+  async document(@CurrentUser() user: AuthPrincipal, @Param('id') id: string) {
     const document = await this.prisma.fiscalDocument.findFirst({
       where: {
         id,

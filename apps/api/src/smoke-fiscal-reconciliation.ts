@@ -92,7 +92,9 @@ async function main() {
       before.paymentsWithoutDocument.some((item) => item.sourceId === order.id),
     );
     assert.ok(
-      before.documentsWithoutFinancialMatch.some((item) => item.id === manual.id),
+      before.documentsWithoutFinancialMatch.some(
+        (item) => item.id === manual.id,
+      ),
     );
 
     const issued = await fiscal.issueOrder(order.id);
@@ -109,12 +111,16 @@ async function main() {
 
     console.log('Fiscal reconciliation smoke passed.');
   } finally {
-    await prisma.fiscalDocument.deleteMany({ where: { id: { in: documentIds } } });
+    await prisma.fiscalDocument.deleteMany({
+      where: { id: { in: documentIds } },
+    });
     await prisma.order.deleteMany({ where: { id: { in: orderIds } } });
     await prisma.fiscalSeries.deleteMany({
       where: { code: `RECON-SMOKE-${year}` },
     });
-    await prisma.deliveryMethod.deleteMany({ where: { code: 'FISCAL-RECON-SMOKE' } });
+    await prisma.deliveryMethod.deleteMany({
+      where: { code: 'FISCAL-RECON-SMOKE' },
+    });
     await prisma.$disconnect();
   }
 }

@@ -39,7 +39,10 @@ function validGiftCardBalance(data: Record<string, unknown>) {
     typeof reserved === 'number' &&
     typeof balance === 'number'
   ) {
-    normalized.balanceCents = Math.max(0, Math.min(balance, initial - reserved));
+    normalized.balanceCents = Math.max(
+      0,
+      Math.min(balance, initial - reserved),
+    );
   }
   return normalized;
 }

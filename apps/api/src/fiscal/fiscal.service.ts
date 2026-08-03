@@ -104,8 +104,7 @@ export class FiscalService {
             email: order.email,
             phone: order.phone,
           };
-          const billingSnapshot =
-            order.billingAddress as Prisma.InputJsonValue;
+          const billingSnapshot = order.billingAddress as Prisma.InputJsonValue;
 
           await tx.fiscalDocument.create({
             data: {

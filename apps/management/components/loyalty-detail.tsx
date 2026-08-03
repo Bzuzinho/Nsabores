@@ -98,14 +98,11 @@ export function LoyaltyCustomerDetail({ userId }: { userId: string }) {
     const form = event.currentTarget;
     const data = new FormData(form);
     try {
-      await managementApi.post(
-        `/v1/admin/loyalty/accounts/${userId}/adjust`,
-        {
-          points: Number(data.get('points')),
-          note: String(data.get('note')),
-          idempotencyKey: crypto.randomUUID(),
-        },
-      );
+      await managementApi.post(`/v1/admin/loyalty/accounts/${userId}/adjust`, {
+        points: Number(data.get('points')),
+        note: String(data.get('note')),
+        idempotencyKey: crypto.randomUUID(),
+      });
       form.reset();
       await reloadAccount();
     } catch (reason) {
@@ -229,10 +226,9 @@ export function GiftCardDetail({ id }: { id: string }) {
     setError('');
     const data = new FormData(event.currentTarget);
     try {
-      await managementApi.patch(
-        `/v1/admin/loyalty/gift-cards/${id}/block`,
-        { reason: String(data.get('reason')) },
-      );
+      await managementApi.patch(`/v1/admin/loyalty/gift-cards/${id}/block`, {
+        reason: String(data.get('reason')),
+      });
       await reloadCard();
     } catch (reason) {
       setError(

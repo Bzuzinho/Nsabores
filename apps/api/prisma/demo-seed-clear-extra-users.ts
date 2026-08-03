@@ -18,7 +18,9 @@ async function main() {
     return;
   }
 
-  await db.businessAccountUser.deleteMany({ where: { userId: { in: userIds } } });
+  await db.businessAccountUser.deleteMany({
+    where: { userId: { in: userIds } },
+  });
   await db.authSession.deleteMany({ where: { userId: { in: userIds } } });
   await db.address.deleteMany({ where: { userId: { in: userIds } } });
   await db.customerProfile.deleteMany({ where: { userId: { in: userIds } } });
