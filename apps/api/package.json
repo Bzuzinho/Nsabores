@@ -13,6 +13,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:seed": "prisma db seed",
+    "prisma:seed:demo": "tsx prisma/demo-seed.ts",
+    "prisma:seed:demo:clear": "tsx prisma/demo-seed-clear.ts",
     "validate:issue18": "tsx scripts/validate-issue-18.ts",
     "validate:club": "tsx scripts/validate-club-lifecycle.ts",
     "validate:club-manual": "pnpm build && node dist/smoke-manual-club.js",
