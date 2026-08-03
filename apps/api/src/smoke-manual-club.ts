@@ -1,11 +1,28 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import { ClubBillingProvider } from './club/billing.provider';
 import { ClubService } from './club/club.service';
 import { ManualClubPaymentsService } from './club/manual-club-payments.service';
 import { PrismaService } from './prisma.service';
+
+type ChargeSummary = {
+  id: string;
+  status: string;
+  periodStart: Date;
+};
+
+type SubscriptionDetail = {
+  id: string;
+  status: string;
+  currentPeriodStart: Date;
+  currentPeriodEnd: Date;
+  charges: ChargeSummary[];
+  events: Array<{ type: string }>;
+};
+
+function subscriptionDetail(value: unknown): SubscriptionDetail {
+  return value as SubscriptionDetail;
+}
 
 async function main() {
   process.env.NODE_ENV = 'test';
@@ -21,15 +38,8 @@ async function main() {
   });
 
   const prisma = app.get(PrismaService);
-  const config = app.get(ConfigService);
   const club = app.get(ClubService);
-  const billing = app.get(ClubBillingProvider);
-  const manual = new ManualClubPaymentsService(
-    prisma,
-    config,
-    club,
-    billing,
-  );
+  const manual = app.get(ManualClubPaymentsService);
 
   const suffix = randomUUID().slice(0, 8).toUpperCase();
   const user = await prisma.user.create({
@@ -54,15 +64,12 @@ async function main() {
     sortOrder: 999,
   })) as { code: string };
 
-  const joined = (await manual.join(user.id, {
-    planCode: plan.code,
-    idempotencyKey: `manual-club:${suffix}:join`,
-  })) as {
-    id: string;
-    status: string;
-    currentPeriodEnd: Date;
-    charges: Array<{ id: string; status: string }>;
-  };
+  const joined = subscriptionDetail(
+    await manual.join(user.id, {
+      planCode: plan.code,
+      idempotencyKey: `manual-club:${suffix}:join`,
+    }),
+  );
 
   assert.equal(joined.status, 'PENDING_ACTIVATION');
   assert.equal(joined.charges.length, 1);
@@ -84,12 +91,9 @@ async function main() {
     'Confirmação idempotente repetida.',
   );
 
-  const active = (await club.subscriptionDetail(joined.id)) as {
-    status: string;
-    currentPeriodEnd: Date;
-    charges: Array<{ id: string; status: string }>;
-    events: Array<{ type: string }>;
-  };
+  const active = subscriptionDetail(
+    await club.subscriptionDetail(joined.id),
+  );
   assert.equal(active.status, 'ACTIVE');
   assert.equal(
     active.charges.find(({ id }) => id === firstChargeId)?.status,
@@ -104,13 +108,9 @@ async function main() {
   await manual.requestRenewal(joined.id);
   await manual.requestRenewal(joined.id);
 
-  const renewalPending = (await club.subscriptionDetail(joined.id)) as {
-    charges: Array<{
-      id: string;
-      status: string;
-      periodStart: Date;
-    }>;
-  };
+  const renewalPending = subscriptionDetail(
+    await club.subscriptionDetail(joined.id),
+  );
   const pendingRenewals = renewalPending.charges.filter(
     ({ status }) => status === 'PENDING',
   );
@@ -128,12 +128,9 @@ async function main() {
     'Renovação confirmada no smoke.',
   );
 
-  const renewed = (await club.subscriptionDetail(joined.id)) as {
-    status: string;
-    currentPeriodStart: Date;
-    currentPeriodEnd: Date;
-    charges: Array<{ status: string }>;
-  };
+  const renewed = subscriptionDetail(
+    await club.subscriptionDetail(joined.id),
+  );
   assert.equal(renewed.status, 'ACTIVE');
   assert.equal(
     new Date(renewed.currentPeriodStart).toISOString(),
@@ -149,7 +146,7 @@ async function main() {
   await app.close();
 }
 
-main().catch((error) => {
+main().catch((error: unknown) => {
   console.error(error);
   process.exitCode = 1;
 });
