@@ -51,7 +51,7 @@ async function main() {
   const password = process.env.DEMO_USER_PASSWORD;
   if (!password) throw new Error('DEMO_USER_PASSWORD é obrigatória.');
 
-  const app = await NestFactory.create(AppModule, { logger: false });
+  const app = await NestFactory.create(AppModule, { logger: ['error'] });
   app.use(cookieParser());
   app.useGlobalPipes(
     new ValidationPipe({
@@ -74,7 +74,10 @@ async function main() {
     });
 
     if (!login.ok) {
-      throw new Error(`Login demo falhou com HTTP ${login.status}.`);
+      const body = await login.text();
+      throw new Error(
+        `Login demo falhou com HTTP ${login.status}: ${body.slice(0, 500)}`,
+      );
     }
 
     const cookie = cookieHeader(login);
@@ -106,7 +109,9 @@ async function main() {
 
     const productCount = products.data?.length ?? 0;
     const categoryCount = Array.isArray(categories) ? categories.length : 0;
-    const orderCount = Array.isArray(orders) ? orders.length : orders.data?.length ?? 0;
+    const orderCount = Array.isArray(orders)
+      ? orders.length
+      : (orders.data?.length ?? 0);
 
     if (productCount < 12 || categoryCount < 6 || orderCount < 8) {
       throw new Error(
