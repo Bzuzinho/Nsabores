@@ -190,7 +190,9 @@ export class FiscalReconciliationService {
           ? ''
           : value instanceof Date
             ? value.toISOString()
-            : String(value);
+            : typeof value === 'object'
+              ? JSON.stringify(value)
+              : String(value);
       return `"${text.replaceAll('"', '""')}"`;
     };
     return [
