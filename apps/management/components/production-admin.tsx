@@ -73,7 +73,9 @@ export function ProductionAdmin() {
               <tr key={row.orderId}>
                 <td>
                   {row.number}
-                  <small>{new Date(row.createdAt).toLocaleString('pt-PT')}</small>
+                  <small>
+                    {new Date(row.createdAt).toLocaleString('pt-PT')}
+                  </small>
                 </td>
                 <td>
                   {row.customerName}
@@ -96,7 +98,9 @@ export function ProductionAdmin() {
                   {row.itemCount} linhas · {row.unitCount} unidades
                 </td>
                 <td>
-                  <Link href={`/operacoes/producao/${row.orderId}`}>Preparar</Link>
+                  <Link href={`/operacoes/producao/${row.orderId}`}>
+                    Preparar
+                  </Link>
                 </td>
               </tr>
             ))}
@@ -202,7 +206,8 @@ export function ProductionDetail({ orderId }: { orderId: string }) {
             type="date"
             defaultValue={work.targetDate?.slice(0, 10) ?? ''}
             onBlur={(event) =>
-              event.target.value && void save({ targetDate: event.target.value })
+              event.target.value &&
+              void save({ targetDate: event.target.value })
             }
           />
         </label>
@@ -210,7 +215,9 @@ export function ProductionDetail({ orderId }: { orderId: string }) {
           Notas de produção
           <textarea
             defaultValue={work.productionNotes ?? ''}
-            onBlur={(event) => void save({ productionNotes: event.target.value })}
+            onBlur={(event) =>
+              void save({ productionNotes: event.target.value })
+            }
           />
         </label>
         {work.customerNotes && (

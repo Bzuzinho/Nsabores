@@ -62,15 +62,25 @@ async function main() {
     await db.paymentContactEvent.deleteMany({
       where: { agreementId: { in: agreementIds } },
     });
-    await db.paymentAgreement.deleteMany({ where: { id: { in: agreementIds } } });
+    await db.paymentAgreement.deleteMany({
+      where: { id: { in: agreementIds } },
+    });
   }
 
-  await db.productionWorkOrder.deleteMany({ where: { orderId: { in: orderIds } } });
-  await db.couponRedemption.deleteMany({ where: { orderId: { in: orderIds } } });
+  await db.productionWorkOrder.deleteMany({
+    where: { orderId: { in: orderIds } },
+  });
+  await db.couponRedemption.deleteMany({
+    where: { orderId: { in: orderIds } },
+  });
   await db.orderDiscount.deleteMany({ where: { orderId: { in: orderIds } } });
-  await db.stockReservation.deleteMany({ where: { orderId: { in: orderIds } } });
+  await db.stockReservation.deleteMany({
+    where: { orderId: { in: orderIds } },
+  });
   await db.payment.deleteMany({ where: { orderId: { in: orderIds } } });
-  await db.orderStatusHistory.deleteMany({ where: { orderId: { in: orderIds } } });
+  await db.orderStatusHistory.deleteMany({
+    where: { orderId: { in: orderIds } },
+  });
   await db.orderItem.deleteMany({ where: { orderId: { in: orderIds } } });
   await db.order.deleteMany({ where: { id: { in: orderIds } } });
 

@@ -133,7 +133,10 @@ export class LoyaltyEarningService {
       }
       const pending = account.pendingPoints - pendingDeduction;
       const available = account.availablePoints - remaining;
-      const lifetime = Math.max(0, account.lifetimeEarnedPoints - earning.points);
+      const lifetime = Math.max(
+        0,
+        account.lifetimeEarnedPoints - earning.points,
+      );
 
       await tx.$executeRaw`
         UPDATE "LoyaltyAccount"

@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PaymentProvider } from '../commerce/payment.provider';
 import { PrismaService } from '../prisma.service';
@@ -18,7 +22,9 @@ export class GiftCardPurchaseService {
   ) {}
 
   private manualFlow() {
-    return (this.config.get<string>('PAYMENT_FLOW_MODE') ?? 'manual') === 'manual';
+    return (
+      (this.config.get<string>('PAYMENT_FLOW_MODE') ?? 'manual') === 'manual'
+    );
   }
 
   async create(body: CreateGiftCardPurchaseDto, purchaserUserId?: string) {
@@ -67,7 +73,9 @@ export class GiftCardPurchaseService {
     if (this.manualFlow() || !this.payments.isMock()) {
       throw new NotFoundException('Confirmação automática indisponível.');
     }
-    const purchase = await this.prisma.giftCardPurchase.findUnique({ where: { id } });
+    const purchase = await this.prisma.giftCardPurchase.findUnique({
+      where: { id },
+    });
     if (!purchase || purchase.providerPaymentId !== body.providerPaymentId) {
       throw new NotFoundException('Compra de vale-oferta não encontrada.');
     }
@@ -75,8 +83,11 @@ export class GiftCardPurchaseService {
   }
 
   async markPaid(id: string) {
-    const purchase = await this.prisma.giftCardPurchase.findUnique({ where: { id } });
-    if (!purchase) throw new NotFoundException('Compra de vale-oferta não encontrada.');
+    const purchase = await this.prisma.giftCardPurchase.findUnique({
+      where: { id },
+    });
+    if (!purchase)
+      throw new NotFoundException('Compra de vale-oferta não encontrada.');
     return this.finalize(id);
   }
 
@@ -88,20 +99,27 @@ export class GiftCardPurchaseService {
   }
 
   async status(id: string) {
-    const purchase = await this.prisma.giftCardPurchase.findUnique({ where: { id } });
-    if (!purchase) throw new NotFoundException('Compra de vale-oferta não encontrada.');
+    const purchase = await this.prisma.giftCardPurchase.findUnique({
+      where: { id },
+    });
+    if (!purchase)
+      throw new NotFoundException('Compra de vale-oferta não encontrada.');
     return this.present(purchase);
   }
 
   private async finalize(id: string) {
-    const purchase = await this.prisma.giftCardPurchase.findUnique({ where: { id } });
-    if (!purchase) throw new NotFoundException('Compra de vale-oferta não encontrada.');
-    if (purchase.status === 'CANCELLED') throw new ConflictException('A compra foi cancelada.');
+    const purchase = await this.prisma.giftCardPurchase.findUnique({
+      where: { id },
+    });
+    if (!purchase)
+      throw new NotFoundException('Compra de vale-oferta não encontrada.');
+    if (purchase.status === 'CANCELLED')
+      throw new ConflictException('A compra foi cancelada.');
     if (purchase.status === 'PAID') {
       return { ...this.present(purchase), codeAvailable: false };
     }
 
-    const issued = (await this.loyalty.issueGiftCard(
+    const issued = await this.loyalty.issueGiftCard(
       {
         initialAmountCents: purchase.amountCents,
         recipientEmail: purchase.recipientEmail,
@@ -110,7 +128,7 @@ export class GiftCardPurchaseService {
         idempotencyKey: `gift-card-purchase:${purchase.id}:issue`,
       },
       purchase.purchaserUserId ?? undefined,
-    )) as Record<string, unknown>;
+    );
 
     const updated = await this.prisma.giftCardPurchase.update({
       where: { id: purchase.id },

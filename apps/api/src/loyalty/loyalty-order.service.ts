@@ -1,12 +1,19 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { LoyaltyLedgerService } from './loyalty-ledger.service';
 import { LoyaltyReleaseService } from './loyalty-release.service';
 import { LoyaltyReversalService } from './loyalty-reversal.service';
 
 const normalizeCode = (value: string) =>
-  value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  value
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '');
 const hashCode = (value: string) =>
   createHash('sha256').update(normalizeCode(value)).digest('hex');
 
@@ -94,7 +101,9 @@ export class LoyaltyOrderService {
         }
         giftCardReserved = Math.min(card.balanceCents, remaining);
         if (giftCardReserved <= 0)
-          throw new ConflictException('O vale-oferta não tem saldo disponível.');
+          throw new ConflictException(
+            'O vale-oferta não tem saldo disponível.',
+          );
         giftCardId = card.id;
         codeLast4 = card.codeLast4;
         await this.ledger.reserveGiftCard(

@@ -7,15 +7,15 @@ on:
     branches: [main]
 
 concurrency:
-  group: management-smoke-${{ github.sha }}
-  cancel-in-progress: false
+  group: management-smoke-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
   management-smoke:
-    name: Management routes and complete demo
+    name: Management routes, permissions and complete demo
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -86,8 +86,8 @@ jobs:
       - name: Validate complete demo counts
         run: pnpm demo:validate
 
-      - name: Validate management API
-        run: pnpm --filter @nsabores/api validate:management
+      - name: Validate authenticated API and permissions
+        run: pnpm --filter @nsabores/api validate:e2e
 
       - name: Validate management route files
         run: pnpm --filter @nsabores/management exec vitest run components/management-routes.test.ts

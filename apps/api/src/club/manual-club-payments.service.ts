@@ -1,5 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
@@ -40,6 +44,7 @@ type ChargeRow = {
 const normalizeCode = (value: string) =>
   value.trim().toUpperCase().replace(/\s+/g, '-');
 
+@Injectable()
 export class ManualClubPaymentsService {
   constructor(
     private readonly prisma: PrismaService,
@@ -104,7 +109,12 @@ export class ManualClubPaymentsService {
             'PENDING_ACTIVATION'::"ClubSubscriptionStatus", 'manual',
             ${now}, ${periodEnd}, false, ${plan.priceCents}, ${plan.currency},
             ${plan.billingInterval}::"ClubBillingInterval",
-            ${JSON.stringify({ id: plan.id, name: plan.name, code: plan.code, benefits: plan.benefits })}::jsonb,
+            ${JSON.stringify({
+              id: plan.id,
+              name: plan.name,
+              code: plan.code,
+              benefits: plan.benefits,
+            })}::jsonb,
             CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
           )
         `;
@@ -186,18 +196,20 @@ export class ManualClubPaymentsService {
     }
 
     await this.prisma.$transaction(async (tx) => {
-      const charges = await tx.$queryRaw<Array<ChargeRow & { subscriptionStatus: string }>>(
-        Prisma.sql`
-          SELECT c.*, s."status"::text AS "subscriptionStatus"
-          FROM "ClubSubscriptionCharge" c
-          JOIN "ClubSubscription" s ON s."id" = c."subscriptionId"
-          WHERE c."id" = ${chargeId}::uuid
-            AND c."subscriptionId" = ${subscriptionId}::uuid
-          FOR UPDATE
-        `,
-      );
+      const charges = await tx.$queryRaw<
+        Array<ChargeRow & { subscriptionStatus: string }>
+      >(Prisma.sql`
+        SELECT c.*, s."status"::text AS "subscriptionStatus"
+        FROM "ClubSubscriptionCharge" c
+        JOIN "ClubSubscription" s ON s."id" = c."subscriptionId"
+        WHERE c."id" = ${chargeId}::uuid
+          AND c."subscriptionId" = ${subscriptionId}::uuid
+        FOR UPDATE
+      `);
       const charge = charges[0];
-      if (!charge) throw new NotFoundException('Cobrança do Clube não encontrada.');
+      if (!charge) {
+        throw new NotFoundException('Cobrança do Clube não encontrada.');
+      }
       if (charge.status === 'PAID') return;
       if (charge.status !== 'PENDING') {
         throw new ConflictException('A cobrança não pode ser confirmada.');
@@ -209,7 +221,10 @@ export class ManualClubPaymentsService {
           "paidAt" = CURRENT_TIMESTAMP,
           "providerPaymentId" = COALESCE(${reference?.trim() || null}, "providerPaymentId"),
           "metadata" = COALESCE("metadata", '{}'::jsonb) ||
-            ${JSON.stringify({ confirmedBy: authorId, note: note?.trim() || null })}::jsonb,
+            ${JSON.stringify({
+              confirmedBy: authorId,
+              note: note?.trim() || null,
+            })}::jsonb,
           "updatedAt" = CURRENT_TIMESTAMP
         WHERE "id" = ${chargeId}::uuid
       `;
@@ -238,7 +253,10 @@ export class ManualClubPaymentsService {
           ${charge.subscriptionStatus}::"ClubSubscriptionStatus",
           'ACTIVE'::"ClubSubscriptionStatus", ${authorId}::uuid,
           ${note?.trim() || 'Pagamento confirmado manualmente.'},
-          ${JSON.stringify({ chargeId, reference: reference?.trim() || null })}::jsonb,
+          ${JSON.stringify({
+            chargeId,
+            reference: reference?.trim() || null,
+          })}::jsonb,
           CURRENT_TIMESTAMP
         )
       `;
@@ -252,7 +270,10 @@ export class ManualClubPaymentsService {
           'PAYMENT_CONFIRMED'::"ClubSubscriptionEventType",
           'ACTIVE'::"ClubSubscriptionStatus", 'ACTIVE'::"ClubSubscriptionStatus",
           ${authorId}::uuid, 'Cobrança do Clube confirmada.',
-          ${JSON.stringify({ chargeId, reference: reference?.trim() || null })}::jsonb,
+          ${JSON.stringify({
+            chargeId,
+            reference: reference?.trim() || null,
+          })}::jsonb,
           CURRENT_TIMESTAMP
         )
       `;
@@ -267,7 +288,9 @@ export class ManualClubPaymentsService {
              "priceCentsSnapshot", "currencySnapshot", "billingIntervalSnapshot"
       FROM "ClubSubscription" WHERE "id" = ${id}::uuid LIMIT 1
     `;
-    if (!rows[0]) throw new NotFoundException('Subscrição não encontrada.');
+    if (!rows[0]) {
+      throw new NotFoundException('Subscrição não encontrada.');
+    }
     return rows[0];
   }
 }

@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
 import { UserRole } from '@prisma/client';
@@ -27,7 +35,10 @@ export class ProductionController {
   }
 
   @Post(':orderId/complete')
-  complete(@Param('orderId') orderId: string, @Body() body: CompleteProductionDto) {
+  complete(
+    @Param('orderId') orderId: string,
+    @Body() body: CompleteProductionDto,
+  ) {
     return this.production.complete(orderId, body);
   }
 }

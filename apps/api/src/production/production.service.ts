@@ -9,7 +9,9 @@ export class ProductionService {
   constructor(private readonly prisma: PrismaService) {}
 
   async ensure(orderId: string) {
-    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+    });
     if (!order) throw new NotFoundException('Encomenda não encontrada.');
     await this.prisma.$executeRaw`
       INSERT INTO "ProductionWorkOrder" ("id", "orderId", "createdAt", "updatedAt")
@@ -47,7 +49,10 @@ export class ProductionService {
     `;
     const work = rows[0];
     if (!work) throw new NotFoundException('Ficha de produção não encontrada.');
-    const items = await this.prisma.orderItem.findMany({ where: { orderId }, orderBy: { createdAt: 'asc' } });
+    const items = await this.prisma.orderItem.findMany({
+      where: { orderId },
+      orderBy: { createdAt: 'asc' },
+    });
     return { ...work, items };
   }
 
@@ -67,7 +72,10 @@ export class ProductionService {
       WHERE "orderId" = ${orderId}::uuid
     `;
     if (status === ProductionWorkStatus.READY) {
-      await this.prisma.order.update({ where: { id: orderId }, data: { status: OrderStatus.READY } });
+      await this.prisma.order.update({
+        where: { id: orderId },
+        data: { status: OrderStatus.READY },
+      });
     }
     return this.detail(orderId);
   }
@@ -80,7 +88,10 @@ export class ProductionService {
           "productionNotes" = COALESCE(${body.note?.trim() ?? null}, "productionNotes"), "updatedAt" = CURRENT_TIMESTAMP
         WHERE "orderId" = ${orderId}::uuid
       `;
-      await tx.order.update({ where: { id: orderId }, data: { status: OrderStatus.READY } });
+      await tx.order.update({
+        where: { id: orderId },
+        data: { status: OrderStatus.READY },
+      });
     });
     return this.detail(orderId);
   }

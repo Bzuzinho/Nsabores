@@ -211,7 +211,10 @@ async function seedSuppliersAndPurchases() {
     ['DEMO-PO-0003', 'SUBMITTED', -2, 5],
   ] as const;
 
-  for (const [poIndex, [number, status, issuedOffset, expectedOffset]] of purchaseSpecs.entries()) {
+  for (const [
+    poIndex,
+    [number, status, issuedOffset, expectedOffset],
+  ] of purchaseSpecs.entries()) {
     const supplier = supplierRows[poIndex];
     const selected = products.slice(poIndex * 3, poIndex * 3 + 3);
     const subtotalCents = selected.reduce(
@@ -273,7 +276,10 @@ async function seedSuppliersAndPurchases() {
       };
       itemRows.push(
         existing
-          ? await db.purchaseOrderItem.update({ where: { id: existing.id }, data })
+          ? await db.purchaseOrderItem.update({
+              where: { id: existing.id },
+              data,
+            })
           : await db.purchaseOrderItem.create({ data }),
       );
     }
@@ -301,7 +307,9 @@ async function seedSuppliersAndPurchases() {
       for (const item of itemRows) {
         const quantity = status === 'RECEIVED' ? 20 : 10;
         const movement = await db.stockMovement.upsert({
-          where: { idempotencyKey: `demo:purchase:${receiptNumber}:${item.id}` },
+          where: {
+            idempotencyKey: `demo:purchase:${receiptNumber}:${item.id}`,
+          },
           update: {
             productId: item.productId,
             type: 'PURCHASE_RECEIPT',
@@ -373,7 +381,9 @@ async function seedInventories() {
     });
 
     for (const product of products.slice(index * 4, index * 4 + 4)) {
-      const stock = await db.stockItem.findUnique({ where: { productId: product.id } });
+      const stock = await db.stockItem.findUnique({
+        where: { productId: product.id },
+      });
       const expected = stock?.onHandQuantity ?? 0;
       const counted = status === 'COMPLETED' ? Math.max(0, expected - 1) : null;
       let movementId: string | null = null;
@@ -414,7 +424,10 @@ async function seedInventories() {
         stockMovementId: movementId,
       };
       if (existing) {
-        await db.inventoryCountItem.update({ where: { id: existing.id }, data });
+        await db.inventoryCountItem.update({
+          where: { id: existing.id },
+          data,
+        });
       } else {
         await db.inventoryCountItem.create({ data });
       }
@@ -599,11 +612,35 @@ async function seedB2B() {
   });
 
   const applications = [
-    ['509990001', 'Mercearia Parceira Demo', 'empresa.demo@nsabores.pt', 'APPROVED', account.id],
-    ['509990003', 'Empório Pendente Demo', 'emporio.demo@nsabores.pt', 'PENDING', null],
-    ['509990004', 'Loja Rejeitada Demo', 'rejeitada.demo@nsabores.pt', 'REJECTED', null],
+    [
+      '509990001',
+      'Mercearia Parceira Demo',
+      'empresa.demo@nsabores.pt',
+      'APPROVED',
+      account.id,
+    ],
+    [
+      '509990003',
+      'Empório Pendente Demo',
+      'emporio.demo@nsabores.pt',
+      'PENDING',
+      null,
+    ],
+    [
+      '509990004',
+      'Loja Rejeitada Demo',
+      'rejeitada.demo@nsabores.pt',
+      'REJECTED',
+      null,
+    ],
   ] as const;
-  for (const [taxNumber, tradeName, email, status, businessAccountId] of applications) {
+  for (const [
+    taxNumber,
+    tradeName,
+    email,
+    status,
+    businessAccountId,
+  ] of applications) {
     await findOrCreate(
       db.resellerApplication,
       { taxNumber, email },
@@ -632,7 +669,10 @@ async function seedB2B() {
   return { account, resellerList };
 }
 
-async function seedPromotionsAndBundles(b2b: { account: any; resellerList: any }) {
+async function seedPromotionsAndBundles(b2b: {
+  account: any;
+  resellerList: any;
+}) {
   const promotions = [
     {
       code: 'DEMO-VERAO-10',
@@ -776,7 +816,12 @@ async function seedPromotionsAndBundles(b2b: { account: any; resellerList: any }
       isActive: true,
     },
   });
-  const componentSkus = ['QUE-CABRA', 'ENC-SALPICAO', 'VIN-BRANCO', 'COMP-ABO-NOZ'];
+  const componentSkus = [
+    'QUE-CABRA',
+    'ENC-SALPICAO',
+    'VIN-BRANCO',
+    'COMP-ABO-NOZ',
+  ];
   for (const [index, sku] of componentSkus.entries()) {
     const product = await requiredProduct(sku);
     await findOrCreate(

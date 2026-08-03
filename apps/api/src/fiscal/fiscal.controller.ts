@@ -1,10 +1,20 @@
-import { Body, Controller, Get, Header, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Header,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { FiscalDocumentType, UserRole } from '@prisma/client';
 import { CurrentUser, Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
 import type { AuthPrincipal } from '../auth/auth.types';
-import { PrismaService } from '../prisma.service';
-import { CreditNoteService, type CreditNoteLineInput } from './credit-note.service';
+import {
+  CreditNoteService,
+  type CreditNoteLineInput,
+} from './credit-note.service';
 import { FiscalProviderService } from './fiscal-provider.service';
 import { FiscalReconciliationService } from './fiscal-reconciliation.service';
 import { FiscalService } from './fiscal.service';
@@ -14,20 +24,13 @@ import { SourceFiscalService } from './source-fiscal.service';
 @Roles(UserRole.STAFF, UserRole.ADMIN)
 @Controller('v1/admin/fiscal')
 export class FiscalController {
-  private readonly creditNotes: CreditNoteService;
-  private readonly sources: SourceFiscalService;
-  private readonly provider: FiscalProviderService;
-  private readonly reconciliation: FiscalReconciliationService;
-
   constructor(
     private readonly fiscal: FiscalService,
-    prisma: PrismaService,
-  ) {
-    this.creditNotes = new CreditNoteService(prisma);
-    this.sources = new SourceFiscalService(prisma);
-    this.provider = new FiscalProviderService(prisma);
-    this.reconciliation = new FiscalReconciliationService(prisma);
-  }
+    private readonly creditNotes: CreditNoteService,
+    private readonly sources: SourceFiscalService,
+    private readonly provider: FiscalProviderService,
+    private readonly reconciliation: FiscalReconciliationService,
+  ) {}
 
   @Get('documents')
   list() {
@@ -36,7 +39,10 @@ export class FiscalController {
 
   @Get('documents.csv')
   @Header('Content-Type', 'text/csv; charset=utf-8')
-  @Header('Content-Disposition', 'attachment; filename="documentos-fiscais.csv"')
+  @Header(
+    'Content-Disposition',
+    'attachment; filename="documentos-fiscais.csv"',
+  )
   documentsCsv() {
     return this.reconciliation.documentsCsv();
   }
@@ -48,7 +54,10 @@ export class FiscalController {
 
   @Get('reconciliation.csv')
   @Header('Content-Type', 'text/csv; charset=utf-8')
-  @Header('Content-Disposition', 'attachment; filename="reconciliacao-fiscal.csv"')
+  @Header(
+    'Content-Disposition',
+    'attachment; filename="reconciliacao-fiscal.csv"',
+  )
   reconciliationCsv() {
     return this.reconciliation.reconciliationCsv();
   }
@@ -112,7 +121,11 @@ export class FiscalController {
     @CurrentUser() user: AuthPrincipal,
     @Body() body: { simulateFailure?: boolean },
   ) {
-    return this.provider.processMock(id, user.sub, body.simulateFailure === true);
+    return this.provider.processMock(
+      id,
+      user.sub,
+      body.simulateFailure === true,
+    );
   }
 
   @Post('documents/:id/credit-notes')

@@ -5,11 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  FiscalDocumentStatus,
-  FiscalEventType,
-  Prisma,
-} from '@prisma/client';
+import { FiscalDocumentStatus, FiscalEventType } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 
 export type FiscalProviderMode = 'manual' | 'mock';
@@ -42,7 +38,9 @@ export class FiscalProviderService {
       });
       if (!document) throw new NotFoundException('Documento não encontrado.');
       if (document.status === FiscalDocumentStatus.CANCELLED) {
-        throw new ConflictException('Um documento cancelado não pode ser processado.');
+        throw new ConflictException(
+          'Um documento cancelado não pode ser processado.',
+        );
       }
 
       const wasFailed = document.status === FiscalDocumentStatus.FAILED;
@@ -61,7 +59,9 @@ export class FiscalProviderService {
       await tx.fiscalDocumentEvent.create({
         data: {
           documentId,
-          type: wasFailed ? FiscalEventType.REPROCESSED : FiscalEventType.ISSUED,
+          type: wasFailed
+            ? FiscalEventType.REPROCESSED
+            : FiscalEventType.ISSUED,
           authorId,
           note: wasFailed
             ? `Documento reprocessado manualmente como ${externalNumber}.`
@@ -101,11 +101,14 @@ export class FiscalProviderService {
       });
       if (!document) throw new NotFoundException('Documento não encontrado.');
       if (document.status === FiscalDocumentStatus.CANCELLED) {
-        throw new ConflictException('Um documento cancelado não pode ser processado.');
+        throw new ConflictException(
+          'Um documento cancelado não pode ser processado.',
+        );
       }
 
       if (simulateFailure) {
-        const errorMessage = 'Falha mock solicitada para validação do provider.';
+        const errorMessage =
+          'Falha mock solicitada para validação do provider.';
         await tx.fiscalDocument.update({
           where: { id: documentId },
           data: {
@@ -140,12 +143,17 @@ export class FiscalProviderService {
         await tx.fiscalDocumentEvent.create({
           data: {
             documentId,
-            type: wasFailed ? FiscalEventType.REPROCESSED : FiscalEventType.ISSUED,
+            type: wasFailed
+              ? FiscalEventType.REPROCESSED
+              : FiscalEventType.ISSUED,
             authorId,
             note: wasFailed
               ? 'Documento reprocessado com sucesso pelo provider mock.'
               : 'Documento processado com sucesso pelo provider mock.',
-            payload: { provider: 'mock', providerReference } as Prisma.InputJsonValue,
+            payload: {
+              provider: 'mock',
+              providerReference,
+            },
           },
         });
       }

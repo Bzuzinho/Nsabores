@@ -3,7 +3,11 @@ import { GiftCardPurchaseSuccess } from '../../../components/gift-card-purchase-
 export default async function GiftCardPurchaseSuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ purchaseId?: string; paymentId?: string; manual?: string }>;
+  searchParams: Promise<{
+    purchaseId?: string;
+    paymentId?: string;
+    manual?: string;
+  }>;
 }) {
   const params = await searchParams;
   if (!params.purchaseId) {

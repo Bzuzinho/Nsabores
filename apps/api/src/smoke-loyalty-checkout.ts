@@ -5,10 +5,7 @@ import { CommerceService } from './commerce/commerce.service';
 import { ManualPaymentService } from './commerce/manual-payment.service';
 import { LoyaltyService } from './loyalty/loyalty.service';
 import { PrismaService } from './prisma.service';
-import {
-  ContactChannelDto,
-  ContactTypeDto,
-} from './receivables/dto';
+import { ContactChannelDto, ContactTypeDto } from './receivables/dto';
 import { ReceivablesService } from './receivables/receivables.service';
 
 async function main() {
@@ -94,7 +91,7 @@ async function main() {
     note: 'Saldo do smoke de checkout.',
     idempotencyKey: `checkout:${suffix}:points`,
   });
-  const giftCard = (await loyalty.issueGiftCard(
+  const giftCard = await loyalty.issueGiftCard(
     {
       initialAmountCents: 2000,
       recipientEmail: user.email,
@@ -102,7 +99,7 @@ async function main() {
       idempotencyKey: `checkout:${suffix}:gift-card`,
     },
     user.id,
-  )) as Record<string, unknown>;
+  );
 
   await commerce.addItem({ userId: user.id }, product.id, 1);
   const order = (await commerce.checkout(
@@ -215,10 +212,7 @@ async function main() {
   assert.equal(account.reservedPoints, 0);
   assert.equal(account.pendingPoints, 40);
 
-  const card = (await loyalty.lookupGiftCard(String(giftCard.code))) as Record<
-    string,
-    unknown
-  >;
+  const card = await loyalty.lookupGiftCard(String(giftCard.code));
   assert.equal(card.balanceCents, 0);
   assert.equal(card.reservedCents, 0);
   assert.equal(card.status, 'DEPLETED');

@@ -60,12 +60,20 @@ export default function GiftCardLookupPage() {
               Vale terminado em <strong>{result.codeLast4}</strong>
             </p>
             <p>Estado: {result.status}</p>
-            <p>Saldo disponível: {money(result.balanceCents, result.currency)}</p>
+            <p>
+              Saldo disponível: {money(result.balanceCents, result.currency)}
+            </p>
             {result.reservedCents > 0 && (
-              <p>Montante reservado: {money(result.reservedCents, result.currency)}</p>
+              <p>
+                Montante reservado:{' '}
+                {money(result.reservedCents, result.currency)}
+              </p>
             )}
             {result.expiresAt && (
-              <p>Validade: {new Date(result.expiresAt).toLocaleDateString('pt-PT')}</p>
+              <p>
+                Validade:{' '}
+                {new Date(result.expiresAt).toLocaleDateString('pt-PT')}
+              </p>
             )}
           </section>
         )}

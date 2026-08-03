@@ -1,4 +1,11 @@
-import { Controller, Get, NotFoundException, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
 import { PrismaService } from '../prisma.service';
@@ -34,7 +41,9 @@ export class AdminLoyaltyAccountsController {
       FROM "GiftCard" WHERE "id" = ${id}::uuid LIMIT 1
     `;
     if (!cards[0]) throw new NotFoundException('Vale-oferta não encontrado.');
-    const transactions = await this.prisma.$queryRaw<Array<Record<string, unknown>>>`
+    const transactions = await this.prisma.$queryRaw<
+      Array<Record<string, unknown>>
+    >`
       SELECT * FROM "GiftCardTransaction"
       WHERE "giftCardId" = ${id}::uuid ORDER BY "createdAt" DESC
     `;

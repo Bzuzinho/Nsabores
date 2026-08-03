@@ -97,10 +97,10 @@ async function main() {
     })) as Record<string, unknown>;
     assert.equal(duplicateJoin.id, subscriptionId);
 
-    const changed = (await operations.changePlan(user.id, yearly.code)) as Record<
-      string,
-      unknown
-    >;
+    const changed = (await operations.changePlan(
+      user.id,
+      yearly.code,
+    )) as Record<string, unknown>;
     assert.equal(changed.planCode, yearly.code);
     assert.equal(changed.priceCentsSnapshot, 19900);
     assert.equal(changed.billingIntervalSnapshot, 'YEARLY');
@@ -150,7 +150,11 @@ async function main() {
     assert.equal(resumed.status, 'ACTIVE');
     assert.equal(resumed.cancelAtPeriodEnd, false);
 
-    await operations.scheduleCancel(subscriptionId, user.id, 'Effective cancellation.');
+    await operations.scheduleCancel(
+      subscriptionId,
+      user.id,
+      'Effective cancellation.',
+    );
     const ended = (await club.renew(
       subscriptionId,
       `club-smoke:${suffix}:cancelled`,
@@ -168,7 +172,10 @@ async function main() {
       'RESUMED',
       'CANCELLED',
     ]) {
-      assert.ok(events.some((event) => event.type === required), `Missing ${required}`);
+      assert.ok(
+        events.some((event) => event.type === required),
+        `Missing ${required}`,
+      );
     }
 
     console.log('Club lifecycle smoke passed.');
@@ -179,7 +186,9 @@ async function main() {
     for (const planId of createdPlanIds) {
       await prisma.$executeRaw`DELETE FROM "ClubPlan" WHERE "id" = ${planId}::uuid`;
     }
-    await prisma.user.deleteMany({ where: { id: { in: users.map((item) => item.id) } } });
+    await prisma.user.deleteMany({
+      where: { id: { in: users.map((item) => item.id) } },
+    });
     await prisma.$disconnect();
   }
 }

@@ -16,14 +16,23 @@ async function main() {
     categories: await db.category.count({
       where: {
         slug: {
-          in: ['tabuas', 'queijos', 'enchidos', 'cabazes', 'vinhos', 'outros-sabores'],
+          in: [
+            'tabuas',
+            'queijos',
+            'enchidos',
+            'cabazes',
+            'vinhos',
+            'outros-sabores',
+          ],
         },
       },
     }),
     products: demoProducts.length,
     users: demoUsers.length,
     orders: await db.order.count({ where: { source: 'DEMO_SEED' } }),
-    stockItems: await db.stockItem.count({ where: { productId: { in: productIds } } }),
+    stockItems: await db.stockItem.count({
+      where: { productId: { in: productIds } },
+    }),
     stockMovements: await db.stockMovement.count({
       where: { idempotencyKey: { startsWith: 'demo:' } },
     }),
@@ -52,7 +61,9 @@ async function main() {
       where: { code: { startsWith: 'DEMO-' } },
     }),
     coupons: await db.coupon.count({ where: { code: { startsWith: 'DEMO' } } }),
-    bundles: await db.productBundle.count({ where: { productId: { in: productIds } } }),
+    bundles: await db.productBundle.count({
+      where: { productId: { in: productIds } },
+    }),
     shipments: await db.shipment.count({
       where: { number: { startsWith: 'DEMO-SHP-' } },
     }),
@@ -68,9 +79,13 @@ async function main() {
     receivables: await db.paymentAgreement.count({
       where: { internalReference: { startsWith: 'DEMO-AGR-' } },
     }),
-    clubPlans: await db.clubPlan.count({ where: { code: { startsWith: 'DEMO-' } } }),
+    clubPlans: await db.clubPlan.count({
+      where: { code: { startsWith: 'DEMO-' } },
+    }),
     clubSubscriptions: await db.clubSubscription.count({
-      where: { providerSubscriptionId: { startsWith: 'demo-club-subscription-' } },
+      where: {
+        providerSubscriptionId: { startsWith: 'demo-club-subscription-' },
+      },
     }),
     clubCharges: await db.clubSubscriptionCharge.count({
       where: { idempotencyKey: { startsWith: 'demo:club-charge:' } },
@@ -126,7 +141,10 @@ async function main() {
 
   const failures = Object.entries(minima)
     .filter(([key, minimum]) => counts[key as keyof typeof counts] < minimum)
-    .map(([key, minimum]) => `${key}: ${counts[key as keyof typeof counts]} < ${minimum}`);
+    .map(
+      ([key, minimum]) =>
+        `${key}: ${counts[key as keyof typeof counts]} < ${minimum}`,
+    );
 
   if (failures.length) {
     throw new Error(`Ambiente demo incompleto: ${failures.join('; ')}`);

@@ -1,12 +1,27 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
-import type { GiftCardBlockDto, IssueGiftCardDto, LoyaltyAdjustmentDto, LoyaltyRuleDto } from './dto';
+import type {
+  GiftCardBlockDto,
+  IssueGiftCardDto,
+  LoyaltyAdjustmentDto,
+  LoyaltyRuleDto,
+} from './dto';
 
 const serializable = { isolationLevel: 'Serializable' as const };
-const normalizeCode = (value: string) => value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-const hashCode = (value: string) => createHash('sha256').update(normalizeCode(value)).digest('hex');
+const normalizeCode = (value: string) =>
+  value
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '');
+const hashCode = (value: string) =>
+  createHash('sha256').update(normalizeCode(value)).digest('hex');
 
 @Injectable()
 export class LoyaltyService {
@@ -18,8 +33,11 @@ export class LoyaltyService {
       SELECT * FROM "LoyaltyAccount" WHERE "userId" = ${userId}::uuid LIMIT 1
     `;
     const account = rows[0];
-    if (!account) throw new NotFoundException('Conta de fidelização não encontrada.');
-    const transactions = await this.prisma.$queryRaw<Array<Record<string, unknown>>>`
+    if (!account)
+      throw new NotFoundException('Conta de fidelização não encontrada.');
+    const transactions = await this.prisma.$queryRaw<
+      Array<Record<string, unknown>>
+    >`
       SELECT * FROM "LoyaltyTransaction"
       WHERE "accountId" = ${account.id as string}::uuid
       ORDER BY "createdAt" DESC LIMIT 100
@@ -28,7 +46,8 @@ export class LoyaltyService {
   }
 
   async adjust(userId: string, body: LoyaltyAdjustmentDto, authorId?: string) {
-    if (!body.points) throw new BadRequestException('O ajuste não pode ser zero.');
+    if (!body.points)
+      throw new BadRequestException('O ajuste não pode ser zero.');
     return this.prisma.$transaction(async (tx) => {
       const duplicate = await tx.$queryRaw<Array<Record<string, unknown>>>`
         SELECT * FROM "LoyaltyTransaction" WHERE "idempotencyKey" = ${body.idempotencyKey} LIMIT 1
@@ -36,7 +55,8 @@ export class LoyaltyService {
       if (duplicate[0]) return duplicate[0];
       const account = await this.ensureAccount(userId, tx, true);
       const nextAvailable = account.availablePoints + body.points;
-      if (nextAvailable < 0) throw new ConflictException('Saldo de pontos insuficiente.');
+      if (nextAvailable < 0)
+        throw new ConflictException('Saldo de pontos insuficiente.');
       await tx.$executeRaw`
         UPDATE "LoyaltyAccount"
         SET "availablePoints" = ${nextAvailable},
@@ -87,7 +107,8 @@ export class LoyaltyService {
         )
       `;
     } catch (error) {
-      if (this.isUnique(error)) throw new ConflictException('Já existe uma regra com esse código.');
+      if (this.isUnique(error))
+        throw new ConflictException('Já existe uma regra com esse código.');
       throw error;
     }
     return this.rule(id);
@@ -97,12 +118,15 @@ export class LoyaltyService {
     const rows = await this.prisma.$queryRaw<Array<Record<string, unknown>>>`
       SELECT * FROM "LoyaltyRule" WHERE "id" = ${id}::uuid LIMIT 1
     `;
-    if (!rows[0]) throw new NotFoundException('Regra de fidelização não encontrada.');
+    if (!rows[0])
+      throw new NotFoundException('Regra de fidelização não encontrada.');
     return rows[0];
   }
 
   async issueGiftCard(body: IssueGiftCardDto, purchaserUserId?: string) {
-    const existing = await this.prisma.$queryRaw<Array<Record<string, unknown>>>`
+    const existing = await this.prisma.$queryRaw<
+      Array<Record<string, unknown>>
+    >`
       SELECT gc.* FROM "GiftCardTransaction" gt
       JOIN "GiftCard" gc ON gc."id" = gt."giftCardId"
       WHERE gt."idempotencyKey" = ${body.idempotencyKey} LIMIT 1
@@ -153,7 +177,8 @@ export class LoyaltyService {
         "blockReason" = ${body.reason}, "updatedAt" = CURRENT_TIMESTAMP
       WHERE "id" = ${id}::uuid AND "status" = 'ACTIVE'::"GiftCardStatus"
     `;
-    if (changed !== 1) throw new ConflictException('O vale não está ativo ou não existe.');
+    if (changed !== 1)
+      throw new ConflictException('O vale não está ativo ou não existe.');
     return this.giftCardById(id);
   }
 
@@ -184,13 +209,19 @@ export class LoyaltyService {
       ON CONFLICT ("userId") DO NOTHING
     `;
     const lockSql = lock ? Prisma.sql`FOR UPDATE` : Prisma.empty;
-    const rows = await client.$queryRaw<Array<{
-      id: string; availablePoints: number; pendingPoints: number; reservedPoints: number;
-    }>>(Prisma.sql`
+    const rows = await client.$queryRaw<
+      Array<{
+        id: string;
+        availablePoints: number;
+        pendingPoints: number;
+        reservedPoints: number;
+      }>
+    >(Prisma.sql`
       SELECT "id", "availablePoints", "pendingPoints", "reservedPoints"
       FROM "LoyaltyAccount" WHERE "userId" = ${userId}::uuid ${lockSql}
     `);
-    if (!rows[0]) throw new NotFoundException('Conta de fidelização não encontrada.');
+    if (!rows[0])
+      throw new NotFoundException('Conta de fidelização não encontrada.');
     return rows[0];
   }
 

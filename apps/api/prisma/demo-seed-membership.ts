@@ -21,7 +21,10 @@ async function seedClub() {
     ['DEMO-PREMIUM', 'Clube Premium Demo', 8990, 'YEARLY', 30, 20],
   ] as const;
   const plans: any[] = [];
-  for (const [index, [code, name, priceCents, billingInterval, trialDays, discountPercent]] of specs.entries()) {
+  for (const [
+    index,
+    [code, name, priceCents, billingInterval, trialDays, discountPercent],
+  ] of specs.entries()) {
     plans.push(
       await db.clubPlan.upsert({
         where: { code },
@@ -63,7 +66,12 @@ async function seedClub() {
   }
 
   const subscriptions: any[] = [];
-  const statuses = ['ACTIVE', 'PENDING_ACTIVATION', 'TRIALING', 'PAST_DUE'] as const;
+  const statuses = [
+    'ACTIVE',
+    'PENDING_ACTIVATION',
+    'TRIALING',
+    'PAST_DUE',
+  ] as const;
   for (const [index, customer] of customers.slice(0, 4).entries()) {
     const plan = plans[index % plans.length];
     const status = statuses[index];
@@ -124,7 +132,11 @@ async function seedClub() {
 
     if (status !== 'TRIALING') {
       const chargeStatus =
-        status === 'ACTIVE' ? 'PAID' : status === 'PAST_DUE' ? 'FAILED' : 'PENDING';
+        status === 'ACTIVE'
+          ? 'PAID'
+          : status === 'PAST_DUE'
+            ? 'FAILED'
+            : 'PENDING';
       await db.clubSubscriptionCharge.upsert({
         where: { idempotencyKey: `demo:club-charge:${index + 1}` },
         update: {
@@ -408,7 +420,13 @@ async function seedFiscal(subscriptions: any[]) {
     },
   });
 
-  const orderNumbers = ['DEMO-0002', 'DEMO-0003', 'DEMO-0004', 'DEMO-0005', 'DEMO-0006'];
+  const orderNumbers = [
+    'DEMO-0002',
+    'DEMO-0003',
+    'DEMO-0004',
+    'DEMO-0005',
+    'DEMO-0006',
+  ];
   const documents: any[] = [];
   for (const [index, number] of orderNumbers.entries()) {
     const order = await requiredOrder(number);
@@ -428,7 +446,11 @@ async function seedFiscal(subscriptions: any[]) {
         discountCents: order.discountCents,
         taxCents: order.taxCents,
         totalCents: order.totalCents,
-        customerSnapshot: { name: order.customerName, email: order.email, demo: true },
+        customerSnapshot: {
+          name: order.customerName,
+          email: order.email,
+          demo: true,
+        },
         billingSnapshot: order.billingAddress,
         metadata: { demo: true, source: 'DEMO_SEED' },
         externalNumber: `EXT-DEMO-${index + 1}`,
@@ -453,7 +475,11 @@ async function seedFiscal(subscriptions: any[]) {
         discountCents: order.discountCents,
         taxCents: order.taxCents,
         totalCents: order.totalCents,
-        customerSnapshot: { name: order.customerName, email: order.email, demo: true },
+        customerSnapshot: {
+          name: order.customerName,
+          email: order.email,
+          demo: true,
+        },
         billingSnapshot: order.billingAddress,
         metadata: { demo: true, source: 'DEMO_SEED' },
         externalNumber: `EXT-DEMO-${index + 1}`,
@@ -471,7 +497,12 @@ async function seedFiscal(subscriptions: any[]) {
     });
     for (const [position, item] of items.entries()) {
       await db.fiscalDocumentLine.upsert({
-        where: { documentId_position: { documentId: document.id, position: position + 1 } },
+        where: {
+          documentId_position: {
+            documentId: document.id,
+            position: position + 1,
+          },
+        },
         update: {
           description: item.productName,
           sku: item.sku,
@@ -502,7 +533,11 @@ async function seedFiscal(subscriptions: any[]) {
     }
     await findOrCreate(
       db.fiscalDocumentEvent,
-      { documentId: document.id, type: 'ISSUED', note: 'Emissão demonstrativa.' },
+      {
+        documentId: document.id,
+        type: 'ISSUED',
+        note: 'Emissão demonstrativa.',
+      },
       {
         documentId: document.id,
         type: 'ISSUED',

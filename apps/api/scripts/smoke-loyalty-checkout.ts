@@ -170,7 +170,10 @@ async function main() {
   assert.equal(benefits.giftCard.status, 'CONSUMED');
   assert.equal(benefits.giftCard.amountCents, 2000);
 
-  const beforePayment = (await loyalty.account(user.id)) as Record<string, unknown>;
+  const beforePayment = (await loyalty.account(user.id)) as Record<
+    string,
+    unknown
+  >;
   assert.equal(beforePayment.availablePoints, 0);
   assert.equal(beforePayment.reservedPoints, 0);
   assert.equal(beforePayment.pendingPoints, 0);
@@ -198,7 +201,10 @@ async function main() {
   >;
   assert.equal(paidAgreement.status, 'PAID');
   const events = paidAgreement.events as Array<{ type: string }>;
-  assert.equal(events.filter(({ type }) => type === 'PAYMENT_CONFIRMED').length, 1);
+  assert.equal(
+    events.filter(({ type }) => type === 'PAYMENT_CONFIRMED').length,
+    1,
+  );
 
   const account = (await loyalty.account(user.id)) as Record<string, unknown>;
   assert.equal(account.availablePoints, 0);
