@@ -12,3 +12,10 @@ Responsabilidades:
 - acesso à base de dados PostgreSQL.
 
 Tecnologia prevista: Node.js, TypeScript, NestJS, Prisma e PostgreSQL.
+
+## Dados de demonstração
+
+A API inclui comandos explícitos e não automáticos para criar e remover dados de demonstração:
+
+- `pnpm run prisma:seed:demo`
+- `pnpm run prisma:seed:demo:clear`
