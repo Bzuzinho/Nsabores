@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { FiscalDocumentStatus, FiscalEventType, Prisma } from '@prisma/client';
+import { FiscalDocumentStatus, FiscalEventType } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 
 export type FiscalProviderMode = 'manual' | 'mock';
