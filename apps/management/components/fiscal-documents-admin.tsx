@@ -72,18 +72,31 @@ export function FiscalDocumentsAdmin() {
   const [busy, setBusy] = useState(false);
 
   const reload = useCallback(async () => {
-    setDocuments(await managementApi.get<FiscalDocument[]>('/v1/admin/fiscal/documents'));
+    setDocuments(
+      await managementApi.get<FiscalDocument[]>('/v1/admin/fiscal/documents'),
+    );
   }, []);
 
   useEffect(() => {
-    void reload().catch((reason: unknown) => {
-      setError(
-        reason instanceof Error
-          ? reason.message
-          : 'Não foi possível carregar os documentos.',
-      );
-    });
-  }, [reload]);
+    let cancelled = false;
+    void managementApi
+      .get<FiscalDocument[]>('/v1/admin/fiscal/documents')
+      .then((response) => {
+        if (!cancelled) setDocuments(response);
+      })
+      .catch((reason: unknown) => {
+        if (!cancelled) {
+          setError(
+            reason instanceof Error
+              ? reason.message
+              : 'Não foi possível carregar os documentos.',
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filtered = useMemo(
     () =>
@@ -125,7 +138,10 @@ export function FiscalDocumentsAdmin() {
         <div>
           <p className="eyebrow">Faturação</p>
           <h1>Documentos comerciais</h1>
-          <p>Emissão manual auditável. Estes documentos não substituem faturação certificada.</p>
+          <p>
+            Emissão manual auditável. Estes documentos não substituem faturação
+            certificada.
+          </p>
         </div>
       </header>
 
@@ -158,23 +174,35 @@ export function FiscalDocumentsAdmin() {
       </section>
 
       <div className="admin-filters">
-        <select value={status} onChange={(event) => setStatus(event.target.value)}>
+        <select
+          value={status}
+          onChange={(event) => setStatus(event.target.value)}
+        >
           <option value="">Todos os estados</option>
-          {['DRAFT', 'ISSUED', 'CANCELLED', 'CREDITED', 'FAILED'].map((value) => (
-            <option key={value}>{value}</option>
-          ))}
-        </select>
-        <select value={type} onChange={(event) => setType(event.target.value)}>
-          <option value="">Todos os tipos</option>
-          {['INVOICE', 'INVOICE_RECEIPT', 'RECEIPT', 'CREDIT_NOTE', 'PROFORMA'].map(
+          {['DRAFT', 'ISSUED', 'CANCELLED', 'CREDITED', 'FAILED'].map(
             (value) => <option key={value}>{value}</option>,
           )}
         </select>
-        <select value={source} onChange={(event) => setSource(event.target.value)}>
-          <option value="">Todas as origens</option>
-          {['ORDER', 'GIFT_CARD_PURCHASE', 'CLUB_CHARGE', 'MANUAL'].map((value) => (
+        <select value={type} onChange={(event) => setType(event.target.value)}>
+          <option value="">Todos os tipos</option>
+          {[
+            'INVOICE',
+            'INVOICE_RECEIPT',
+            'RECEIPT',
+            'CREDIT_NOTE',
+            'PROFORMA',
+          ].map((value) => (
             <option key={value}>{value}</option>
           ))}
+        </select>
+        <select
+          value={source}
+          onChange={(event) => setSource(event.target.value)}
+        >
+          <option value="">Todas as origens</option>
+          {['ORDER', 'GIFT_CARD_PURCHASE', 'CLUB_CHARGE', 'MANUAL'].map(
+            (value) => <option key={value}>{value}</option>,
+          )}
         </select>
       </div>
 
@@ -220,7 +248,11 @@ export function FiscalDocumentsAdmin() {
             ))}
           </tbody>
         </table>
-        {!filtered.length && <p className="admin-state">Sem documentos para os filtros selecionados.</p>}
+        {!filtered.length && (
+          <p className="admin-state">
+            Sem documentos para os filtros selecionados.
+          </p>
+        )}
       </div>
     </>
   );
@@ -268,22 +300,42 @@ export function FiscalDocumentDetail({ id }: { id: string }) {
 
       <section className="admin-card">
         <h2>Resumo</h2>
-        <p>Origem: {document.sourceType} · {document.sourceId ?? 'manual'}</p>
-        <p>Série: {document.series?.code ?? '—'} · {document.series?.year ?? '—'}</p>
-        <p>Emitido em: {document.issuedAt ? new Date(document.issuedAt).toLocaleString('pt-PT') : 'Não emitido'}</p>
+        <p>
+          Origem: {document.sourceType} · {document.sourceId ?? 'manual'}
+        </p>
+        <p>
+          Série: {document.series?.code ?? '—'} ·{' '}
+          {document.series?.year ?? '—'}
+        </p>
+        <p>
+          Emitido em:{' '}
+          {document.issuedAt
+            ? new Date(document.issuedAt).toLocaleString('pt-PT')
+            : 'Não emitido'}
+        </p>
         <p>
           Subtotal {money(document.subtotalCents, document.currency)} · descontos{' '}
           {money(document.discountCents, document.currency)} · imposto{' '}
           {money(document.taxCents, document.currency)}
         </p>
-        <p><strong>Total: {money(document.totalCents, document.currency)}</strong></p>
-        <p className="admin-warning">Representação interna/manual. Não constitui documento certificado por software homologado.</p>
+        <p>
+          <strong>
+            Total: {money(document.totalCents, document.currency)}
+          </strong>
+        </p>
+        <p className="admin-warning">
+          Representação interna/manual. Não constitui documento certificado por
+          software homologado.
+        </p>
       </section>
 
       <section className="admin-card">
         <h2>Cliente</h2>
         <p>{text(document.customerSnapshot.name)}</p>
-        <p>{text(document.customerSnapshot.email)} · {text(document.customerSnapshot.phone)}</p>
+        <p>
+          {text(document.customerSnapshot.email)} ·{' '}
+          {text(document.customerSnapshot.phone)}
+        </p>
         <pre>{JSON.stringify(document.billingSnapshot, null, 2)}</pre>
       </section>
 
@@ -304,7 +356,10 @@ export function FiscalDocumentDetail({ id }: { id: string }) {
               {(document.lines ?? []).map((line) => (
                 <tr key={line.id}>
                   <td>{line.position}</td>
-                  <td>{line.description}<small>{line.sku ?? ''}</small></td>
+                  <td>
+                    {line.description}
+                    <small>{line.sku ?? ''}</small>
+                  </td>
                   <td>{line.quantity}</td>
                   <td>{money(line.unitPriceCents, document.currency)}</td>
                   <td>{money(line.totalCents, document.currency)}</td>
@@ -320,12 +375,15 @@ export function FiscalDocumentDetail({ id }: { id: string }) {
         {(document.events ?? []).map((event) => (
           <p key={event.id}>
             {new Date(event.createdAt).toLocaleString('pt-PT')} —{' '}
-            <strong>{event.type}</strong>{event.note ? ` · ${event.note}` : ''}
+            <strong>{event.type}</strong>
+            {event.note ? ` · ${event.note}` : ''}
           </p>
         ))}
       </section>
 
-      <p><Link href="/documentos">Voltar aos documentos</Link></p>
+      <p>
+        <Link href="/documentos">Voltar aos documentos</Link>
+      </p>
     </>
   );
 }
