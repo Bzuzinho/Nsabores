@@ -14,7 +14,11 @@
     "typecheck": "turbo typecheck",
     "test": "turbo test",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "demo:install": "pnpm --filter @nsabores/api prisma:seed:demo",
+    "demo:clear": "pnpm --filter @nsabores/api prisma:seed:demo:clear",
+    "demo:reset": "pnpm --filter @nsabores/api prisma:seed:demo:reset",
+    "demo:validate": "pnpm --filter @nsabores/api prisma:seed:demo:validate"
   },
   "devDependencies": {
     "cross-env": "^10.0.0",
