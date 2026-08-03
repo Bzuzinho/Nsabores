@@ -57,7 +57,7 @@ jobs:
         shell: bash
         run: |
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          git status --short
+          test -z "$(git status --short)"
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -77,18 +77,13 @@ jobs:
       - name: Generate Prisma client
         run: pnpm --filter @nsabores/api prisma:generate
 
-      - name: Normalize formatting in runner
-        run: pnpm format
-
       - name: Verify formatting
         run: pnpm format:check
 
-      - name: Lint (report legacy debt)
-        continue-on-error: true
+      - name: Lint
         run: pnpm lint
 
-      - name: Typecheck (report legacy debt)
-        continue-on-error: true
+      - name: Typecheck
         run: pnpm typecheck
 
       - name: Test
