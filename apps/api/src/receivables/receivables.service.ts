@@ -176,7 +176,7 @@ export class ReceivablesService {
         ${body.promisedPaymentAt ? new Date(body.promisedPaymentAt) : null}, ${key}, CURRENT_TIMESTAMP
       )
     `;
-    if (body.type === ContactTypeDto.PAYMENT_PROMISE) {
+    if (String(body.type) === 'PAYMENT_PROMISE') {
       await this.prisma.$executeRaw`
         UPDATE "PaymentAgreement" SET "status" = 'AWAITING_PAYMENT',
           "dueAt" = COALESCE(${body.promisedPaymentAt ? new Date(body.promisedPaymentAt) : null}, "dueAt"),
