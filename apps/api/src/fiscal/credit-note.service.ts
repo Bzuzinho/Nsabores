@@ -1,5 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   FiscalDocumentStatus,
   FiscalDocumentType,
@@ -14,6 +19,11 @@ export type CreditNoteLineInput = {
   quantity: number;
 };
 
+function inputJson(value: Prisma.JsonValue): Prisma.InputJsonValue {
+  if (value === null) return {};
+  return value as Prisma.InputJsonValue;
+}
+
 @Injectable()
 export class CreditNoteService {
   constructor(private readonly prisma: PrismaService) {}
@@ -26,12 +36,22 @@ export class CreditNoteService {
     requestedLines?: CreditNoteLineInput[],
   ) {
     const key = idempotencyKey.trim();
-    if (!key) throw new BadRequestException('A chave de idempotência é obrigatória.');
-    if (!reason.trim()) throw new BadRequestException('O motivo da nota de crédito é obrigatório.');
+    if (!key) {
+      throw new BadRequestException('A chave de idempotência é obrigatória.');
+    }
+    if (!reason.trim()) {
+      throw new BadRequestException(
+        'O motivo da nota de crédito é obrigatório.',
+      );
+    }
 
     const existing = await this.prisma.fiscalDocument.findUnique({
       where: { idempotencyKey: key },
-      include: { series: true, lines: { orderBy: { position: 'asc' } }, events: true },
+      include: {
+        series: true,
+        lines: { orderBy: { position: 'asc' } },
+        events: true,
+      },
     });
     if (existing) return existing;
 
@@ -40,7 +60,11 @@ export class CreditNoteService {
         async (tx) => {
           const duplicate = await tx.fiscalDocument.findUnique({
             where: { idempotencyKey: key },
-            include: { series: true, lines: { orderBy: { position: 'asc' } }, events: true },
+            include: {
+              series: true,
+              lines: { orderBy: { position: 'asc' } },
+              events: true,
+            },
           });
           if (duplicate) return duplicate;
 
@@ -51,12 +75,21 @@ export class CreditNoteService {
               creditDocuments: { include: { lines: true } },
             },
           });
-          if (!original) throw new NotFoundException('Documento original não encontrado.');
-          if (original.type === FiscalDocumentType.CREDIT_NOTE) {
-            throw new ConflictException('Não é possível creditar uma nota de crédito.');
+          if (!original) {
+            throw new NotFoundException('Documento original não encontrado.');
           }
-          if (![FiscalDocumentStatus.ISSUED, FiscalDocumentStatus.CREDITED].includes(original.status)) {
-            throw new ConflictException('Apenas documentos emitidos podem ser creditados.');
+          if (original.type === FiscalDocumentType.CREDIT_NOTE) {
+            throw new ConflictException(
+              'Não é possível creditar uma nota de crédito.',
+            );
+          }
+          if (
+            original.status !== FiscalDocumentStatus.ISSUED &&
+            original.status !== FiscalDocumentStatus.CREDITED
+          ) {
+            throw new ConflictException(
+              'Apenas documentos emitidos podem ser creditados.',
+            );
           }
 
           const alreadyCredited = new Map<string, number>();
@@ -71,9 +104,15 @@ export class CreditNoteService {
             }
           }
 
-          const requested = this.resolveLines(original.lines, alreadyCredited, requestedLines);
+          const requested = this.resolveLines(
+            original.lines,
+            alreadyCredited,
+            requestedLines,
+          );
           if (!requested.length) {
-            throw new ConflictException('O documento já se encontra totalmente creditado.');
+            throw new ConflictException(
+              'O documento já se encontra totalmente creditado.',
+            );
           }
 
           const year = new Date().getUTCFullYear();
@@ -96,17 +135,21 @@ export class CreditNoteService {
             },
             update: {},
           });
-          const allocated = await tx.$queryRaw<Array<{ sequentialNumber: number; prefix: string }>>(
-            Prisma.sql`
-              UPDATE "FiscalSeries"
-              SET "nextNumber" = "nextNumber" + 1,
-                  "updatedAt" = CURRENT_TIMESTAMP
-              WHERE "id" = ${series.id}::uuid AND "isActive" = true
-              RETURNING "nextNumber" - 1 AS "sequentialNumber", "prefix"
-            `,
-          );
+          const allocated = await tx.$queryRaw<
+            Array<{ sequentialNumber: number; prefix: string }>
+          >(Prisma.sql`
+            UPDATE "FiscalSeries"
+            SET "nextNumber" = "nextNumber" + 1,
+                "updatedAt" = CURRENT_TIMESTAMP
+            WHERE "id" = ${series.id}::uuid AND "isActive" = true
+            RETURNING "nextNumber" - 1 AS "sequentialNumber", "prefix"
+          `);
           const sequence = allocated[0];
-          if (!sequence) throw new ConflictException('A série de notas de crédito não está ativa.');
+          if (!sequence) {
+            throw new ConflictException(
+              'A série de notas de crédito não está ativa.',
+            );
+          }
 
           const totals = requested.reduce(
             (sum, item) => ({
@@ -115,7 +158,12 @@ export class CreditNoteService {
               taxCents: sum.taxCents + item.taxCents,
               totalCents: sum.totalCents + item.totalCents,
             }),
-            { subtotalCents: 0, discountCents: 0, taxCents: 0, totalCents: 0 },
+            {
+              subtotalCents: 0,
+              discountCents: 0,
+              taxCents: 0,
+              totalCents: 0,
+            },
           );
           const documentId = randomUUID();
           const number = `${sequence.prefix}${String(sequence.sequentialNumber).padStart(6, '0')}`;
@@ -138,12 +186,14 @@ export class CreditNoteService {
               discountCents: totals.discountCents,
               taxCents: totals.taxCents,
               totalCents: totals.totalCents,
-              customerSnapshot: original.customerSnapshot,
-              billingSnapshot: original.billingSnapshot,
+              customerSnapshot: inputJson(original.customerSnapshot),
+              billingSnapshot: inputJson(original.billingSnapshot),
               metadata: {
                 reason: reason.trim(),
                 originalDocumentNumber: original.number,
-                creditKind: requestedLines?.length ? 'PARTIAL' : 'REMAINING_TOTAL',
+                creditKind: requestedLines?.length
+                  ? 'PARTIAL'
+                  : 'REMAINING_TOTAL',
               },
               provider: 'manual',
               issuedAt: new Date(),
@@ -182,21 +232,30 @@ export class CreditNoteService {
 
           const creditedAfter = new Map(alreadyCredited);
           for (const item of requested) {
-            creditedAfter.set(item.id, (creditedAfter.get(item.id) ?? 0) + item.quantity);
+            creditedAfter.set(
+              item.id,
+              (creditedAfter.get(item.id) ?? 0) + item.quantity,
+            );
           }
           const fullyCredited = original.lines.every(
-            (line) => (creditedAfter.get(line.id) ?? 0) >= line.quantity,
+            (line) =>
+              (creditedAfter.get(line.id) ?? 0) >= line.quantity,
           );
           await tx.fiscalDocument.update({
             where: { id: original.id },
             data: {
-              status: fullyCredited ? FiscalDocumentStatus.CREDITED : original.status,
+              status: fullyCredited
+                ? FiscalDocumentStatus.CREDITED
+                : original.status,
               events: {
                 create: {
                   type: FiscalEventType.CREDITED,
                   authorId,
                   note: `${fullyCredited ? 'Crédito total' : 'Crédito parcial'} através de ${number}.`,
-                  payload: { creditDocumentId: documentId, amountCents: totals.totalCents },
+                  payload: {
+                    creditDocumentId: documentId,
+                    amountCents: totals.totalCents,
+                  },
                 },
               },
             },
@@ -204,7 +263,11 @@ export class CreditNoteService {
 
           return tx.fiscalDocument.findUniqueOrThrow({
             where: { id: documentId },
-            include: { series: true, lines: { orderBy: { position: 'asc' } }, events: true },
+            include: {
+              series: true,
+              lines: { orderBy: { position: 'asc' } },
+              events: true,
+            },
           });
         },
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
@@ -213,7 +276,11 @@ export class CreditNoteService {
       if (this.isUniqueViolation(error)) {
         const duplicate = await this.prisma.fiscalDocument.findUnique({
           where: { idempotencyKey: key },
-          include: { series: true, lines: { orderBy: { position: 'asc' } }, events: true },
+          include: {
+            series: true,
+            lines: { orderBy: { position: 'asc' } },
+            events: true,
+          },
         });
         if (duplicate) return duplicate;
       }
@@ -242,28 +309,37 @@ export class CreditNoteService {
     if (requestedMap) {
       for (const [lineId, quantity] of requestedMap) {
         if (!Number.isInteger(quantity) || quantity <= 0) {
-          throw new BadRequestException(`Quantidade inválida para a linha ${lineId}.`);
+          throw new BadRequestException(
+            `Quantidade inválida para a linha ${lineId}.`,
+          );
         }
       }
     }
 
     return lines.flatMap((line) => {
-      const remaining = line.quantity - (alreadyCredited.get(line.id) ?? 0);
-      const quantity = requestedMap ? requestedMap.get(line.id) ?? 0 : remaining;
+      const remaining =
+        line.quantity - (alreadyCredited.get(line.id) ?? 0);
+      const quantity = requestedMap
+        ? (requestedMap.get(line.id) ?? 0)
+        : remaining;
       if (quantity === 0) return [];
       if (remaining <= 0 || quantity > remaining) {
-        throw new ConflictException(`A quantidade pedida excede o saldo creditável da linha ${line.id}.`);
+        throw new ConflictException(
+          `A quantidade pedida excede o saldo creditável da linha ${line.id}.`,
+        );
       }
       const ratio = quantity / line.quantity;
-      return [{
-        ...line,
-        originalQuantity: line.quantity,
-        quantity,
-        subtotalCents: Math.round(line.unitPriceCents * quantity),
-        discountCents: Math.round(line.discountCents * ratio),
-        taxCents: Math.round(line.taxCents * ratio),
-        totalCents: Math.round(line.totalCents * ratio),
-      }];
+      return [
+        {
+          ...line,
+          originalQuantity: line.quantity,
+          quantity,
+          subtotalCents: Math.round(line.unitPriceCents * quantity),
+          discountCents: Math.round(line.discountCents * ratio),
+          taxCents: Math.round(line.taxCents * ratio),
+          totalCents: Math.round(line.totalCents * ratio),
+        },
+      ];
     });
   }
 
