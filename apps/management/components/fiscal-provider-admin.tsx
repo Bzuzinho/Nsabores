@@ -23,11 +23,7 @@ export function FiscalProviderAdmin({ id }: { id: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  async function load() {
-    const [provider, current] = await Promise.all([
-      managementApi.get<ProviderMode>('/v1/admin/fiscal/provider'),
-      managementApi.get<FiscalDocument>(`/v1/admin/fiscal/documents/${id}`),
-    ]);
+  function applyLoaded(provider: ProviderMode, current: FiscalDocument) {
     setMode(provider.mode);
     setDocument(current);
     setExternalNumber(current.externalNumber ?? '');
@@ -35,14 +31,35 @@ export function FiscalProviderAdmin({ id }: { id: string }) {
     setProviderReference(current.providerReference ?? '');
   }
 
+  async function load() {
+    const [provider, current] = await Promise.all([
+      managementApi.get<ProviderMode>('/v1/admin/fiscal/provider'),
+      managementApi.get<FiscalDocument>(`/v1/admin/fiscal/documents/${id}`),
+    ]);
+    applyLoaded(provider, current);
+  }
+
   useEffect(() => {
-    void load().catch((reason: unknown) => {
-      setError(
-        reason instanceof Error
-          ? reason.message
-          : 'Não foi possível carregar o provider fiscal.',
-      );
-    });
+    let cancelled = false;
+    void Promise.all([
+      managementApi.get<ProviderMode>('/v1/admin/fiscal/provider'),
+      managementApi.get<FiscalDocument>(`/v1/admin/fiscal/documents/${id}`),
+    ])
+      .then(([provider, current]) => {
+        if (!cancelled) applyLoaded(provider, current);
+      })
+      .catch((reason: unknown) => {
+        if (!cancelled) {
+          setError(
+            reason instanceof Error
+              ? reason.message
+              : 'Não foi possível carregar o provider fiscal.',
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   async function registerManual(event: FormEvent<HTMLFormElement>) {
@@ -50,14 +67,21 @@ export function FiscalProviderAdmin({ id }: { id: string }) {
     setBusy(true);
     setError('');
     try {
-      await managementApi.post(`/v1/admin/fiscal/documents/${id}/provider/manual`, {
-        externalNumber,
-        externalDocumentUrl: externalDocumentUrl || undefined,
-        providerReference: providerReference || undefined,
-      });
+      await managementApi.post(
+        `/v1/admin/fiscal/documents/${id}/provider/manual`,
+        {
+          externalNumber,
+          externalDocumentUrl: externalDocumentUrl || undefined,
+          providerReference: providerReference || undefined,
+        },
+      );
       await load();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Não foi possível registar o documento externo.');
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível registar o documento externo.',
+      );
     } finally {
       setBusy(false);
     }
@@ -67,12 +91,19 @@ export function FiscalProviderAdmin({ id }: { id: string }) {
     setBusy(true);
     setError('');
     try {
-      await managementApi.post(`/v1/admin/fiscal/documents/${id}/provider/mock`, {
-        simulateFailure,
-      });
+      await managementApi.post(
+        `/v1/admin/fiscal/documents/${id}/provider/mock`,
+        {
+          simulateFailure,
+        },
+      );
       await load();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Não foi possível processar o documento.');
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível processar o documento.',
+      );
     } finally {
       setBusy(false);
     }
@@ -85,7 +116,9 @@ export function FiscalProviderAdmin({ id }: { id: string }) {
         Modo configurado: <strong>{mode}</strong> · estado atual:{' '}
         <strong>{document?.status ?? '—'}</strong>
       </p>
-      {document?.providerError && <p className="admin-error">{document.providerError}</p>}
+      {document?.providerError && (
+        <p className="admin-error">{document.providerError}</p>
+      )}
       {error && <p className="admin-error">{error}</p>}
 
       {mode === 'manual' ? (
@@ -113,14 +146,27 @@ export function FiscalProviderAdmin({ id }: { id: string }) {
               onChange={(event) => setProviderReference(event.target.value)}
             />
           </label>
-          <button className="admin-primary" disabled={busy || !externalNumber.trim()}>
-            {busy ? 'A guardar…' : document?.status === 'FAILED' ? 'Reprocessar manualmente' : 'Registar documento externo'}
+          <button
+            className="admin-primary"
+            disabled={busy || !externalNumber.trim()}
+          >
+            {busy
+              ? 'A guardar…'
+              : document?.status === 'FAILED'
+                ? 'Reprocessar manualmente'
+                : 'Registar documento externo'}
           </button>
         </form>
       ) : (
         <div className="admin-actions">
-          <button className="admin-primary" disabled={busy} onClick={() => void processMock(false)}>
-            {document?.status === 'FAILED' ? 'Reprocessar com sucesso' : 'Processar com sucesso'}
+          <button
+            className="admin-primary"
+            disabled={busy}
+            onClick={() => void processMock(false)}
+          >
+            {document?.status === 'FAILED'
+              ? 'Reprocessar com sucesso'
+              : 'Processar com sucesso'}
           </button>
           <button disabled={busy} onClick={() => void processMock(true)}>
             Simular falha
