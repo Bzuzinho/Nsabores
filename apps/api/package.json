@@ -17,6 +17,7 @@
     "prisma:seed:demo:clear": "tsx prisma/demo-seed-clear-extended.ts && tsx prisma/demo-seed-clear.ts",
     "prisma:seed:demo:reset": "pnpm run prisma:seed:demo:clear && pnpm run prisma:seed:demo",
     "prisma:seed:demo:validate": "tsx prisma/demo-seed-validate.ts",
+    "prisma:seed:demo:clear:validate": "tsx prisma/demo-seed-clear-validate.ts",
     "validate:issue18": "tsx scripts/validate-issue-18.ts",
     "validate:club": "tsx scripts/validate-club-lifecycle.ts",
     "validate:club-manual": "pnpm build && node dist/smoke-manual-club.js",
