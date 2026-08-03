@@ -5,7 +5,7 @@
     "buildCommand": "pnpm --filter @nsabores/api build"
   },
   "deploy": {
-    "startCommand": "pnpm --filter @nsabores/api start:prod",
+    "startCommand": "sh -c 'if [ -z \"${BOOTSTRAP_ADMIN_EMAIL:-}\" ]; then unset BOOTSTRAP_ADMIN_EMAIL; fi; if [ -z \"${BOOTSTRAP_ADMIN_PASSWORD_HASH:-}\" ]; then unset BOOTSTRAP_ADMIN_PASSWORD_HASH; fi; exec pnpm --filter @nsabores/api start:prod'",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
