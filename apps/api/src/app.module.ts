@@ -101,6 +101,8 @@ import { ReceivablesController } from './receivables/receivables.controller';
 import { ReceivablesService } from './receivables/receivables.service';
 import { FiscalController } from './fiscal/fiscal.controller';
 import { FiscalService } from './fiscal/fiscal.service';
+import { ProductionController } from './production/production.controller';
+import { ProductionService } from './production/production.service';
 
 @Module({
   imports: [
@@ -136,8 +138,12 @@ import { FiscalService } from './fiscal/fiscal.service';
         AUTH_COOKIE_SECURE: Joi.boolean().default(false),
         WEBSITE_URL: Joi.string().uri().default('http://localhost:3000'),
         MANAGEMENT_URL: Joi.string().uri().default('http://localhost:3001'),
-        PAYMENT_FLOW_MODE: Joi.string().valid('manual', 'automatic').default('manual'),
-        PAYMENT_PROVIDER: Joi.string().valid('mock', 'stripe').default('mock'),
+        PAYMENT_FLOW_MODE: Joi.string()
+          .valid('manual', 'automatic')
+          .default('manual'),
+        PAYMENT_PROVIDER: Joi.string()
+          .valid('mock', 'stripe')
+          .default('mock'),
         PAYMENT_SECRET_KEY: Joi.string().allow('').optional(),
         PAYMENT_WEBHOOK_SECRET: Joi.string()
           .min(16)
@@ -218,6 +224,7 @@ import { FiscalService } from './fiscal/fiscal.service';
     AdminLoyaltyController,
     AdminLoyaltyAccountsController,
     ReceivablesController,
+    ProductionController,
     FiscalController,
   ],
   providers: [
@@ -230,6 +237,7 @@ import { FiscalService } from './fiscal/fiscal.service';
     RolesGuard,
     MailProvider,
     ReceivablesService,
+    ProductionService,
     FiscalService,
     LoyaltyCommerceService,
     { provide: BundleAwareCommerceService, useExisting: LoyaltyCommerceService },

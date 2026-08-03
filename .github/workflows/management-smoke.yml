@@ -1,0 +1,86 @@
+name: Management smoke
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: management-smoke-${{ github.sha }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  management-smoke:
+    name: Management routes and data
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nsabores
+      AUTH_ACCESS_TOKEN_SECRET: ci-access-token-secret-with-at-least-32-characters
+      DEMO_USER_PASSWORD: ci-demo-password-with-at-least-20-characters
+      PAYMENT_PROVIDER: mock
+      PAYMENT_FLOW_MODE: manual
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: nsabores
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d nsabores"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          clean: true
+          fetch-depth: 1
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build internal packages
+        run: |
+          pnpm --filter @nsabores/types build
+          pnpm --filter @nsabores/validation build
+
+      - name: Generate Prisma client
+        run: pnpm --filter @nsabores/api prisma:generate
+
+      - name: Apply migrations
+        run: pnpm --filter @nsabores/api prisma:migrate:deploy
+
+      - name: Seed base and demo data
+        run: |
+          pnpm --filter @nsabores/api prisma:seed
+          pnpm --filter @nsabores/api prisma:seed:demo
+
+      - name: Validate management API
+        run: pnpm --filter @nsabores/api validate:management
+
+      - name: Validate management route files
+        run: pnpm --filter @nsabores/management exec vitest run components/management-routes.test.ts
