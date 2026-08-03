@@ -4,10 +4,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useManagementAuth } from './management-auth';
+import { managementRoutes } from './management-routes';
 
 export function ManagementShell({ children }: { children: ReactNode }) {
   const auth = useManagementAuth();
   const router = useRouter();
+  const routes = managementRoutes.filter(
+    (route) => !route.adminOnly || auth.user?.role === 'ADMIN',
+  );
+
   return (
     <div className="management-shell">
       <aside>
@@ -15,30 +20,11 @@ export function ManagementShell({ children }: { children: ReactNode }) {
           Nsabores <small>Gestão</small>
         </Link>
         <nav>
-          <Link href="/catalogo">Visão geral</Link>
-          <Link href="/catalogo/produtos">Produtos</Link>
-          <Link href="/catalogo/categorias">Categorias</Link>
-          <Link href="/encomendas">Encomendas</Link>
-          <Link href="/operacoes/producao">Produção</Link>
-          <Link href="/recebimentos">Recebimentos</Link>
-          <Link href="/documentos">Documentos</Link>
-          <Link href="/promocoes">Promoções</Link>
-          <Link href="/cupoes">Cupões</Link>
-          <Link href="/cabazes">Cabazes</Link>
-          <Link href="/clube">Clube Nsabores</Link>
-          <Link href="/fidelizacao">Fidelização</Link>
-          <Link href="/vales-oferta">Vales-oferta</Link>
-          <Link href="/vales-oferta/pedidos">Pagamentos de vales</Link>
-          <Link href="/stock">Stock</Link>
-          <Link href="/stock/inventarios">Inventários</Link>
-          <Link href="/fornecedores">Fornecedores</Link>
-          <Link href="/compras">Compras</Link>
-          <Link href="/revendedores">Revendedores</Link>
-          <Link href="/revendedores/candidaturas">Candidaturas B2B</Link>
-          <Link href="/tabelas-precos">Tabelas de preços</Link>
-          {auth.user?.role === 'ADMIN' && (
-            <Link href="/utilizadores">Utilizadores</Link>
-          )}
+          {routes.map((route) => (
+            <Link href={route.href} key={route.href}>
+              {route.label}
+            </Link>
+          ))}
         </nav>
         <div className="management-user">
           <span>
