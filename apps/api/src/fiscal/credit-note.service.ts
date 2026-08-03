@@ -21,7 +21,7 @@ export type CreditNoteLineInput = {
 
 function inputJson(value: Prisma.JsonValue): Prisma.InputJsonValue {
   if (value === null) return {};
-  return value as Prisma.InputJsonValue;
+  return value;
 }
 
 @Injectable()

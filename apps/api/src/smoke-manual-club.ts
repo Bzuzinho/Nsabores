@@ -75,7 +75,7 @@ async function main() {
   assert.equal(joined.charges.length, 1);
   assert.equal(joined.charges[0]?.status, 'PENDING');
 
-  const firstChargeId = joined.charges[0]!.id;
+  const firstChargeId = joined.charges[0].id;
   await manual.confirmCharge(
     joined.id,
     firstChargeId,

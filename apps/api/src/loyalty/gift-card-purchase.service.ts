@@ -119,7 +119,7 @@ export class GiftCardPurchaseService {
       return { ...this.present(purchase), codeAvailable: false };
     }
 
-    const issued = (await this.loyalty.issueGiftCard(
+    const issued = await this.loyalty.issueGiftCard(
       {
         initialAmountCents: purchase.amountCents,
         recipientEmail: purchase.recipientEmail,
@@ -128,7 +128,7 @@ export class GiftCardPurchaseService {
         idempotencyKey: `gift-card-purchase:${purchase.id}:issue`,
       },
       purchase.purchaserUserId ?? undefined,
-    )) as Record<string, unknown>;
+    );
 
     const updated = await this.prisma.giftCardPurchase.update({
       where: { id: purchase.id },

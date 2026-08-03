@@ -153,7 +153,7 @@ export class FiscalProviderService {
             payload: {
               provider: 'mock',
               providerReference,
-            } as Prisma.InputJsonValue,
+            },
           },
         });
       }
