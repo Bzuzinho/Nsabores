@@ -15,9 +15,9 @@ permissions:
 
 jobs:
   management-smoke:
-    name: Management routes and data
+    name: Management routes and complete demo
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nsabores
       AUTH_ACCESS_TOKEN_SECRET: ci-access-token-secret-with-at-least-32-characters
@@ -74,13 +74,28 @@ jobs:
       - name: Apply migrations
         run: pnpm --filter @nsabores/api prisma:migrate:deploy
 
-      - name: Seed base and demo data
-        run: |
-          pnpm --filter @nsabores/api prisma:seed
-          pnpm --filter @nsabores/api prisma:seed:demo
+      - name: Seed base data
+        run: pnpm --filter @nsabores/api prisma:seed
+
+      - name: Reset complete demo
+        run: pnpm demo:reset
+
+      - name: Reinstall complete demo to prove idempotency
+        run: pnpm demo:install
+
+      - name: Validate complete demo counts
+        run: pnpm demo:validate
 
       - name: Validate management API
         run: pnpm --filter @nsabores/api validate:management
 
       - name: Validate management route files
         run: pnpm --filter @nsabores/management exec vitest run components/management-routes.test.ts
+
+      - name: Clear complete demo twice
+        run: |
+          pnpm demo:clear
+          pnpm demo:clear
+
+      - name: Validate complete demo cleanup
+        run: pnpm --filter @nsabores/api prisma:seed:demo:clear:validate
