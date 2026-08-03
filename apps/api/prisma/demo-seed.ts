@@ -1,5 +1,6 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import {
+  DeliveryMethodType,
   OrderStatus,
   PaymentStatus,
   PrismaClient,
@@ -20,6 +21,15 @@ const demoPassword = process.env.DEMO_USER_PASSWORD;
 const configuredPasswordHash =
   process.env.DEMO_USER_PASSWORD_HASH ??
   process.env.BOOTSTRAP_ADMIN_PASSWORD_HASH;
+
+const demoCategories = [
+  ['Tábuas', 'tabuas'],
+  ['Queijos', 'queijos'],
+  ['Enchidos', 'enchidos'],
+  ['Cabazes', 'cabazes'],
+  ['Vinhos', 'vinhos'],
+  ['Outros sabores', 'outros-sabores'],
+] as const;
 
 const demoProducts = [
   ['Compota de Abóbora e Noz', 'compota-abobora-noz', 'COMP-ABO-NOZ', 590, 'outros-sabores'],
@@ -68,15 +78,66 @@ function demoAddress(name: string) {
   };
 }
 
+async function seedFoundation() {
+  for (const [index, [name, slug]] of demoCategories.entries()) {
+    await prisma.category.upsert({
+      where: { slug },
+      update: { name, isActive: true, sortOrder: index },
+      create: { name, slug, isActive: true, sortOrder: index },
+    });
+  }
+
+  await prisma.deliveryMethod.upsert({
+    where: { code: 'standard-pt' },
+    update: {
+      name: 'Entrega standard — Portugal Continental',
+      type: DeliveryMethodType.STANDARD,
+      isActive: true,
+      priceCents: 490,
+      freeShippingAboveCents: 5000,
+    },
+    create: {
+      code: 'standard-pt',
+      name: 'Entrega standard — Portugal Continental',
+      type: DeliveryMethodType.STANDARD,
+      isActive: true,
+      priceCents: 490,
+      freeShippingAboveCents: 5000,
+    },
+  });
+
+  await prisma.deliveryMethod.upsert({
+    where: { code: 'local-pickup' },
+    update: {
+      name: 'Recolha local',
+      type: DeliveryMethodType.LOCAL_PICKUP,
+      isActive: true,
+      priceCents: 0,
+      freeShippingAboveCents: null,
+    },
+    create: {
+      code: 'local-pickup',
+      name: 'Recolha local',
+      type: DeliveryMethodType.LOCAL_PICKUP,
+      isActive: true,
+      priceCents: 0,
+    },
+  });
+}
+
 async function seedProducts() {
-  const categories = await prisma.category.findMany();
+  const categories = await prisma.category.findMany({
+    where: { slug: { in: demoCategories.map(([, slug]) => slug) } },
+  });
   const categoryIds = new Map(
     categories.map((category) => [category.slug, category.id]),
   );
 
   for (const [name, slug, sku, priceCents, categorySlug] of demoProducts) {
     const categoryId = categoryIds.get(categorySlug);
-    if (!categoryId) continue;
+    if (!categoryId) {
+      throw new Error(`Categoria demo em falta: ${categorySlug}`);
+    }
 
     const product = await prisma.product.upsert({
       where: { sku },
@@ -85,7 +146,10 @@ async function seedProducts() {
         slug,
         priceCents,
         categoryId,
+        imageUrl: '/images/product-hamper-clean.jpg',
+        shortDescription: 'Produto de demonstração para validação funcional.',
         isActive: true,
+        isFeatured: true,
         stockStatus: StockStatus.IN_STOCK,
       },
       create: {
@@ -106,6 +170,7 @@ async function seedProducts() {
       where: { productId: product.id },
       update: {
         onHandQuantity: 40 + (priceCents % 37),
+        reservedQuantity: 0,
         reorderPoint: 10,
         reorderQuantity: 30,
         trackStock: true,
@@ -113,6 +178,7 @@ async function seedProducts() {
       create: {
         productId: product.id,
         onHandQuantity: 40 + (priceCents % 37),
+        reservedQuantity: 0,
         reorderPoint: 10,
         reorderQuantity: 30,
         trackStock: true,
@@ -133,7 +199,7 @@ async function seedUsers() {
   }
 
   for (const [email, firstName, lastName, role] of demoUsers) {
-    await prisma.user.upsert({
+    const user = await prisma.user.upsert({
       where: { email },
       update: {
         passwordHash,
@@ -151,18 +217,25 @@ async function seedUsers() {
         role,
         isActive: true,
         emailVerifiedAt: new Date(),
-        customerProfile:
-          role === UserRole.CUSTOMER
-            ? {
-                create: {
-                  marketingConsent: true,
-                  marketingConsentAt: new Date(),
-                  notes: 'Conta de demonstração.',
-                },
-              }
-            : undefined,
       },
     });
+
+    if (role === UserRole.CUSTOMER) {
+      await prisma.customerProfile.upsert({
+        where: { userId: user.id },
+        update: {
+          marketingConsent: true,
+          marketingConsentAt: new Date(),
+          notes: 'Conta de demonstração.',
+        },
+        create: {
+          userId: user.id,
+          marketingConsent: true,
+          marketingConsentAt: new Date(),
+          notes: 'Conta de demonstração.',
+        },
+      });
+    }
   }
 }
 
@@ -172,16 +245,16 @@ async function seedOrders() {
     orderBy: { email: 'asc' },
   });
   const products = await prisma.product.findMany({
-    where: { isActive: true },
-    orderBy: { createdAt: 'asc' },
-    take: 12,
+    where: { sku: { in: demoProducts.map(([, , sku]) => sku) } },
+    orderBy: { sku: 'asc' },
   });
-  const delivery = await prisma.deliveryMethod.findFirst({
-    where: { isActive: true },
-    orderBy: { priceCents: 'asc' },
+  const delivery = await prisma.deliveryMethod.findUnique({
+    where: { code: 'standard-pt' },
   });
 
-  if (!customers.length || products.length < 2 || !delivery) return;
+  if (!customers.length || products.length < 2 || !delivery) {
+    throw new Error('Fundação insuficiente para criar encomendas demo.');
+  }
 
   for (const [index, [status, paymentStatus]] of orderStates.entries()) {
     const customer = customers[index % customers.length]!;
@@ -194,11 +267,18 @@ async function seedOrders() {
     const order = await prisma.order.upsert({
       where: { number },
       update: {
+        userId: customer.id,
+        email: customer.email,
+        customerName: `${customer.firstName} ${customer.lastName}`,
         status,
         paymentStatus,
         subtotalCents,
         shippingCents,
+        discountCents: 0,
+        taxCents: 0,
         totalCents: subtotalCents + shippingCents,
+        source: 'DEMO_SEED',
+        deliveryMethodId: delivery.id,
         internalNotes: 'Encomenda de demonstração gerada automaticamente.',
       },
       create: {
@@ -211,6 +291,8 @@ async function seedOrders() {
         paymentStatus,
         subtotalCents,
         shippingCents,
+        discountCents: 0,
+        taxCents: 0,
         totalCents: subtotalCents + shippingCents,
         billingAddress: demoAddress(customer.firstName),
         shippingAddress: demoAddress(customer.firstName),
@@ -250,6 +332,7 @@ async function seedOrders() {
     await prisma.payment.upsert({
       where: { providerPaymentId: `demo-payment-${index + 1}` },
       update: {
+        orderId: order.id,
         status: paymentStatus,
         amountCents: subtotalCents + shippingCents,
       },
@@ -281,18 +364,35 @@ async function seedOrders() {
 }
 
 async function main() {
+  await seedFoundation();
   await seedProducts();
   await seedUsers();
   await seedOrders();
 
-  const [products, users, orders] = await Promise.all([
-    prisma.product.count(),
+  const [categories, products, users, orders] = await Promise.all([
+    prisma.category.count({
+      where: { slug: { in: demoCategories.map(([, slug]) => slug) } },
+    }),
+    prisma.product.count({
+      where: { sku: { in: demoProducts.map(([, , sku]) => sku) } },
+    }),
     prisma.user.count({ where: { email: { startsWith: 'demo.' } } }),
     prisma.order.count({ where: { source: 'DEMO_SEED' } }),
   ]);
 
+  if (
+    categories !== demoCategories.length ||
+    products !== demoProducts.length ||
+    users !== demoUsers.length ||
+    orders !== orderStates.length
+  ) {
+    throw new Error(
+      `Seed demo incompleto: ${categories} categorias, ${products} produtos, ${users} utilizadores, ${orders} encomendas.`,
+    );
+  }
+
   console.log(
-    `Demo seed concluído: ${products} produtos, ${users} utilizadores e ${orders} encomendas demo.`,
+    `Demo seed concluído: ${categories} categorias, ${products} produtos, ${users} utilizadores e ${orders} encomendas demo.`,
   );
 }
 
