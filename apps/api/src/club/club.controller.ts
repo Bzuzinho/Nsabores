@@ -7,13 +7,11 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { UserRole } from '@prisma/client';
 import { CurrentUser, Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
 import type { AuthPrincipal } from '../auth/auth.types';
 import { PrismaService } from '../prisma.service';
-import { ClubBillingProvider } from './billing.provider';
 import { ClubService } from './club.service';
 import { ClubCancelDto, ClubPlanDto, JoinClubDto } from './dto';
 import { ManualClubPaymentsService } from './manual-club-payments.service';
@@ -31,21 +29,10 @@ export class PublicClubController {
 @UseGuards(AuthGuard)
 @Controller('v1/account/club')
 export class AccountClubController {
-  private readonly manual: ManualClubPaymentsService;
-
   constructor(
     private readonly club: ClubService,
-    prisma: PrismaService,
-    config: ConfigService,
-    billing: ClubBillingProvider,
-  ) {
-    this.manual = new ManualClubPaymentsService(
-      prisma,
-      config,
-      club,
-      billing,
-    );
-  }
+    private readonly manual: ManualClubPaymentsService,
+  ) {}
 
   @Get()
   subscription(@CurrentUser() user: AuthPrincipal) {
@@ -72,21 +59,11 @@ export class AccountClubController {
 @Roles(UserRole.STAFF, UserRole.ADMIN)
 @Controller('v1/admin/club')
 export class AdminClubController {
-  private readonly manual: ManualClubPaymentsService;
-
   constructor(
     private readonly club: ClubService,
     private readonly prisma: PrismaService,
-    config: ConfigService,
-    billing: ClubBillingProvider,
-  ) {
-    this.manual = new ManualClubPaymentsService(
-      prisma,
-      config,
-      club,
-      billing,
-    );
-  }
+    private readonly manual: ManualClubPaymentsService,
+  ) {}
 
   @Get('plans')
   plans() {
