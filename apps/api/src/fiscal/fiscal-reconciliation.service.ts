@@ -185,14 +185,24 @@ export class FiscalReconciliationService {
 
   private toCsv(headers: string[], rows: unknown[][]) {
     const escape = (value: unknown) => {
-      const text =
-        value == null
-          ? ''
-          : value instanceof Date
-            ? value.toISOString()
-            : typeof value === 'object'
-              ? JSON.stringify(value)
-              : String(value);
+      let text = '';
+      if (value instanceof Date) {
+        text = value.toISOString();
+      } else if (typeof value === 'string') {
+        text = value;
+      } else if (
+        typeof value === 'number' ||
+        typeof value === 'bigint' ||
+        typeof value === 'boolean'
+      ) {
+        text = value.toString();
+      } else if (typeof value === 'object' && value !== null) {
+        text = JSON.stringify(value);
+      } else if (typeof value === 'symbol') {
+        text = value.description ?? '';
+      } else if (typeof value === 'function') {
+        text = value.name;
+      }
       return `"${text.replaceAll('"', '""')}"`;
     };
     return [
