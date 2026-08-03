@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import {
   Body,
   Controller,
@@ -13,14 +12,12 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
 import { OrderStatus, UserRole } from '@prisma/client';
 import type { Request, Response } from 'express';
 import { CurrentUser, Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
 import type { AuthPrincipal } from '../auth/auth.types';
-import { PrismaService } from '../prisma.service';
+import { CommerceIdentityService } from './commerce-identity.service';
 import { CommerceService } from './commerce.service';
 import {
   CartItemDto,
@@ -36,63 +33,21 @@ import {
 } from './dto';
 import { ManualPaymentService } from './manual-payment.service';
 
-class CommerceIdentity {
-  constructor(
-    private readonly jwt: JwtService,
-    private readonly prisma: PrismaService,
-    private readonly config: ConfigService,
-  ) {}
-
-  async resolve(request: Request, response: Response) {
-    const token = request.cookies?.nsabores_access as string | undefined;
-    let userId: string | undefined;
-    if (token) {
-      try {
-        const principal = await this.jwt.verifyAsync<AuthPrincipal>(token);
-        const user = await this.prisma.user.findFirst({
-          where: { id: principal.sub, isActive: true },
-          select: { id: true },
-        });
-        userId = user?.id;
-      } catch {
-        userId = undefined;
-      }
-    }
-    let sessionId = request.cookies?.nsabores_cart as string | undefined;
-    if (!sessionId || !/^[0-9a-f-]{36}$/i.test(sessionId)) {
-      sessionId = randomUUID();
-      response.cookie('nsabores_cart', sessionId, {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: this.config.get<boolean>('AUTH_COOKIE_SECURE') ?? false,
-        domain: this.config.get<string>('AUTH_COOKIE_DOMAIN') || undefined,
-        maxAge: 1000 * 60 * 60 * 24 * 365,
-        path: '/',
-      });
-    }
-    return { userId, sessionId };
-  }
-}
-
 @Controller('v1/cart')
 export class CartController {
-  private readonly identity: CommerceIdentity;
-
   constructor(
     private readonly commerce: CommerceService,
-    jwt: JwtService,
-    prisma: PrismaService,
-    config: ConfigService,
-  ) {
-    this.identity = new CommerceIdentity(jwt, prisma, config);
-  }
+    private readonly identity: CommerceIdentityService,
+  ) {}
 
   @Get()
   async get(
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ) {
-    return this.commerce.cart(await this.identity.resolve(request, response));
+    return this.commerce.cart(
+      await this.identity.resolve(request, response),
+    );
   }
 
   @Post('items')
@@ -156,16 +111,10 @@ export class CartController {
 
 @Controller('v1')
 export class CheckoutController {
-  private readonly identity: CommerceIdentity;
-
   constructor(
     private readonly commerce: CommerceService,
-    jwt: JwtService,
-    prisma: PrismaService,
-    config: ConfigService,
-  ) {
-    this.identity = new CommerceIdentity(jwt, prisma, config);
-  }
+    private readonly identity: CommerceIdentityService,
+  ) {}
 
   @Get('delivery-methods')
   deliveryMethods() {
@@ -192,7 +141,11 @@ export class CheckoutController {
     @Body() body: PaymentStartDto,
   ) {
     const identity = await this.identity.resolve(request, response);
-    return this.commerce.startPayment(id, identity.userId, body.idempotencyKey);
+    return this.commerce.startPayment(
+      id,
+      identity.userId,
+      body.idempotencyKey,
+    );
   }
 
   @Post('payments/webhook')
@@ -255,7 +208,12 @@ export class AdminOrdersController {
     @Param('id') id: string,
     @Body() body: OrderStatusDto,
   ) {
-    return this.commerce.changeStatus(id, body.status, user.sub, body.note);
+    return this.commerce.changeStatus(
+      id,
+      body.status,
+      user.sub,
+      body.note,
+    );
   }
 
   @Patch('orders/:id/notes')
@@ -274,7 +232,11 @@ export class AdminOrdersController {
 
   @Post('orders/:id/cancel')
   cancel(@CurrentUser() user: AuthPrincipal, @Param('id') id: string) {
-    return this.commerce.changeStatus(id, OrderStatus.CANCELLED, user.sub);
+    return this.commerce.changeStatus(
+      id,
+      OrderStatus.CANCELLED,
+      user.sub,
+    );
   }
 
   @Post('orders/:id/refund')
@@ -288,7 +250,10 @@ export class AdminOrdersController {
   }
 
   @Patch('delivery-methods/:id')
-  updateDelivery(@Param('id') id: string, @Body() body: DeliveryMethodDto) {
+  updateDelivery(
+    @Param('id') id: string,
+    @Body() body: DeliveryMethodDto,
+  ) {
     return this.commerce.updateDeliveryMethod(id, body);
   }
 }
