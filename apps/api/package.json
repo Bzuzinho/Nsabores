@@ -28,7 +28,8 @@
     "validate:fiscal-reconciliation": "pnpm build && node dist/smoke-fiscal-reconciliation.js",
     "validate:loyalty": "tsx scripts/smoke-loyalty.ts",
     "validate:loyalty-checkout": "pnpm build && node dist/smoke-loyalty-checkout.js",
-    "validate:management": "pnpm build && node dist/smoke-management.js"
+    "validate:management": "pnpm build && node dist/smoke-management.js",
+    "validate:e2e": "pnpm build && node dist/smoke-management.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.3",
