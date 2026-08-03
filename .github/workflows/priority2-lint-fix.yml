@@ -5,6 +5,10 @@ on:
     branches:
       - chore/priority-2-quality
 
+concurrency:
+  group: priority2-lint-fix
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
