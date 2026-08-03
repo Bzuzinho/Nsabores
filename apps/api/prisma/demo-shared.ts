@@ -29,8 +29,33 @@ function positiveMoney(data: Record<string, unknown> | undefined) {
   return normalized;
 }
 
+function validGiftCardBalance(data: Record<string, unknown>) {
+  const normalized = { ...data };
+  const initial = normalized.initialAmountCents;
+  const reserved = normalized.reservedCents;
+  const balance = normalized.balanceCents;
+  if (
+    typeof initial === 'number' &&
+    typeof reserved === 'number' &&
+    typeof balance === 'number'
+  ) {
+    normalized.balanceCents = Math.max(0, Math.min(balance, initial - reserved));
+  }
+  return normalized;
+}
+
+function normalizeDemoData(model: string, data: Record<string, unknown>) {
+  if (model === 'giftCard') return validGiftCardBalance(data);
+  if (model === 'fiscalDocument' && data?.type !== 'CREDIT_NOTE') return data;
+  return positiveMoney(data) as Record<string, unknown>;
+}
+
 function demoDelegate(model: string, delegate: any) {
-  if (model !== 'fiscalDocument' && model !== 'fiscalDocumentLine') {
+  if (
+    model !== 'fiscalDocument' &&
+    model !== 'fiscalDocumentLine' &&
+    model !== 'giftCard'
+  ) {
     return delegate;
   }
 
@@ -40,27 +65,20 @@ function demoDelegate(model: string, delegate: any) {
       if (typeof method !== 'function') return method;
 
       if (property === 'create' || property === 'update') {
-        return (args: any) => {
-          const data =
-            model === 'fiscalDocument' && args.data?.type !== 'CREDIT_NOTE'
-              ? args.data
-              : positiveMoney(args.data);
-          return method.call(target, { ...args, data });
-        };
+        return (args: any) =>
+          method.call(target, {
+            ...args,
+            data: normalizeDemoData(model, args.data),
+          });
       }
 
       if (property === 'upsert') {
-        return (args: any) => {
-          const normalizeDocument = (data: Record<string, unknown>) =>
-            model === 'fiscalDocument' && data?.type !== 'CREDIT_NOTE'
-              ? data
-              : (positiveMoney(data) as Record<string, unknown>);
-          return method.call(target, {
+        return (args: any) =>
+          method.call(target, {
             ...args,
-            create: normalizeDocument(args.create),
-            update: normalizeDocument(args.update),
+            create: normalizeDemoData(model, args.create),
+            update: normalizeDemoData(model, args.update),
           });
-        };
       }
 
       return method.bind(target);
