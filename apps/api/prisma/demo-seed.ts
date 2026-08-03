@@ -17,6 +17,9 @@ const prisma = new PrismaClient({
 });
 
 const demoPassword = process.env.DEMO_USER_PASSWORD;
+const configuredPasswordHash =
+  process.env.DEMO_USER_PASSWORD_HASH ??
+  process.env.BOOTSTRAP_ADMIN_PASSWORD_HASH;
 
 const demoProducts = [
   ['Compota de Abóbora e Noz', 'compota-abobora-noz', 'COMP-ABO-NOZ', 590, 'outros-sabores'],
@@ -67,7 +70,9 @@ function demoAddress(name: string) {
 
 async function seedProducts() {
   const categories = await prisma.category.findMany();
-  const categoryIds = new Map(categories.map((category) => [category.slug, category.id]));
+  const categoryIds = new Map(
+    categories.map((category) => [category.slug, category.id]),
+  );
 
   for (const [name, slug, sku, priceCents, categorySlug] of demoProducts) {
     const categoryId = categoryIds.get(categorySlug);
@@ -117,18 +122,21 @@ async function seedProducts() {
 }
 
 async function seedUsers() {
-  if (!demoPassword) {
-    throw new Error('DEMO_USER_PASSWORD é obrigatória para criar utilizadores de demonstração.');
-  }
+  const passwordHash = demoPassword
+    ? await argon2.hash(demoPassword, { type: argon2.argon2id })
+    : configuredPasswordHash;
 
-  const passwordHash = await argon2.hash(demoPassword, {
-    type: argon2.argon2id,
-  });
+  if (!passwordHash) {
+    throw new Error(
+      'Defina DEMO_USER_PASSWORD, DEMO_USER_PASSWORD_HASH ou BOOTSTRAP_ADMIN_PASSWORD_HASH para criar utilizadores demo.',
+    );
+  }
 
   for (const [email, firstName, lastName, role] of demoUsers) {
     await prisma.user.upsert({
       where: { email },
       update: {
+        passwordHash,
         firstName,
         lastName,
         role,
@@ -283,7 +291,9 @@ async function main() {
     prisma.order.count({ where: { source: 'DEMO_SEED' } }),
   ]);
 
-  console.log(`Demo seed concluído: ${products} produtos, ${users} utilizadores e ${orders} encomendas demo.`);
+  console.log(
+    `Demo seed concluído: ${products} produtos, ${users} utilizadores e ${orders} encomendas demo.`,
+  );
 }
 
 main()
