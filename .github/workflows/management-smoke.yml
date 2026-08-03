@@ -83,4 +83,4 @@ jobs:
         run: pnpm --filter @nsabores/api validate:management
 
       - name: Validate management route files
-        run: pnpm --filter @nsabores/management test -- management-routes.test.ts
+        run: pnpm --filter @nsabores/management exec vitest run components/management-routes.test.ts
