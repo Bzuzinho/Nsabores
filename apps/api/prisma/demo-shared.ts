@@ -10,7 +10,71 @@ export const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: databaseUrl }),
 });
 
-export const db = prisma as any;
+const rawDb = prisma as any;
+
+function positiveMoney(data: Record<string, unknown> | undefined) {
+  if (!data) return data;
+  const normalized = { ...data };
+  for (const key of [
+    'subtotalCents',
+    'discountCents',
+    'taxCents',
+    'totalCents',
+    'unitPriceCents',
+  ]) {
+    if (typeof normalized[key] === 'number') {
+      normalized[key] = Math.abs(normalized[key] as number);
+    }
+  }
+  return normalized;
+}
+
+function demoDelegate(model: string, delegate: any) {
+  if (model !== 'fiscalDocument' && model !== 'fiscalDocumentLine') {
+    return delegate;
+  }
+
+  return new Proxy(delegate, {
+    get(target, property, receiver) {
+      const method = Reflect.get(target, property, receiver);
+      if (typeof method !== 'function') return method;
+
+      if (property === 'create' || property === 'update') {
+        return (args: any) => {
+          const data =
+            model === 'fiscalDocument' && args.data?.type !== 'CREDIT_NOTE'
+              ? args.data
+              : positiveMoney(args.data);
+          return method.call(target, { ...args, data });
+        };
+      }
+
+      if (property === 'upsert') {
+        return (args: any) => {
+          const normalizeDocument = (data: Record<string, unknown>) =>
+            model === 'fiscalDocument' && data?.type !== 'CREDIT_NOTE'
+              ? data
+              : (positiveMoney(data) as Record<string, unknown>);
+          return method.call(target, {
+            ...args,
+            create: normalizeDocument(args.create),
+            update: normalizeDocument(args.update),
+          });
+        };
+      }
+
+      return method.bind(target);
+    },
+  });
+}
+
+export const db = new Proxy(rawDb, {
+  get(target, property, receiver) {
+    const value = Reflect.get(target, property, receiver);
+    return demoDelegate(String(property), value);
+  },
+});
+
 export const DEMO_SOURCE = 'DEMO_SEED';
 export const now = new Date();
 export const day = (offset: number) =>
