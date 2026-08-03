@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import assert from 'node:assert/strict';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
@@ -37,6 +38,12 @@ const endpoints = [
 
 type SetCookieHeaders = Headers & { getSetCookie?: () => string[] };
 
+type AuthMe = {
+  id: string;
+  email: string;
+  role: string;
+};
+
 function cookieHeader(response: Response) {
   const headers = response.headers as SetCookieHeaders;
   const values = headers.getSetCookie?.() ?? [];
@@ -45,6 +52,27 @@ function cookieHeader(response: Response) {
     if (single) values.push(single);
   }
   return values.map((value) => value.split(';', 1)[0]).join('; ');
+}
+
+async function login(
+  baseUrl: string,
+  email: string,
+  password: string,
+) {
+  const response = await fetch(`${baseUrl}/v1/auth/login`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(
+      `Login de ${email} falhou com HTTP ${response.status}: ${body.slice(0, 500)}`,
+    );
+  }
+  const cookie = cookieHeader(response);
+  assert.match(cookie, /nsabores_access=/);
+  return cookie;
 }
 
 async function main() {
@@ -64,31 +92,45 @@ async function main() {
   try {
     await app.listen(0, '127.0.0.1');
     const baseUrl = await app.getUrl();
-    const login = await fetch(`${baseUrl}/v1/auth/login`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        email: 'demo.staff@nsabores.pt',
-        password,
-      }),
+
+    const unauthenticated = await fetch(
+      `${baseUrl}/v1/admin/products?limit=1`,
+    );
+    assert.equal(unauthenticated.status, 401);
+
+    const publicCatalog = await fetch(`${baseUrl}/v1/products?limit=100`);
+    assert.equal(publicCatalog.status, 200);
+    const publicProducts = (await publicCatalog.json()) as {
+      data?: unknown[];
+    };
+    assert.ok((publicProducts.data?.length ?? 0) >= 12);
+
+    const staffCookie = await login(
+      baseUrl,
+      'demo.staff@nsabores.pt',
+      password,
+    );
+    const staffMeResponse = await fetch(`${baseUrl}/v1/auth/me`, {
+      headers: { cookie: staffCookie },
     });
+    assert.equal(staffMeResponse.status, 200);
+    const staffMe = (await staffMeResponse.json()) as AuthMe;
+    assert.equal(staffMe.role, 'STAFF');
 
-    if (!login.ok) {
-      const body = await login.text();
-      throw new Error(
-        `Login demo falhou com HTTP ${login.status}: ${body.slice(0, 500)}`,
-      );
-    }
-
-    const cookie = cookieHeader(login);
-    if (!cookie.includes('nsabores_access=')) {
-      throw new Error('O login não devolveu o cookie de acesso.');
-    }
+    const customerCookie = await login(
+      baseUrl,
+      'demo.cliente1@nsabores.pt',
+      password,
+    );
+    const forbidden = await fetch(`${baseUrl}/v1/admin/orders`, {
+      headers: { cookie: customerCookie },
+    });
+    assert.equal(forbidden.status, 403);
 
     const responses = new Map<string, unknown>();
     for (const endpoint of endpoints) {
       const response = await fetch(`${baseUrl}${endpoint}`, {
-        headers: { cookie },
+        headers: { cookie: staffCookie },
       });
       if (!response.ok) {
         const body = await response.text();
@@ -106,6 +148,10 @@ async function main() {
     const orders = responses.get('/v1/admin/orders') as
       | unknown[]
       | { data?: unknown[] };
+    const operations = responses.get(
+      '/v1/admin/operations/dashboard',
+    ) as Record<string, unknown>;
+    const production = responses.get('/v1/admin/production') as unknown[];
 
     const productCount = products.data?.length ?? 0;
     const categoryCount = Array.isArray(categories) ? categories.length : 0;
@@ -118,9 +164,12 @@ async function main() {
         `Dados demo insuficientes: ${productCount} produtos, ${categoryCount} categorias, ${orderCount} encomendas.`,
       );
     }
+    assert.ok(Object.keys(operations).length > 0);
+    assert.ok(Array.isArray(production));
+    assert.ok(production.length >= 3);
 
     console.log(
-      `Management validado: ${endpoints.length} endpoints, ${productCount} produtos, ${categoryCount} categorias e ${orderCount} encomendas.`,
+      `E2E validado: autenticação, permissões, catálogo público, ${endpoints.length} endpoints administrativos, ${productCount} produtos, ${categoryCount} categorias e ${orderCount} encomendas.`,
     );
   } finally {
     await app.close();
