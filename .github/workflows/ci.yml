@@ -14,8 +14,34 @@ permissions:
   contents: read
 
 jobs:
+  deployment-gate:
+    name: Production deployment gate
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          clean: true
+          fetch-depth: 1
+
+      - name: Verify checked out commit
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+
+      - name: Verify API deployment assets
+        shell: bash
+        run: |
+          test -f apps/api/prisma/demo-seed.ts
+          test -f apps/api/prisma/demo-seed-clear.ts
+          node -e "const p=require('./apps/api/package.json'); if(!p.scripts['prisma:seed:demo'] || !p.scripts['prisma:seed:demo:clear']) process.exit(1)"
+
   quality:
     name: Quality checks
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -57,8 +83,7 @@ jobs:
       - name: Verify formatting
         run: pnpm format:check
 
-      - name: Lint (report legacy debt without blocking deploy)
-        continue-on-error: true
+      - name: Lint
         run: pnpm lint
 
       - name: Typecheck
@@ -76,6 +101,7 @@ jobs:
 
   migrations:
     name: Clean database migrations
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
