@@ -55,6 +55,23 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
   ): Promise<CheckoutResult> {
     const cart = await super.cart(identity);
     const order = await super.checkout(identity, body);
+    const shippingQuotePending = order.deliveryMethod.code === 'case-by-case';
+
+    await this.loyaltyPrisma.order.update({
+      where: { id: order.id },
+      data: {
+        paymentTermsSnapshot: {
+          flow: this.manualFlow() ? 'MANUAL' : 'AUTOMATIC',
+          preference: body.manualPaymentPreference,
+          shippingQuoteStatus: shippingQuotePending
+            ? 'PENDING'
+            : 'NOT_REQUIRED',
+          shippingQuoteCents: shippingQuotePending ? null : order.shippingCents,
+          shippingQuoteNote: null,
+        },
+      },
+    });
+
     try {
       await this.loyaltyOrders.reserve(
         order.id,
@@ -85,7 +102,9 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
                 note:
                   refreshed.totalCents === 0
                     ? 'Encomenda aceite para produção e liquidada com benefícios internos.'
-                    : 'Encomenda aceite para produção. Pagamento a combinar e confirmar manualmente.',
+                    : shippingQuotePending
+                      ? 'Encomenda aceite. Cobrança manual e transporte ficam a confirmar pelo operador.'
+                      : 'Encomenda aceite para produção. Pagamento a combinar e confirmar manualmente.',
               },
             },
           },
