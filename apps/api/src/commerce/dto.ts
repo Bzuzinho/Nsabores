@@ -17,6 +17,13 @@ import {
 } from 'class-validator';
 import { OrderStatus, PaymentStatus } from '@prisma/client';
 
+export enum ManualPaymentPreferenceDto {
+  OPERATOR_CONTACT = 'OPERATOR_CONTACT',
+  PAY_ON_DELIVERY = 'PAY_ON_DELIVERY',
+  PAY_ON_PICKUP = 'PAY_ON_PICKUP',
+  CARRIER_COD = 'CARRIER_COD',
+}
+
 export class CartItemDto {
   @IsUUID()
   productId!: string;
@@ -57,6 +64,8 @@ export class CheckoutDto {
   @Type(() => AddressSnapshotDto)
   billingAddress!: AddressSnapshotDto;
   @IsUUID() deliveryMethodId!: string;
+  @IsEnum(ManualPaymentPreferenceDto)
+  manualPaymentPreference = ManualPaymentPreferenceDto.OPERATOR_CONTACT;
   @IsBoolean() termsAccepted!: boolean;
   @IsBoolean() privacyAccepted!: boolean;
   @IsOptional() @IsBoolean() marketingConsent?: boolean;
@@ -73,6 +82,11 @@ export class PaymentStartDto {
 export class ManualPaymentDto {
   @IsOptional() @IsString() @MaxLength(80) method?: string;
   @IsOptional() @IsString() @MaxLength(160) reference?: string;
+  @IsOptional() @IsString() @MaxLength(1000) note?: string;
+}
+
+export class ShippingQuoteDto {
+  @IsInt() @Min(0) amountCents!: number;
   @IsOptional() @IsString() @MaxLength(1000) note?: string;
 }
 
