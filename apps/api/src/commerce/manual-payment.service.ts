@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PaymentStatus, Prisma } from '@prisma/client';
+import { PaymentStatus } from '@prisma/client';
 import { LoyaltyEarningService } from '../loyalty/loyalty-earning.service';
 import { PrismaService } from '../prisma.service';
 import { ReceivablesService } from '../receivables/receivables.service';
@@ -57,7 +57,7 @@ export class ManualPaymentService {
             shippingQuoteNote: note,
             shippingQuoteConfirmedBy: authorId,
             shippingQuoteConfirmedAt: new Date().toISOString(),
-          } as Prisma.InputJsonValue,
+          },
           internalNotes: [
             order.internalNotes,
             `Transporte confirmado: ${(body.amountCents / 100).toFixed(2)} EUR${
