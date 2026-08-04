@@ -213,18 +213,35 @@ async function main() {
   await prisma.deliveryMethod.upsert({
     where: { code: 'standard-pt' },
     update: {
-      name: 'Entrega standard — Portugal Continental',
+      name: 'Entrega standard — desativada',
       type: DeliveryMethodType.STANDARD,
-      isActive: true,
-      priceCents: 490,
-      freeShippingAboveCents: 5000,
+      isActive: false,
+      priceCents: 0,
+      freeShippingAboveCents: null,
     },
     create: {
       code: 'standard-pt',
-      name: 'Entrega standard — Portugal Continental',
+      name: 'Entrega standard — desativada',
       type: DeliveryMethodType.STANDARD,
-      priceCents: 490,
-      freeShippingAboveCents: 5000,
+      isActive: false,
+      priceCents: 0,
+    },
+  });
+  await prisma.deliveryMethod.upsert({
+    where: { code: 'case-by-case' },
+    update: {
+      name: 'Transporte a combinar com o cliente',
+      type: DeliveryMethodType.STANDARD,
+      isActive: true,
+      priceCents: 0,
+      freeShippingAboveCents: null,
+    },
+    create: {
+      code: 'case-by-case',
+      name: 'Transporte a combinar com o cliente',
+      type: DeliveryMethodType.STANDARD,
+      isActive: true,
+      priceCents: 0,
     },
   });
   await prisma.deliveryMethod.upsert({
