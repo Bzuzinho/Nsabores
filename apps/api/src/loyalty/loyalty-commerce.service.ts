@@ -62,7 +62,7 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
       data: {
         paymentTermsSnapshot: {
           flow: this.manualFlow() ? 'MANUAL' : 'AUTOMATIC',
-          preference: body.manualPaymentPreference,
+          preference: body.manualPaymentPreference ?? 'OPERATOR_CONTACT',
           shippingQuoteStatus: shippingQuotePending
             ? 'PENDING'
             : 'NOT_REQUIRED',
