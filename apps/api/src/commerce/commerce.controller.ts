@@ -30,6 +30,7 @@ import {
   OrderQueryDto,
   OrderStatusDto,
   PaymentStartDto,
+  ShippingQuoteDto,
 } from './dto';
 import { ManualPaymentService } from './manual-payment.service';
 
@@ -208,6 +209,15 @@ export class AdminOrdersController {
   @Patch('orders/:id/notes')
   note(@Param('id') id: string, @Body() body: InternalNoteDto) {
     return this.commerce.updateInternalNote(id, body.note);
+  }
+
+  @Patch('orders/:id/shipping-quote')
+  shippingQuote(
+    @CurrentUser() user: AuthPrincipal,
+    @Param('id') id: string,
+    @Body() body: ShippingQuoteDto,
+  ) {
+    return this.manualPayments.setShippingQuote(id, user.sub, body);
   }
 
   @Post('orders/:id/mark-paid')
