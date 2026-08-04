@@ -77,7 +77,10 @@ export default function AccountDocumentPage() {
           <p>A carregar…</p>
         ) : (
           <>
-            <p className="eyebrow">Documento comercial</p>
+            <p className="eyebrow">Documento de demonstração</p>
+            <p role="alert">
+              <strong>DEMONSTRAÇÃO — SEM VALOR FISCAL</strong>
+            </p>
             <h1>{document.number ?? 'Documento sem número'}</h1>
             <p>
               {document.type} · {document.status} ·{' '}
@@ -123,8 +126,10 @@ export default function AccountDocumentPage() {
               </p>
             )}
             <p>
-              Esta visualização é uma representação interna e não substitui um
-              documento emitido por software de faturação certificado.
+              Este documento reproduz o fluxo e a aparência de faturação para
+              demonstração do software. Não foi emitido por software certificado,
+              não substitui fatura legal e não deve ser usado para fins fiscais ou
+              contabilísticos.
             </p>
             <Link href="/conta/documentos">Voltar aos documentos</Link>
           </>
