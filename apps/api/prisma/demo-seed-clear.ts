@@ -66,6 +66,12 @@ async function main() {
       await tx.cartItem.deleteMany({
         where: { productId: { in: productIds } },
       });
+      await tx.stockReservation.deleteMany({
+        where: { productId: { in: productIds } },
+      });
+      await tx.stockMovement.deleteMany({
+        where: { productId: { in: productIds } },
+      });
       await tx.stockItem.deleteMany({
         where: { productId: { in: productIds } },
       });
