@@ -4,7 +4,8 @@ import { ApiClient } from '@nsabores/api-client';
 import { useState, type FormEvent } from 'react';
 
 const api = new ApiClient(
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000',
+  process.env.NEXT_PUBLIC_API_URL ??
+    (process.env.NODE_ENV === 'development' ? 'http://localhost:4000' : ''),
 );
 
 const money = (cents: number, currency = 'EUR') =>

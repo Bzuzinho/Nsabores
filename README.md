@@ -16,9 +16,9 @@ Plataforma digital da marca **Nsabores**, composta por:
 ## Arquitetura prevista
 
 ```text
-www.nsabores.pt        Website público e loja online
-app.nsabores.pt        Aplicação interna de gestão
-api.nsabores.pt        API central
+www.nsabores.pt          Website público e loja online
+www.nsabores.pt/gestao  Aplicação interna de gestão
+www.nsabores.pt/v1      API, encaminhada para o serviço interno
 Railway                 Aplicação, API e PostgreSQL
 GitHub                  Código-fonte e CI/CD
 Domínios.pt             Gestão do domínio e DNS

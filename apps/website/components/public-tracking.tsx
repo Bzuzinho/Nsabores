@@ -31,7 +31,8 @@ export function PublicTracking() {
     setResult(null);
     try {
       const baseUrl =
-        process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+        process.env.NEXT_PUBLIC_API_URL ??
+        (process.env.NODE_ENV === 'development' ? 'http://localhost:4000' : '');
       const response = await fetch(`${baseUrl}/v1/tracking`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },

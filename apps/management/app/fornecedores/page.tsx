@@ -5,6 +5,7 @@ export default function Page() {
       title="Fornecedores"
       endpoint="suppliers"
       description="Parceiros, custos e condições de compra."
+      detailBasePath="/fornecedores"
     />
   );
 }

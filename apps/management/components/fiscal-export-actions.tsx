@@ -4,7 +4,9 @@ import Link from 'next/link';
 
 export function FiscalExportActions() {
   async function downloadDocuments() {
-    const base = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+    const base =
+      process.env.NEXT_PUBLIC_API_URL ??
+      (process.env.NODE_ENV === 'development' ? 'http://localhost:4000' : '');
     const response = await fetch(`${base}/v1/admin/fiscal/documents.csv`, {
       credentials: 'include',
     });

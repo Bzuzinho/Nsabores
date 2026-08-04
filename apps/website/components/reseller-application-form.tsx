@@ -3,7 +3,9 @@
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+const apiUrl =
+  process.env.NEXT_PUBLIC_API_URL ??
+  (process.env.NODE_ENV === 'development' ? 'http://localhost:4000' : '');
 
 export function ResellerApplicationForm() {
   const router = useRouter();

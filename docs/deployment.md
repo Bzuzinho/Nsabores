@@ -8,23 +8,43 @@
 
 ## Produção
 
-### Website público
+O utilizador acede sempre a `https://www.nsabores.pt`:
 
-Domínio: `www.nsabores.pt`
+| Caminho   | Responsabilidade                    | Serviço Railway |
+| --------- | ----------------------------------- | --------------- |
+| `/`       | website institucional, loja e conta | `website`       |
+| `/gestao` | aplicação interna autenticada       | `management`    |
+| `/v1`     | API do website e da gestão          | `api`           |
 
-O website poderá ser servido no Railway ou noutro serviço compatível com Next.js. Caso o alojamento da Domínios.pt seja apenas alojamento tradicional, o domínio deverá ser apontado por DNS para o serviço onde o frontend estiver efetivamente publicado.
+O serviço `website` é a entrada pública e encaminha internamente `/gestao` e
+`/v1`. Os serviços `management` e `api` mantêm os domínios técnicos gerados
+pelo Railway, mas não precisam de subdomínios próprios no DNS da Nsabores.
 
-### Aplicação de gestão
+O domínio raiz `https://nsabores.pt` deve redirecionar para
+`https://www.nsabores.pt`.
 
-Domínio: `app.nsabores.pt`
+### Variáveis do website
 
-Alojamento previsto: Railway.
+```text
+NEXT_PUBLIC_APP_URL=https://www.nsabores.pt
+NEXT_PUBLIC_API_URL=
+API_ORIGIN=https://<dominio-interno-api>.up.railway.app
+MANAGEMENT_ORIGIN=https://<dominio-interno-management>.up.railway.app
+```
 
-### API
+`NEXT_PUBLIC_API_URL` fica vazio em produção para que o browser use `/v1` na
+mesma origem. `API_ORIGIN` e `MANAGEMENT_ORIGIN` são usados apenas no serviço
+`website` para o encaminhamento.
 
-Domínio: `api.nsabores.pt`
+### Variáveis da API
 
-Alojamento previsto: Railway.
+```text
+WEBSITE_URL=https://www.nsabores.pt
+MANAGEMENT_URL=https://www.nsabores.pt/gestao
+CORS_ORIGINS=https://www.nsabores.pt
+AUTH_COOKIE_DOMAIN=
+AUTH_COOKIE_SECURE=true
+```
 
 ### Base de dados
 
@@ -40,16 +60,13 @@ PostgreSQL gerido no Railway, com migrations executadas de forma controlada.
 - validar migrations antes de aplicar em produção;
 - garantir backups antes de alterações estruturais relevantes.
 
-## DNS previsto
+## DNS
 
-A configuração final dependerá dos domínios gerados pelo Railway.
-
-Exemplo conceptual:
+É necessário apenas o endereço público do website:
 
 ```text
 www    CNAME   <domínio-do-website>
-app    CNAME   <domínio-da-app>
-api    CNAME   <domínio-da-api>
+@      redirect para https://www.nsabores.pt
 ```
 
 Não criar registos DNS com valores provisórios.
