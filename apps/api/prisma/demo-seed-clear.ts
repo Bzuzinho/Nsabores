@@ -63,6 +63,9 @@ async function main() {
     const productIds = demoProducts.map((product) => product.id);
 
     if (productIds.length > 0) {
+      await tx.cartItem.deleteMany({
+        where: { productId: { in: productIds } },
+      });
       await tx.stockItem.deleteMany({
         where: { productId: { in: productIds } },
       });
