@@ -64,8 +64,9 @@ export class CheckoutDto {
   @Type(() => AddressSnapshotDto)
   billingAddress!: AddressSnapshotDto;
   @IsUUID() deliveryMethodId!: string;
+  @IsOptional()
   @IsEnum(ManualPaymentPreferenceDto)
-  manualPaymentPreference = ManualPaymentPreferenceDto.OPERATOR_CONTACT;
+  manualPaymentPreference?: ManualPaymentPreferenceDto;
   @IsBoolean() termsAccepted!: boolean;
   @IsBoolean() privacyAccepted!: boolean;
   @IsOptional() @IsBoolean() marketingConsent?: boolean;
