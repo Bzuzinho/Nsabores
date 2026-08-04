@@ -111,7 +111,7 @@ O projeto Railway contém `website`, `management`, `api` e `Postgres` no ambient
 | Ambiente demo integral                 | concluído                       |
 | CI estrito para qualidade e regressões | concluído                       |
 | Fluxo de pagamentos manuais            | implementado                    |
-| Transporte caso a caso                 | implementação em curso          |
+| Transporte caso a caso                 | implementado e validado no E2E  |
 | Provider Outlook                       | código pronto; OAuth pendente   |
 | Domínios definitivos                   | associação DNS/Railway pendente |
 | Faturação de demonstração              | implementada e identificada     |
