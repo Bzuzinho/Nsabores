@@ -118,10 +118,7 @@ export type PaymentStatus =
   | 'PARTIALLY_REFUNDED';
 
 export type ManualPaymentPreference =
-  | 'OPERATOR_CONTACT'
-  | 'PAY_ON_DELIVERY'
-  | 'PAY_ON_PICKUP'
-  | 'CARRIER_COD';
+  'OPERATOR_CONTACT' | 'PAY_ON_DELIVERY' | 'PAY_ON_PICKUP' | 'CARRIER_COD';
 
 export interface ManualOrderTerms {
   flow?: 'MANUAL' | 'AUTOMATIC';

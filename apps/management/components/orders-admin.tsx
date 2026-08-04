@@ -298,8 +298,7 @@ export function OrderAdmin({ id }: { id: string }) {
           <strong>{order.paymentStatus}</strong>
         </p>
         <p>
-          Preferência do cliente:{' '}
-          <strong>{paymentPreference(order)}</strong>
+          Preferência do cliente: <strong>{paymentPreference(order)}</strong>
         </p>
         <p>
           Entrega: <strong>{order.deliveryMethod.name}</strong> · Transporte:{' '}
@@ -338,7 +337,9 @@ export function OrderAdmin({ id }: { id: string }) {
           </strong>
         </p>
         {order.paymentTermsSnapshot?.shippingQuoteNote && (
-          <p>Nota de transporte: {order.paymentTermsSnapshot.shippingQuoteNote}</p>
+          <p>
+            Nota de transporte: {order.paymentTermsSnapshot.shippingQuoteNote}
+          </p>
         )}
         <label>
           Novo estado de produção

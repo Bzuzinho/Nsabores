@@ -120,7 +120,8 @@ export default function CheckoutPage() {
     }
   }
 
-  const selected = methods.find(({ id }) => id === selectedMethodId) ?? methods[0];
+  const selected =
+    methods.find(({ id }) => id === selectedMethodId) ?? methods[0];
   const shippingQuotePending = selected?.code === 'case-by-case';
   const hasFreeShippingPromotion = (cart?.discounts ?? []).some(
     (discount) => discount.freeShipping,

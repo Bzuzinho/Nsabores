@@ -127,9 +127,9 @@ export default function AccountDocumentPage() {
             )}
             <p>
               Este documento reproduz o fluxo e a aparência de faturação para
-              demonstração do software. Não foi emitido por software certificado,
-              não substitui fatura legal e não deve ser usado para fins fiscais ou
-              contabilísticos.
+              demonstração do software. Não foi emitido por software
+              certificado, não substitui fatura legal e não deve ser usado para
+              fins fiscais ou contabilísticos.
             </p>
             <Link href="/conta/documentos">Voltar aos documentos</Link>
           </>

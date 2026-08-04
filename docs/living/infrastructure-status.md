@@ -100,21 +100,21 @@ O projeto Railway contém `website`, `management`, `api` e `Postgres` no ambient
 
 ## Estado operacional
 
-| Critério                               | Estado                       |
-| -------------------------------------- | ---------------------------- |
-| Configuração por serviço versionada    | concluído                    |
-| Website, Management e API em produção  | online                       |
-| PostgreSQL ligado à API                | validado                     |
-| Health checks remotos                  | ativos                       |
-| Migrations em base limpa e produção    | validadas                    |
-| Autenticação e permissões E2E          | validadas                    |
-| Ambiente demo integral                 | concluído                    |
-| CI estrito para qualidade e regressões | concluído                    |
-| Fluxo de pagamentos manuais            | implementado                 |
-| Transporte caso a caso                 | implementação em curso       |
-| Provider Outlook                       | código pronto; OAuth pendente |
+| Critério                               | Estado                          |
+| -------------------------------------- | ------------------------------- |
+| Configuração por serviço versionada    | concluído                       |
+| Website, Management e API em produção  | online                          |
+| PostgreSQL ligado à API                | validado                        |
+| Health checks remotos                  | ativos                          |
+| Migrations em base limpa e produção    | validadas                       |
+| Autenticação e permissões E2E          | validadas                       |
+| Ambiente demo integral                 | concluído                       |
+| CI estrito para qualidade e regressões | concluído                       |
+| Fluxo de pagamentos manuais            | implementado                    |
+| Transporte caso a caso                 | implementação em curso          |
+| Provider Outlook                       | código pronto; OAuth pendente   |
 | Domínios definitivos                   | associação DNS/Railway pendente |
-| Faturação de demonstração              | implementada e identificada  |
+| Faturação de demonstração              | implementada e identificada     |
 
 ## Arranque e deployment
 

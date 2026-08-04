@@ -35,7 +35,7 @@ const templates: Record<
     text: `A encomenda ${orderNumber} foi cancelada. Para qualquer esclarecimento, responda a este email.`,
   }),
   ORDER_REFUNDED: (orderNumber) => ({
-    subject: `Nsabores — regularização da encomenda ${orderNumber}`, 
+    subject: `Nsabores — regularização da encomenda ${orderNumber}`,
     text: `Foi registada uma regularização ou devolução relativa à encomenda ${orderNumber}.`,
   }),
 };
@@ -44,11 +44,7 @@ const templates: Record<
 export class CommerceMailProvider {
   constructor(private readonly config: ConfigService) {}
 
-  send(
-    template: CommerceMailTemplate,
-    recipient: string,
-    orderNumber: string,
-  ) {
+  send(template: CommerceMailTemplate, recipient: string, orderNumber: string) {
     const content = templates[template](orderNumber);
     sendTransactionalMail(this.config, {
       to: recipient,

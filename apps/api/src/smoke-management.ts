@@ -101,7 +101,9 @@ async function validateManualCheckout(
   const deliveryResponse = await fetch(`${baseUrl}/v1/delivery-methods`);
   assert.equal(deliveryResponse.status, 200);
   const deliveryMethods = (await deliveryResponse.json()) as DeliveryMethod[];
-  const caseByCase = deliveryMethods.find(({ code }) => code === 'case-by-case');
+  const caseByCase = deliveryMethods.find(
+    ({ code }) => code === 'case-by-case',
+  );
   assert.ok(caseByCase, 'Método de transporte caso a caso não disponível.');
   assert.ok(products[0]?.id, 'Produto público não disponível para checkout.');
 
@@ -186,10 +188,7 @@ async function validateManualCheckout(
   const quoted = (await shippingResponse.json()) as ManualOrder;
   assert.equal(quoted.shippingCents, 725);
   assert.equal(quoted.totalCents, order.totalCents + 725);
-  assert.equal(
-    quoted.paymentTermsSnapshot?.shippingQuoteStatus,
-    'CONFIRMED',
-  );
+  assert.equal(quoted.paymentTermsSnapshot?.shippingQuoteStatus, 'CONFIRMED');
   assert.equal(quoted.paymentTermsSnapshot?.shippingQuoteCents, 725);
 }
 

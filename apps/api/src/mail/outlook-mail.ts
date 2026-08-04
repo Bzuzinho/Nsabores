@@ -93,51 +93,58 @@ async function deliver(
   const token = (await tokenResponse.json()) as TokenResponse;
   if (!tokenResponse.ok || !token.access_token) {
     throw new Error(
-      token.error_description || token.error || `OAuth HTTP ${tokenResponse.status}`,
+      token.error_description ||
+        token.error ||
+        `OAuth HTTP ${tokenResponse.status}`,
     );
   }
 
-  const sendResponse = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
-    method: 'POST',
-    headers: {
-      authorization: `Bearer ${token.access_token}`,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      message: {
-        subject: message.subject,
-        body: {
-          contentType: message.html ? 'HTML' : 'Text',
-          content: message.html ?? message.text,
-        },
-        toRecipients: [
-          {
-            emailAddress: {
-              address: message.to,
-            },
-          },
-        ],
-        replyTo: [
-          {
-            emailAddress: {
-              address: replyTo,
-            },
-          },
-        ],
-        internetMessageHeaders: [
-          {
-            name: 'X-Nsabores-From',
-            value: from,
-          },
-        ],
+  const sendResponse = await fetch(
+    'https://graph.microsoft.com/v1.0/me/sendMail',
+    {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${token.access_token}`,
+        'content-type': 'application/json',
       },
-      saveToSentItems: true,
-    }),
-  });
+      body: JSON.stringify({
+        message: {
+          subject: message.subject,
+          body: {
+            contentType: message.html ? 'HTML' : 'Text',
+            content: message.html ?? message.text,
+          },
+          toRecipients: [
+            {
+              emailAddress: {
+                address: message.to,
+              },
+            },
+          ],
+          replyTo: [
+            {
+              emailAddress: {
+                address: replyTo,
+              },
+            },
+          ],
+          internetMessageHeaders: [
+            {
+              name: 'X-Nsabores-From',
+              value: from,
+            },
+          ],
+        },
+        saveToSentItems: true,
+      }),
+    },
+  );
 
   if (!sendResponse.ok) {
     const detail = await sendResponse.text();
-    throw new Error(`Microsoft Graph HTTP ${sendResponse.status}: ${detail.slice(0, 300)}`);
+    throw new Error(
+      `Microsoft Graph HTTP ${sendResponse.status}: ${detail.slice(0, 300)}`,
+    );
   }
 
   logger.log(
