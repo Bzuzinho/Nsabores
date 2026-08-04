@@ -1,7 +1,11 @@
 'use client';
 
 import { ApiClient } from '@nsabores/api-client';
-import type { CommerceOrder, DeliveryMethod } from '@nsabores/types';
+import type {
+  CommerceOrder,
+  DeliveryMethod,
+  ManualPaymentPreference,
+} from '@nsabores/types';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
@@ -22,11 +26,25 @@ type CheckoutOrder = CommerceOrder & {
   paymentFlowMode?: 'manual' | 'automatic';
 };
 
+const paymentPreferences: Array<{
+  value: ManualPaymentPreference;
+  label: string;
+}> = [
+  {
+    value: 'OPERATOR_CONTACT',
+    label: 'Ser contactado pela Nsabores para combinar o pagamento',
+  },
+  { value: 'PAY_ON_DELIVERY', label: 'Pagamento contra entrega' },
+  { value: 'PAY_ON_PICKUP', label: 'Pagamento no momento da recolha' },
+  { value: 'CARRIER_COD', label: 'Envio à cobrança' },
+];
+
 export default function CheckoutPage() {
   const { user } = useAuth();
   const { cart, refreshCart } = useShop();
   const router = useRouter();
   const [methods, setMethods] = useState<DeliveryMethod[]>([]);
+  const [selectedMethodId, setSelectedMethodId] = useState('');
   const [loyalty, setLoyalty] = useState<LoyaltyAccount | null>(null);
   const [points, setPoints] = useState(0);
   const [giftCardCode, setGiftCardCode] = useState('');
@@ -34,7 +52,10 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    void api.get<DeliveryMethod[]>('/v1/delivery-methods').then(setMethods);
+    void api.get<DeliveryMethod[]>('/v1/delivery-methods').then((available) => {
+      setMethods(available);
+      setSelectedMethodId((current) => current || available[0]?.id || '');
+    });
   }, []);
 
   useEffect(() => {
@@ -68,6 +89,9 @@ export default function CheckoutPage() {
         shippingAddress: address,
         billingAddress: address,
         deliveryMethodId: String(data.get('deliveryMethodId')),
+        manualPaymentPreference: String(
+          data.get('manualPaymentPreference'),
+        ) as ManualPaymentPreference,
         termsAccepted: data.get('termsAccepted') === 'on',
         privacyAccepted: data.get('privacyAccepted') === 'on',
         marketingConsent: data.get('marketingConsent') === 'on',
@@ -96,12 +120,15 @@ export default function CheckoutPage() {
     }
   }
 
-  const selected = methods[0];
+  const selected =
+    methods.find(({ id }) => id === selectedMethodId) ?? methods[0];
+  const shippingQuotePending = selected?.code === 'case-by-case';
   const hasFreeShippingPromotion = (cart?.discounts ?? []).some(
     (discount) => discount.freeShipping,
   );
   const shipping =
     selected &&
+    !shippingQuotePending &&
     !hasFreeShippingPromotion &&
     (selected.freeShippingAboveCents === null ||
       (cart?.subtotalCents ?? 0) < selected.freeShippingAboveCents)
@@ -126,9 +153,8 @@ export default function CheckoutPage() {
         <p className="eyebrow">Pedido de encomenda</p>
         <h1>Dados de entrega</h1>
         <p>
-          A encomenda segue para preparação assim que for confirmada. O
-          pagamento será combinado diretamente entre a Nsabores e o cliente e
-          posteriormente confirmado pela empresa.
+          A Nsabores confirma pessoalmente o pagamento e a solução de entrega.
+          Não existe cobrança digital automática nesta fase.
         </p>
         {!cart?.items.length && <p>O carrinho está vazio.</p>}
         <label>
@@ -183,27 +209,40 @@ export default function CheckoutPage() {
           <input name="taxNumber" pattern="\d{9}" />
         </label>
         <label>
-          Método de entrega
+          Entrega
           <select
             name="deliveryMethodId"
             required
-            onChange={(event) => {
-              const method = methods.find(
-                ({ id }) => id === event.target.value,
-              );
-              if (method)
-                setMethods([
-                  method,
-                  ...methods.filter(({ id }) => id !== method.id),
-                ]);
-            }}
+            value={selectedMethodId}
+            onChange={(event) => setSelectedMethodId(event.target.value)}
           >
             {methods.map((method) => (
               <option key={method.id} value={method.id}>
-                {method.name} — {formatPrice(method.priceCents)}
+                {method.name}
+                {method.code === 'case-by-case'
+                  ? ' — valor a confirmar'
+                  : ` — ${formatPrice(method.priceCents)}`}
               </option>
             ))}
           </select>
+        </label>
+        <label>
+          Preferência de pagamento
+          <select
+            name="manualPaymentPreference"
+            defaultValue="OPERATOR_CONTACT"
+            required
+          >
+            {paymentPreferences.map((preference) => (
+              <option key={preference.value} value={preference.value}>
+                {preference.label}
+              </option>
+            ))}
+          </select>
+          <small>
+            A preferência será confirmada pelo operador antes da produção ou
+            expedição.
+          </small>
         </label>
 
         {user && loyalty && (
@@ -266,7 +305,11 @@ export default function CheckoutPage() {
             ))}
           <p>
             Entrega:{' '}
-            {hasFreeShippingPromotion ? 'Grátis' : formatPrice(shipping)}
+            {shippingQuotePending
+              ? 'A confirmar pelo operador'
+              : hasFreeShippingPromotion
+                ? 'Grátis'
+                : formatPrice(shipping)}
           </p>
           {requestedPoints > 0 && (
             <p>Pontos solicitados: −{formatPrice(requestedPoints)}</p>
@@ -275,11 +318,15 @@ export default function CheckoutPage() {
             <p>Vale-oferta: valor confirmado no servidor</p>
           )}
           <p>
-            <strong>Total estimado: {formatPrice(estimatedTotal)}</strong>
+            <strong>
+              {shippingQuotePending ? 'Total provisório' : 'Total estimado'}:{' '}
+              {formatPrice(estimatedTotal)}
+            </strong>
           </p>
           <small>
-            O valor final é confirmado no servidor. O pagamento não é cobrado
-            automaticamente.
+            {shippingQuotePending
+              ? 'O custo de transporte será acrescentado depois de confirmado consigo.'
+              : 'O valor final é confirmado pela Nsabores. O pagamento não é cobrado automaticamente.'}
           </small>
         </div>
 
@@ -290,6 +337,9 @@ export default function CheckoutPage() {
         >
           {submitting ? 'A confirmar encomenda…' : 'Confirmar encomenda'}
         </button>
+        <p>
+          Dúvidas: <a href="mailto:nsabores@outlook.pt">nsabores@outlook.pt</a>
+        </p>
       </form>
     </main>
   );

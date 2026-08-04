@@ -2,48 +2,72 @@
 
 ## Regra operacional atual
 
-O pagamento não é cobrado automaticamente pela plataforma.
-
-A configuração por defeito é:
+A plataforma não cobra pagamentos digitais. A configuração obrigatória nesta fase é:
 
 ```text
 PAYMENT_FLOW_MODE=manual
 ```
+
+O checkout recolhe uma preferência do cliente, que será sempre validada pela equipa:
+
+- `OPERATOR_CONTACT`: contacto antes da produção ou envio para combinar o pagamento;
+- `PAY_ON_DELIVERY`: pagamento contra entrega;
+- `PAY_ON_PICKUP`: pagamento no momento da recolha;
+- `CARRIER_COD`: envio à cobrança.
+
+A preferência não confirma automaticamente condições comerciais. O operador pode ajustar a solução depois de contactar o cliente.
 
 Quando o cliente confirma uma encomenda:
 
 1. a encomenda é criada;
 2. o stock é reservado;
 3. pontos e vale-oferta utilizados são consolidados;
-4. a encomenda passa imediatamente para `PROCESSING`;
+4. a encomenda passa para `PROCESSING`;
 5. o pagamento permanece `PENDING` quando existe valor externo a receber;
-6. a empresa combina o método de pagamento diretamente com o cliente;
-7. o management marca manualmente o pagamento como recebido;
-8. o pagamento passa para `PAID` sem alterar o estado de produção;
-9. os pontos ganhos pela compra são calculados apenas após essa confirmação.
+6. a preferência de cobrança fica guardada em `paymentTermsSnapshot`;
+7. a empresa confirma diretamente com o cliente pagamento, produção e entrega;
+8. o Management marca manualmente o pagamento como recebido;
+9. o pagamento passa para `PAID` sem alterar automaticamente o estado de produção;
+10. os pontos ganhos pela compra são calculados apenas após essa confirmação.
 
-Produção e pagamento são, portanto, estados independentes.
+Produção, pagamento e transporte são estados independentes.
+
+## Transporte tratado caso a caso
+
+Os métodos públicos ativos são:
+
+- `case-by-case`: transporte e respetivo custo a confirmar pelo operador;
+- `local-pickup`: recolha local sem custo automático.
+
+O antigo preço standard fica desativado. Quando a encomenda usa `case-by-case`:
+
+- o checkout apresenta um total provisório sem transporte;
+- `shippingQuoteStatus` fica em `PENDING` dentro de `paymentTermsSnapshot`;
+- o operador introduz o custo real no detalhe da encomenda;
+- o total da encomenda e o valor esperado no módulo de recebimentos são atualizados;
+- o custo não pode ser alterado depois de o pagamento estar confirmado.
 
 ## Management
 
-No detalhe da encomenda existe a ação:
+No detalhe da encomenda existem as ações:
 
 ```text
+Confirmar custo de transporte
 Marcar pagamento como recebido
 ```
 
-A ação permite guardar:
+A confirmação do pagamento permite guardar:
 
 - método de pagamento;
 - referência ou comprovativo;
 - nota interna;
 - utilizador que confirmou a operação.
 
-A confirmação é idempotente.
+As operações são idempotentes sempre que aplicável.
 
 ## Pontos e vales usados na compra
 
-Como a encomenda segue imediatamente para produção, os pontos e o saldo de vale utilizados são consumidos no momento em que a encomenda é aceite.
+Como a encomenda segue para produção, os pontos e o saldo de vale utilizados são consumidos no momento em que a encomenda é aceite.
 
 Se a encomenda for cancelada antes do pagamento, esses benefícios são devolvidos através do ledger.
 
@@ -61,26 +85,20 @@ O vale apenas é emitido depois de a empresa marcar manualmente o pedido como pa
 
 O código integral é apresentado uma única vez nessa operação.
 
-## Automatização futura
+## Pagamentos digitais
 
-A implementação automática continua preparada. Quando existir provider e processo operacional aprovado, pode ser ativada por configuração:
+Os adapters automáticos permanecem no código apenas para evolução futura e testes isolados. Não são apresentados no checkout nem iniciados quando `PAYMENT_FLOW_MODE=manual`.
 
-```text
-PAYMENT_FLOW_MODE=automatic
-```
-
-Nesse modo, permanecem disponíveis:
-
-- criação de sessão de pagamento;
-- provider mock/adapter futuro;
-- webhooks idempotentes;
-- confirmação automática;
-- reembolsos através do provider.
-
-A ativação futura não exige substituir o modelo de encomendas, apenas alterar a configuração e validar o provider real.
+Qualquer ativação futura exige uma decisão de negócio explícita, configuração segura e novos testes de aceitação.
 
 ## Deployment
 
-Não é necessário definir `PAYMENT_FLOW_MODE` para obter o comportamento atual: `manual` é o valor por defeito.
+Em produção devem ser mantidas:
 
-As migrations continuam controladas e não são executadas automaticamente no `start:prod`.
+```text
+PAYMENT_FLOW_MODE=manual
+MAIL_FROM_ADDRESS=nsabores@outlook.pt
+MAIL_REPLY_TO=nsabores@outlook.pt
+```
+
+As migrations e os seeds continuam controlados e não são executados automaticamente no `start:prod`.

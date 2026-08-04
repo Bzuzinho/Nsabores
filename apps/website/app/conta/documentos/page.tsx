@@ -49,11 +49,13 @@ export default function AccountDocumentsPage() {
   return (
     <main id="conteudo" className="account-page">
       <section className="account-card">
-        <p className="eyebrow">Documentos</p>
+        <p className="eyebrow">Documentos de demonstração</p>
         <h1>Os seus documentos comerciais</h1>
-        <p>
-          Consulte os documentos associados aos seus pagamentos. A representação
-          apresentada na conta não substitui faturação certificada.
+        <p role="alert">
+          <strong>DEMONSTRAÇÃO — SEM VALOR FISCAL.</strong> Estes documentos
+          simulam o fluxo de faturação da plataforma, mas não foram emitidos por
+          software certificado e não devem ser usados para fins fiscais ou
+          contabilísticos.
         </p>
         {error && <p role="alert">{error}</p>}
         {!documents ? (

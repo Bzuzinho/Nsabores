@@ -44,6 +44,28 @@ type AuthMe = {
   role: string;
 };
 
+type PublicProduct = {
+  id: string;
+};
+
+type DeliveryMethod = {
+  id: string;
+  code: string;
+};
+
+type ManualOrder = {
+  id: string;
+  status: string;
+  paymentStatus: string;
+  shippingCents: number;
+  totalCents: number;
+  paymentTermsSnapshot?: {
+    preference?: string;
+    shippingQuoteStatus?: string;
+    shippingQuoteCents?: number | null;
+  } | null;
+};
+
 function cookieHeader(response: Response) {
   const headers = response.headers as SetCookieHeaders;
   const values = headers.getSetCookie?.() ?? [];
@@ -71,6 +93,105 @@ async function login(baseUrl: string, email: string, password: string) {
   return cookie;
 }
 
+async function validateManualCheckout(
+  baseUrl: string,
+  staffCookie: string,
+  products: PublicProduct[],
+) {
+  const deliveryResponse = await fetch(`${baseUrl}/v1/delivery-methods`);
+  assert.equal(deliveryResponse.status, 200);
+  const deliveryMethods = (await deliveryResponse.json()) as DeliveryMethod[];
+  const caseByCase = deliveryMethods.find(
+    ({ code }) => code === 'case-by-case',
+  );
+  assert.ok(caseByCase, 'Método de transporte caso a caso não disponível.');
+  assert.ok(products[0]?.id, 'Produto público não disponível para checkout.');
+
+  const cartResponse = await fetch(`${baseUrl}/v1/cart/items`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ productId: products[0].id, quantity: 1 }),
+  });
+  assert.equal(cartResponse.status, 201);
+  const cartCookie = cookieHeader(cartResponse);
+  assert.match(cartCookie, /nsabores_cart=/);
+
+  const checkoutResponse = await fetch(`${baseUrl}/v1/checkout`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      cookie: cartCookie,
+    },
+    body: JSON.stringify({
+      email: 'e2e.manual@example.invalid',
+      customerName: 'Cliente Manual E2E',
+      phone: '+351912345678',
+      shippingAddress: {
+        firstName: 'Cliente',
+        lastName: 'Manual',
+        line1: 'Rua de Teste 1',
+        postalCode: '1000-001',
+        city: 'Lisboa',
+        countryCode: 'PT',
+      },
+      billingAddress: {
+        firstName: 'Cliente',
+        lastName: 'Manual',
+        line1: 'Rua de Teste 1',
+        postalCode: '1000-001',
+        city: 'Lisboa',
+        countryCode: 'PT',
+      },
+      deliveryMethodId: caseByCase.id,
+      manualPaymentPreference: 'CARRIER_COD',
+      termsAccepted: true,
+      privacyAccepted: true,
+      idempotencyKey: `e2e-manual-${Date.now()}`,
+    }),
+  });
+  assert.equal(checkoutResponse.status, 201);
+  const order = (await checkoutResponse.json()) as ManualOrder;
+  assert.equal(order.status, 'PROCESSING');
+  assert.equal(order.paymentStatus, 'PENDING');
+  assert.equal(order.shippingCents, 0);
+  assert.equal(order.paymentTermsSnapshot?.preference, 'CARRIER_COD');
+  assert.equal(order.paymentTermsSnapshot?.shippingQuoteStatus, 'PENDING');
+
+  const digitalPaymentResponse = await fetch(
+    `${baseUrl}/v1/orders/${order.id}/payment`,
+    {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        cookie: cartCookie,
+      },
+      body: JSON.stringify({ idempotencyKey: `e2e-payment-${Date.now()}` }),
+    },
+  );
+  assert.equal(digitalPaymentResponse.status, 409);
+
+  const shippingResponse = await fetch(
+    `${baseUrl}/v1/admin/orders/${order.id}/shipping-quote`,
+    {
+      method: 'PATCH',
+      headers: {
+        'content-type': 'application/json',
+        cookie: staffCookie,
+      },
+      body: JSON.stringify({
+        amountCents: 725,
+        note: 'Transportadora escolhida caso a caso no E2E.',
+      }),
+    },
+  );
+  assert.equal(shippingResponse.status, 200);
+  const quoted = (await shippingResponse.json()) as ManualOrder;
+  assert.equal(quoted.shippingCents, 725);
+  assert.equal(quoted.totalCents, order.totalCents + 725);
+  assert.equal(quoted.paymentTermsSnapshot?.shippingQuoteStatus, 'CONFIRMED');
+  assert.equal(quoted.paymentTermsSnapshot?.shippingQuoteCents, 725);
+}
+
 async function main() {
   const password = process.env.DEMO_USER_PASSWORD;
   if (!password) throw new Error('DEMO_USER_PASSWORD é obrigatória.');
@@ -95,7 +216,7 @@ async function main() {
     const publicCatalog = await fetch(`${baseUrl}/v1/products?limit=100`);
     assert.equal(publicCatalog.status, 200);
     const publicProducts = (await publicCatalog.json()) as {
-      data?: unknown[];
+      data?: PublicProduct[];
     };
     assert.ok((publicProducts.data?.length ?? 0) >= 12);
 
@@ -120,6 +241,12 @@ async function main() {
       headers: { cookie: customerCookie },
     });
     assert.equal(forbidden.status, 403);
+
+    await validateManualCheckout(
+      baseUrl,
+      staffCookie,
+      publicProducts.data ?? [],
+    );
 
     const responses = new Map<string, unknown>();
     for (const endpoint of endpoints) {
@@ -162,7 +289,7 @@ async function main() {
     assert.ok(production.length >= 3);
 
     console.log(
-      `E2E validado: autenticação, permissões, catálogo público, ${endpoints.length} endpoints administrativos, ${productCount} produtos, ${categoryCount} categorias e ${orderCount} encomendas.`,
+      `E2E validado: autenticação, permissões, checkout manual, transporte caso a caso, catálogo público, ${endpoints.length} endpoints administrativos, ${productCount} produtos, ${categoryCount} categorias e ${orderCount} encomendas.`,
     );
   } finally {
     await app.close();

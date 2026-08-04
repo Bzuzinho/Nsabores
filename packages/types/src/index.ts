@@ -117,6 +117,19 @@ export type PaymentStatus =
   | 'REFUNDED'
   | 'PARTIALLY_REFUNDED';
 
+export type ManualPaymentPreference =
+  'OPERATOR_CONTACT' | 'PAY_ON_DELIVERY' | 'PAY_ON_PICKUP' | 'CARRIER_COD';
+
+export interface ManualOrderTerms {
+  flow?: 'MANUAL' | 'AUTOMATIC';
+  preference?: ManualPaymentPreference;
+  shippingQuoteStatus?: 'PENDING' | 'CONFIRMED' | 'NOT_REQUIRED';
+  shippingQuoteCents?: number | null;
+  shippingQuoteNote?: string | null;
+  shippingQuoteConfirmedBy?: string;
+  shippingQuoteConfirmedAt?: string;
+}
+
 export interface AppliedDiscount {
   promotionId?: string | null;
   couponId?: string | null;
@@ -188,6 +201,7 @@ export interface CommerceOrder {
   shippingAddress: Record<string, unknown>;
   customerNotes: string | null;
   internalNotes?: string | null;
+  paymentTermsSnapshot?: ManualOrderTerms | null;
   createdAt: string;
   deliveryMethod: DeliveryMethod;
   discounts?: AppliedDiscount[];

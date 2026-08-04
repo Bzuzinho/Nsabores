@@ -1,6 +1,11 @@
 'use client';
 
-import type { CommerceOrder, OrderStatus, Paginated } from '@nsabores/types';
+import type {
+  CommerceOrder,
+  ManualPaymentPreference,
+  OrderStatus,
+  Paginated,
+} from '@nsabores/types';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { managementApi } from './management-auth';
@@ -9,6 +14,18 @@ const money = (cents: number) =>
   new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(
     cents / 100,
   );
+
+const paymentPreferenceLabels: Record<ManualPaymentPreference, string> = {
+  OPERATOR_CONTACT: 'Contactar para combinar',
+  PAY_ON_DELIVERY: 'Contra entrega',
+  PAY_ON_PICKUP: 'Pagamento na recolha',
+  CARRIER_COD: 'Envio à cobrança',
+};
+
+const paymentPreference = (order: CommerceOrder) => {
+  const preference = order.paymentTermsSnapshot?.preference;
+  return preference ? paymentPreferenceLabels[preference] : 'A combinar';
+};
 
 export function OrdersAdmin() {
   const [orders, setOrders] = useState<CommerceOrder[]>([]);
@@ -27,7 +44,17 @@ export function OrdersAdmin() {
 
   function exportCsv() {
     const rows = [
-      ['Número', 'Data', 'Cliente', 'Email', 'Estado', 'Pagamento', 'Total'],
+      [
+        'Número',
+        'Data',
+        'Cliente',
+        'Email',
+        'Estado',
+        'Pagamento',
+        'Preferência de cobrança',
+        'Transporte',
+        'Total',
+      ],
       ...orders.map((order) => [
         order.number,
         order.createdAt,
@@ -35,6 +62,8 @@ export function OrdersAdmin() {
         order.email,
         order.status,
         order.paymentStatus,
+        paymentPreference(order),
+        order.paymentTermsSnapshot?.shippingQuoteStatus ?? 'NOT_REQUIRED',
         String(order.totalCents),
       ]),
     ];
@@ -55,7 +84,10 @@ export function OrdersAdmin() {
       <header className="admin-header">
         <div>
           <h1>Encomendas</h1>
-          <p>Produção independente da confirmação manual do pagamento.</p>
+          <p>
+            Pagamento e transporte são confirmados manualmente pela equipa
+            Nsabores.
+          </p>
         </div>
         <button className="admin-primary" onClick={exportCsv}>
           Exportar CSV
@@ -115,7 +147,8 @@ export function OrdersAdmin() {
               <th>Número</th>
               <th>Cliente</th>
               <th>Produção</th>
-              <th>Pagamento</th>
+              <th>Cobrança</th>
+              <th>Transporte</th>
               <th>Total</th>
               <th></th>
             </tr>
@@ -134,7 +167,15 @@ export function OrdersAdmin() {
                   <small>{order.email}</small>
                 </td>
                 <td>{order.status}</td>
-                <td>{order.paymentStatus}</td>
+                <td>
+                  {paymentPreference(order)}
+                  <small>{order.paymentStatus}</small>
+                </td>
+                <td>
+                  {order.paymentTermsSnapshot?.shippingQuoteStatus === 'PENDING'
+                    ? 'A confirmar'
+                    : money(order.shippingCents)}
+                </td>
                 <td>{money(order.totalCents)}</td>
                 <td>
                   <Link href={`/encomendas/${order.id}`}>Abrir</Link>
@@ -176,10 +217,43 @@ export function OrderAdmin({ id }: { id: string }) {
     }
   };
 
+  const confirmShipping = async () => {
+    const value = window.prompt(
+      'Custo de transporte em euros (ex.: 7,50):',
+      order.shippingCents ? (order.shippingCents / 100).toFixed(2) : '0,00',
+    );
+    if (value === null) return;
+    const normalized = value.replace(',', '.').trim();
+    const euros = Number(normalized);
+    if (!Number.isFinite(euros) || euros < 0) {
+      setError('Introduza um valor de transporte válido.');
+      return;
+    }
+    const note =
+      window.prompt('Transportadora, referência ou nota (opcional):', '') ?? '';
+    if (!window.confirm('Confirmar o custo de transporte desta encomenda?'))
+      return;
+    setError('');
+    try {
+      setOrder(
+        await managementApi.patch(`/v1/admin/orders/${id}/shipping-quote`, {
+          amountCents: Math.round(euros * 100),
+          note,
+        }),
+      );
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível confirmar o transporte.',
+      );
+    }
+  };
+
   const markPaid = async () => {
     const method = window.prompt(
-      'Método de pagamento (ex.: transferência, numerário, MB Way):',
-      'transferência',
+      'Método de pagamento (ex.: transferência, numerário na entrega, recolha, à cobrança):',
+      paymentPreference(order),
     );
     if (method === null) return;
     const reference =
@@ -204,6 +278,9 @@ export function OrderAdmin({ id }: { id: string }) {
     }
   };
 
+  const shippingPending =
+    order.paymentTermsSnapshot?.shippingQuoteStatus === 'PENDING';
+
   return (
     <>
       <header className="admin-header">
@@ -220,6 +297,25 @@ export function OrderAdmin({ id }: { id: string }) {
           Produção: <strong>{order.status}</strong> · Pagamento:{' '}
           <strong>{order.paymentStatus}</strong>
         </p>
+        <p>
+          Preferência do cliente: <strong>{paymentPreference(order)}</strong>
+        </p>
+        <p>
+          Entrega: <strong>{order.deliveryMethod.name}</strong> · Transporte:{' '}
+          <strong>
+            {shippingPending ? 'A confirmar' : money(order.shippingCents)}
+          </strong>
+        </p>
+        {shippingPending && order.paymentStatus === 'PENDING' && (
+          <p>
+            <button
+              className="admin-primary"
+              onClick={() => void confirmShipping()}
+            >
+              Confirmar custo de transporte
+            </button>
+          </p>
+        )}
         {order.paymentStatus === 'PENDING' && (
           <p>
             <button className="admin-primary" onClick={() => void markPaid()}>
@@ -233,14 +329,18 @@ export function OrderAdmin({ id }: { id: string }) {
             {money(item.totalCents)}
           </p>
         ))}
+        <p>Morada: {JSON.stringify(order.shippingAddress)}</p>
         <p>
-          Entrega: {order.deliveryMethod.name}
-          <br />
-          Morada: {JSON.stringify(order.shippingAddress)}
+          <strong>
+            {shippingPending ? 'Total provisório' : 'Total a receber'}:{' '}
+            {money(order.totalCents)}
+          </strong>
         </p>
-        <p>
-          <strong>Total a receber: {money(order.totalCents)}</strong>
-        </p>
+        {order.paymentTermsSnapshot?.shippingQuoteNote && (
+          <p>
+            Nota de transporte: {order.paymentTermsSnapshot.shippingQuoteNote}
+          </p>
+        )}
         <label>
           Novo estado de produção
           <select
