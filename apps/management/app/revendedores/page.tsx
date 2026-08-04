@@ -5,6 +5,7 @@ export default function Page() {
       title="Revendedores"
       endpoint="business-accounts"
       description="Contas B2B, estados e condições comerciais."
+      detailBasePath="/revendedores"
     />
   );
 }

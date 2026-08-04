@@ -16,9 +16,14 @@ export const navigation = [
 interface MobileNavigationProps {
   onClose: () => void;
   open: boolean;
+  showManagement?: boolean;
 }
 
-export function MobileNavigation({ onClose, open }: MobileNavigationProps) {
+export function MobileNavigation({
+  onClose,
+  open,
+  showManagement = false,
+}: MobileNavigationProps) {
   return (
     <>
       <nav
@@ -43,6 +48,15 @@ export function MobileNavigation({ onClose, open }: MobileNavigationProps) {
             {label}
           </Link>
         ))}
+        {showManagement && (
+          <Link
+            className="management-access-link"
+            href="/gestao"
+            onClick={onClose}
+          >
+            Entrar na gestão
+          </Link>
+        )}
       </nav>
       <button
         className={`page-backdrop ${open ? 'page-backdrop-visible' : ''}`}

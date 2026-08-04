@@ -1,6 +1,7 @@
 # API
 
-Serviço central previsto para `api.nsabores.pt`, alojado no Railway.
+Serviço central alojado no Railway e exposto publicamente pelo website em
+`www.nsabores.pt/v1`.
 
 Responsabilidades:
 

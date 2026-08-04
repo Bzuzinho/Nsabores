@@ -22,27 +22,30 @@
 - `Postgres`: serviço gerido pelo Railway;
 - Node.js 22, pnpm 11 e Turborepo.
 
-## Domínios definitivos
+## Endereço público definitivo
 
 A topologia aprovada é:
 
-| Endereço                  | Serviço Railway |
-| ------------------------- | --------------- |
-| `https://www.nsabores.pt` | `website`       |
-| `https://app.nsabores.pt` | `management`    |
-| `https://api.nsabores.pt` | `api`           |
+| Endereço                         | Serviço Railway           |
+| -------------------------------- | ------------------------- |
+| `https://www.nsabores.pt`        | `website`                 |
+| `https://www.nsabores.pt/gestao` | `management`, via website |
+| `https://www.nsabores.pt/v1`     | `api`, via website        |
 
-O domínio raiz `https://nsabores.pt` deve redirecionar para `https://www.nsabores.pt`. O `www` nunca aponta para a API nem para o PostgreSQL.
+O domínio raiz `https://nsabores.pt` deve redirecionar para `https://www.nsabores.pt`.
+O `www` aponta apenas para o serviço `website`, que encaminha os dois caminhos
+internos para os respetivos serviços Railway. A base de dados nunca é pública.
 
 Depois da associação dos domínios no Railway, as variáveis de produção devem ficar alinhadas:
 
 ```text
 WEBSITE_URL=https://www.nsabores.pt
-MANAGEMENT_URL=https://app.nsabores.pt
-CORS_ORIGINS=https://www.nsabores.pt,https://app.nsabores.pt
+MANAGEMENT_URL=https://www.nsabores.pt/gestao
+CORS_ORIGINS=https://www.nsabores.pt
 NEXT_PUBLIC_APP_URL=https://www.nsabores.pt
-NEXT_PUBLIC_API_URL=https://api.nsabores.pt
-API_URL=https://api.nsabores.pt
+NEXT_PUBLIC_API_URL=
+API_ORIGIN=https://<servico-api>.up.railway.app
+MANAGEMENT_ORIGIN=https://<servico-management>.up.railway.app
 AUTH_COOKIE_SECURE=true
 ```
 
@@ -59,12 +62,12 @@ AUTH_COOKIE_SECURE=true
 
 O projeto Railway contém `website`, `management`, `api` e `Postgres` no ambiente de produção.
 
-| Serviço      | Config File                | Healthcheck   | Variáveis principais                                      |
-| ------------ | -------------------------- | ------------- | --------------------------------------------------------- |
-| `website`    | `/railway/website.json`    | `/api/health` | `NODE_ENV`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_API_URL`  |
-| `management` | `/railway/management.json` | `/api/health` | `NODE_ENV`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_API_URL`  |
-| `api`        | `/railway/api.json`        | `/health`     | `NODE_ENV`, `DATABASE_URL`, `CORS_ORIGINS`, segredos auth |
-| `Postgres`   | imagem gerida Railway      | serviço       | variáveis geridas pelo Railway                            |
+| Serviço      | Config File                | Healthcheck          | Variáveis principais                                     |
+| ------------ | -------------------------- | -------------------- | -------------------------------------------------------- |
+| `website`    | `/railway/website.json`    | `/api/health`        | `NEXT_PUBLIC_APP_URL`, `API_ORIGIN`, `MANAGEMENT_ORIGIN` |
+| `management` | `/railway/management.json` | `/gestao/api/health` | `NODE_ENV`, `NEXT_PUBLIC_API_URL` vazio em produção      |
+| `api`        | `/railway/api.json`        | `/health`            | `DATABASE_URL`, `CORS_ORIGINS`, segredos auth            |
+| `Postgres`   | imagem gerida Railway      | serviço              | variáveis geridas pelo Railway                           |
 
 `DATABASE_URL` deve usar a referência do serviço Postgres. `PORT` é fornecida pelo Railway e não deve ser definida manualmente.
 

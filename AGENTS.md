@@ -36,9 +36,8 @@ scripts/
 
 ## Infraestrutura
 
-- `www.nsabores.pt`: website e loja;
-- `app.nsabores.pt`: gestão interna;
-- `api.nsabores.pt`: API;
+- `www.nsabores.pt`: website, loja, gestão em `/gestao` e API em `/v1`;
+- `management` e `api`: serviços internos Railway encaminhados pelo website;
 - Railway: aplicações e PostgreSQL;
 - Domínios.pt: domínio e DNS.
 

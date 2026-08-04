@@ -23,7 +23,7 @@ Responsabilidades:
 
 ### Aplicação de gestão
 
-Domínio previsto: `https://app.nsabores.pt`
+Caminho público: `https://www.nsabores.pt/gestao`
 
 Responsabilidades:
 
@@ -40,7 +40,7 @@ Responsabilidades:
 
 ### API
 
-Domínio previsto: `https://api.nsabores.pt`
+Caminho público: `https://www.nsabores.pt/v1`
 
 Responsabilidades:
 
@@ -85,6 +85,13 @@ scripts/
 - GitHub Actions para validação contínua;
 - deploy de produção apenas após confirmação;
 - segredos apenas em variáveis de ambiente.
+
+## Entrada pública única
+
+O serviço `website` funciona como gateway da experiência pública. Encaminha
+`/gestao` para a aplicação de gestão e `/v1` para a API, mantendo três serviços
+independentes no Railway sem exigir três domínios registados. A gestão usa o
+`basePath` `/gestao`; website e gestão consomem a API pela mesma origem.
 
 ## Princípios
 

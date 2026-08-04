@@ -1,6 +1,7 @@
 # Aplicação de Gestão
 
-Aplicação interna prevista para `app.nsabores.pt`.
+Aplicação interna servida em `www.nsabores.pt/gestao`, com `basePath` próprio e
+encaminhamento pelo website para o serviço `management` no Railway.
 
 Responsabilidades:
 

@@ -5,17 +5,19 @@
 Configurar sem versionar valores reais:
 
 - API: `DATABASE_URL`, `CORS_ORIGINS` e variáveis `AUTH_*`;
-- website: `API_URL` e `NEXT_PUBLIC_API_URL`;
-- management: `NEXT_PUBLIC_API_URL` para o cliente autenticado.
+- website: `API_URL`, `API_ORIGIN`, `MANAGEMENT_ORIGIN` e
+  `NEXT_PUBLIC_API_URL` vazio em produção;
+- management: `NEXT_PUBLIC_API_URL` vazio em produção para usar a origem
+  pública única.
 
 ### Autenticação
 
 Configurar na API: `AUTH_ACCESS_TOKEN_SECRET`, `AUTH_ACCESS_TOKEN_TTL`,
-`AUTH_REFRESH_TOKEN_TTL`, `AUTH_COOKIE_DOMAIN=.nsabores.pt`,
+`AUTH_REFRESH_TOKEN_TTL`, `AUTH_COOKIE_DOMAIN` vazio,
 `AUTH_COOKIE_SECURE=true`, `PASSWORD_RESET_TOKEN_TTL`,
 `EMAIL_VERIFICATION_TOKEN_TTL`, `WEBSITE_URL` e `MANAGEMENT_URL`.
 
-Website e management recebem `NEXT_PUBLIC_API_URL`. As variáveis
+Website e management recebem `NEXT_PUBLIC_API_URL` vazio em produção. As variáveis
 `BOOTSTRAP_ADMIN_*` são temporárias: executar a seed uma vez e removê-las.
 `ADMIN_API_KEY` deixou de ser suportada.
 
@@ -24,11 +26,11 @@ Website e management recebem `NEXT_PUBLIC_API_URL`. As variáveis
 Os serviços de aplicação usam a raiz do monorepo. Em Railway, deixar **Root
 Directory** vazio e definir **Config File** com o caminho absoluto indicado:
 
-| Serviço      | Config File                | Build                                      | Start                                      | Healthcheck   |
-| ------------ | -------------------------- | ------------------------------------------ | ------------------------------------------ | ------------- |
-| `website`    | `/railway/website.json`    | `pnpm --filter @nsabores/website build`    | `pnpm --filter @nsabores/website start`    | `/api/health` |
-| `management` | `/railway/management.json` | `pnpm --filter @nsabores/management build` | `pnpm --filter @nsabores/management start` | `/api/health` |
-| `api`        | `/railway/api.json`        | `pnpm --filter @nsabores/api build`        | `pnpm --filter @nsabores/api start:prod`   | `/health`     |
+| Serviço      | Config File                | Build                                      | Start                                      | Healthcheck          |
+| ------------ | -------------------------- | ------------------------------------------ | ------------------------------------------ | -------------------- |
+| `website`    | `/railway/website.json`    | `pnpm --filter @nsabores/website build`    | `pnpm --filter @nsabores/website start`    | `/api/health`        |
+| `management` | `/railway/management.json` | `pnpm --filter @nsabores/management build` | `pnpm --filter @nsabores/management start` | `/gestao/api/health` |
+| `api`        | `/railway/api.json`        | `pnpm --filter @nsabores/api build`        | `pnpm --filter @nsabores/api start:prod`   | `/health`            |
 
 Os ficheiros selecionam Railpack, esperam até 300 segundos pelo health check e
 reiniciam no máximo três vezes em caso de falha. Os dois processos Next.js fazem
@@ -43,15 +45,17 @@ Não copiar valores resolvidos nem segredos para o repositório.
 ```text
 NODE_ENV=production
 NEXT_PUBLIC_APP_URL=https://<dominio-staging-website>
-NEXT_PUBLIC_API_URL=https://<dominio-staging-api>
+NEXT_PUBLIC_API_URL=
+API_ORIGIN=https://<dominio-staging-api>
+MANAGEMENT_ORIGIN=https://<dominio-staging-management>
 ```
 
 ### `management`
 
 ```text
 NODE_ENV=production
-NEXT_PUBLIC_APP_URL=https://<dominio-staging-management>
-NEXT_PUBLIC_API_URL=https://<dominio-staging-api>
+NEXT_PUBLIC_APP_URL=https://<dominio-staging-website>
+NEXT_PUBLIC_API_URL=
 ```
 
 ### `api`
@@ -59,7 +63,7 @@ NEXT_PUBLIC_API_URL=https://<dominio-staging-api>
 ```text
 NODE_ENV=production
 DATABASE_URL=${{Postgres.DATABASE_URL}}
-CORS_ORIGINS=https://<dominio-staging-website>,https://<dominio-staging-management>
+CORS_ORIGINS=https://<dominio-staging-website>
 ```
 
 Não definir `PORT`: Railway injeta-a automaticamente. `DATABASE_URL` e
@@ -99,8 +103,9 @@ Depois do CI e dos deployments concluírem:
 
 ```bash
 curl --fail --show-error https://<dominio-staging-website>/api/health
-curl --fail --show-error https://<dominio-staging-management>/api/health
+curl --fail --show-error https://<dominio-staging-management>/gestao/api/health
 curl --fail --show-error https://<dominio-staging-api>/health
+curl --fail --show-error https://<dominio-staging-website>/gestao/api/health
 ```
 
 Os três pedidos devem devolver HTTP 200. Nos detalhes do deployment, confirmar
