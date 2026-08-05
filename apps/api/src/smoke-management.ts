@@ -27,6 +27,7 @@ const endpoints = [
   '/v1/admin/stock',
   '/v1/admin/inventories',
   '/v1/admin/suppliers',
+  '/v1/admin/blog',
   '/v1/admin/purchases',
   '/v1/admin/business-accounts',
   '/v1/admin/reseller-applications',

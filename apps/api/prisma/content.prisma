@@ -1,0 +1,23 @@
+enum BlogPostStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model BlogPost {
+  id            String         @id @default(uuid()) @db.Uuid
+  slug          String         @unique
+  title         String
+  excerpt       String
+  content       String
+  coverImageUrl String
+  imageAlt      String
+  status        BlogPostStatus @default(DRAFT)
+  publishedAt   DateTime?
+  authorId      String?        @db.Uuid
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @default(now()) @updatedAt
+  author        User?          @relation("BlogPostAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([status, publishedAt])
+  @@index([createdAt])
+}

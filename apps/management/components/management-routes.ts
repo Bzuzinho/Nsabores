@@ -2,7 +2,7 @@ export type ManagementGroup =
   | 'Visão geral'
   | 'Vendas'
   | 'Operações'
-  | 'Oferta'
+  | 'Catálogo'
   | 'Compras e stock'
   | 'Clientes'
   | 'Administração';
@@ -25,6 +25,14 @@ export const managementRoutes: ManagementRoute[] = [
     group: 'Visão geral',
     keywords: ['dashboard', 'resumo', 'início'],
     pageFile: 'app/page.tsx',
+  },
+  {
+    href: '/vendas',
+    label: 'Painel de vendas',
+    description: 'Indicadores, canais e evolução comercial.',
+    group: 'Vendas',
+    keywords: ['dashboard', 'gráficos', 'vendas'],
+    pageFile: 'app/vendas/page.tsx',
   },
   {
     href: '/encomendas',
@@ -59,8 +67,8 @@ export const managementRoutes: ManagementRoute[] = [
   },
   {
     href: '/operacoes',
-    label: 'Centro de operações',
-    description: 'Atalhos e estado do trabalho operacional.',
+    label: 'Painel operacional',
+    description: 'Indicadores e estado do trabalho operacional.',
     group: 'Operações',
     pageFile: 'app/operacoes/page.tsx',
   },
@@ -101,45 +109,61 @@ export const managementRoutes: ManagementRoute[] = [
   },
   {
     href: '/catalogo',
-    label: 'Catálogo',
+    label: 'Painel de catálogo',
     description: 'Resumo do catálogo e da disponibilidade.',
-    group: 'Oferta',
+    group: 'Catálogo',
     pageFile: 'app/catalogo/page.tsx',
   },
   {
     href: '/catalogo/produtos',
     label: 'Produtos',
     description: 'Artigos, preços, imagens e disponibilidade.',
-    group: 'Oferta',
+    group: 'Catálogo',
     pageFile: 'app/catalogo/produtos/page.tsx',
   },
   {
     href: '/catalogo/categorias',
     label: 'Categorias',
     description: 'Organização do catálogo público.',
-    group: 'Oferta',
+    group: 'Catálogo',
     pageFile: 'app/catalogo/categorias/page.tsx',
   },
   {
     href: '/cabazes',
     label: 'Cabazes',
     description: 'Composições, opções e disponibilidade.',
-    group: 'Oferta',
+    group: 'Catálogo',
     pageFile: 'app/cabazes/page.tsx',
   },
   {
     href: '/promocoes',
     label: 'Promoções',
     description: 'Campanhas e regras promocionais.',
-    group: 'Oferta',
+    group: 'Catálogo',
     pageFile: 'app/promocoes/page.tsx',
   },
   {
     href: '/cupoes',
     label: 'Cupões',
     description: 'Códigos, utilização e validade.',
-    group: 'Oferta',
+    group: 'Catálogo',
     pageFile: 'app/cupoes/page.tsx',
+  },
+  {
+    href: '/blog',
+    label: 'Blog',
+    description: 'Artigos, rascunhos e publicação editorial.',
+    group: 'Catálogo',
+    keywords: ['conteúdos', 'artigos', 'notícias'],
+    pageFile: 'app/blog/page.tsx',
+  },
+  {
+    href: '/compras-stock',
+    label: 'Painel de compras e stock',
+    description: 'Indicadores de abastecimento e disponibilidade.',
+    group: 'Compras e stock',
+    keywords: ['dashboard', 'gráficos', 'abastecimento'],
+    pageFile: 'app/compras-stock/page.tsx',
   },
   {
     href: '/stock',
@@ -175,6 +199,14 @@ export const managementRoutes: ManagementRoute[] = [
     description: 'Ordens, custos e receções.',
     group: 'Compras e stock',
     pageFile: 'app/compras/page.tsx',
+  },
+  {
+    href: '/clientes',
+    label: 'Painel de clientes',
+    description: 'Indicadores de clientes particulares, Clube e B2B.',
+    group: 'Clientes',
+    keywords: ['dashboard', 'crm', 'gráficos'],
+    pageFile: 'app/clientes/page.tsx',
   },
   {
     href: '/clube',
@@ -254,6 +286,15 @@ export const managementRoutes: ManagementRoute[] = [
     pageFile: 'app/tabelas-precos/page.tsx',
   },
   {
+    href: '/administracao',
+    label: 'Painel de administração',
+    description: 'Utilizadores, conteúdos e controlo da plataforma.',
+    group: 'Administração',
+    keywords: ['dashboard', 'configuração', 'acessos'],
+    adminOnly: true,
+    pageFile: 'app/administracao/page.tsx',
+  },
+  {
     href: '/utilizadores',
     label: 'Utilizadores',
     description: 'Acessos, funções e estado das contas.',
@@ -268,11 +309,21 @@ export const managementGroups: ManagementGroup[] = [
   'Visão geral',
   'Vendas',
   'Operações',
-  'Oferta',
+  'Catálogo',
   'Compras e stock',
   'Clientes',
   'Administração',
 ];
+
+export const managementGroupDashboards: Record<ManagementGroup, string> = {
+  'Visão geral': '/',
+  Vendas: '/vendas',
+  Operações: '/operacoes',
+  Catálogo: '/catalogo',
+  'Compras e stock': '/compras-stock',
+  Clientes: '/clientes',
+  Administração: '/administracao',
+};
 
 export function normalizeManagementPath(pathname: string) {
   const path = pathname.replace(/^\/gestao(?=\/|$)/, '') || '/';

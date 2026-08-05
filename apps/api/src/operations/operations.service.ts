@@ -40,34 +40,61 @@ export class OperationsService {
 
   dashboard() {
     return this.prisma.$transaction(async (tx) => {
-      const [stock, purchases, applications, resellers, sales] =
-        await Promise.all([
-          tx.stockItem.findMany({
-            include: { product: { select: { priceCents: true } } },
-          }),
-          tx.purchaseOrder.count({
-            where: {
-              status: {
-                in: [
-                  PurchaseOrderStatus.SUBMITTED,
-                  PurchaseOrderStatus.CONFIRMED,
-                  PurchaseOrderStatus.PARTIALLY_RECEIVED,
-                ],
-              },
+      const [
+        stock,
+        purchases,
+        applications,
+        resellers,
+        sales,
+        ordersByStatus,
+        purchasesByStatus,
+        supportByStatus,
+        usersByRole,
+        blogByStatus,
+        productCount,
+        activeProductCount,
+        featuredProductCount,
+        categoryCount,
+      ] = await Promise.all([
+        tx.stockItem.findMany({
+          include: { product: { select: { priceCents: true } } },
+        }),
+        tx.purchaseOrder.count({
+          where: {
+            status: {
+              in: [
+                PurchaseOrderStatus.SUBMITTED,
+                PurchaseOrderStatus.CONFIRMED,
+                PurchaseOrderStatus.PARTIALLY_RECEIVED,
+              ],
             },
-          }),
-          tx.resellerApplication.count({
-            where: { status: ResellerApplicationStatus.PENDING },
-          }),
-          tx.businessAccount.count({
-            where: { status: BusinessAccountStatus.APPROVED },
-          }),
-          tx.order.groupBy({
-            by: ['salesChannel'],
-            _sum: { totalCents: true },
-            _count: true,
-          }),
-        ]);
+          },
+        }),
+        tx.resellerApplication.count({
+          where: { status: ResellerApplicationStatus.PENDING },
+        }),
+        tx.businessAccount.count({
+          where: { status: BusinessAccountStatus.APPROVED },
+        }),
+        tx.order.groupBy({
+          by: ['salesChannel'],
+          _sum: { totalCents: true },
+          _count: true,
+        }),
+        tx.order.groupBy({
+          by: ['status'],
+          _sum: { totalCents: true },
+          _count: true,
+        }),
+        tx.purchaseOrder.groupBy({ by: ['status'], _count: true }),
+        tx.supportCase.groupBy({ by: ['status'], _count: true }),
+        tx.user.groupBy({ by: ['role'], _count: true }),
+        tx.blogPost.groupBy({ by: ['status'], _count: true }),
+        tx.product.count(),
+        tx.product.count({ where: { isActive: true } }),
+        tx.product.count({ where: { isFeatured: true, isActive: true } }),
+        tx.category.count({ where: { isActive: true } }),
+      ]);
       return {
         outOfStock: stock.filter(
           (item) => item.onHandQuantity <= item.reservedQuantity,
@@ -89,6 +116,17 @@ export class OperationsService {
         pendingApplications: applications,
         activeResellers: resellers,
         sales,
+        ordersByStatus,
+        purchasesByStatus,
+        supportByStatus,
+        usersByRole,
+        blogByStatus,
+        catalog: {
+          products: productCount,
+          activeProducts: activeProductCount,
+          featuredProducts: featuredProductCount,
+          categories: categoryCount,
+        },
       };
     }, serializable);
   }
@@ -136,6 +174,25 @@ export class OperationsService {
       where: { id },
       data: { ...body, address: body.address as Prisma.InputJsonValue },
     });
+  }
+
+  async deleteSupplier(id: string) {
+    const supplier = await this.prisma.supplier.findUnique({
+      where: { id },
+      include: {
+        _count: { select: { products: true, purchaseOrders: true } },
+      },
+    });
+    if (!supplier) throw new NotFoundException('Fornecedor não encontrado.');
+    if (supplier._count.products || supplier._count.purchaseOrders) {
+      const updated = await this.prisma.supplier.update({
+        where: { id },
+        data: { isActive: false },
+      });
+      return { action: 'DEACTIVATED', supplier: updated };
+    }
+    await this.prisma.supplier.delete({ where: { id } });
+    return { action: 'DELETED' };
   }
 
   purchases() {

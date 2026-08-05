@@ -7,6 +7,8 @@ import { AdminBundlesController } from './bundles/bundles.controller';
 import { AdminClubController } from './club/club.controller';
 import { AdminOrdersController } from './commerce/commerce.controller';
 import { AdminCatalogController } from './catalog/admin-catalog.controller';
+import { AdminBlogController } from './content/content.controller';
+import { ContentService } from './content/content.service';
 import { FiscalController } from './fiscal/fiscal.controller';
 import { AdminFulfillmentController } from './fulfillment/fulfillment.controller';
 import { AdminGiftCardPurchaseController } from './loyalty/gift-card-purchase.controller';
@@ -20,6 +22,7 @@ import { ReceivablesController } from './receivables/receivables.controller';
 
 const expectedControllers = [
   AdminCatalogController,
+  AdminBlogController,
   AdminOrdersController,
   AdminOperationsController,
   AdminFulfillmentController,
@@ -50,5 +53,6 @@ describe('management API registration', () => {
       AppModule,
     ) as unknown[];
     expect(providers).toContain(ProductionService);
+    expect(providers).toContain(ContentService);
   });
 });

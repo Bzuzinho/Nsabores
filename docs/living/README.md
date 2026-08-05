@@ -23,6 +23,8 @@ Esta pasta contém documentação operacional e evolutiva do projeto. Deve ser a
 - `changelog/`: resumo legível das mudanças relevantes.
 - `templates/`: modelos para novos documentos.
 - `website-status.md`: estado funcional e limitações do website público.
+- `completion-audit-2026-08-05.md`: auditoria funcional transversal e trabalho
+  ainda pendente após a revisão de agosto.
 - `catalog.md`: modelo, API e interfaces do catálogo.
 - `authentication.md`: sessões, clientes, roles e bootstrap administrativo.
 - `commerce.md`: carrinho, checkout, pagamentos, entrega e gestão de encomendas.

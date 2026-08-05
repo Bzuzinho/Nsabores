@@ -90,6 +90,7 @@ enum InventoryCountStatus {
 
 enum BusinessAccountType {
   RESELLER
+  B2B
 }
 
 enum BusinessAccountStatus {
@@ -338,6 +339,7 @@ model User {
   assignedSupportCases       SupportCase[]         @relation("SupportCaseAssignee")
   supportCaseComments        SupportCaseComment[]  @relation("SupportCaseCommentAuthor")
   couponRedemptions          CouponRedemption[]
+  blogPosts                  BlogPost[]             @relation("BlogPostAuthor")
 
   @@index([role, isActive])
 }

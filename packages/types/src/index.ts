@@ -55,6 +55,59 @@ export interface Paginated<T> {
   };
 }
 
+export type BlogPostStatus = 'DRAFT' | 'PUBLISHED';
+
+export interface BlogPost {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  coverImageUrl: string;
+  imageAlt: string;
+  status: BlogPostStatus;
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  author?: { firstName: string; lastName: string } | null;
+}
+
+export type CustomerAccountType = 'PARTICULAR' | 'RESELLER' | 'B2B';
+
+export interface AccountDashboard {
+  accountType: CustomerAccountType;
+  businessAccount: {
+    id: string;
+    type: 'RESELLER' | 'B2B';
+    tradeName: string;
+    status: string;
+    priceListName: string | null;
+  } | null;
+  orders: {
+    total: number;
+    active: number;
+    recent: Array<{
+      id: string;
+      number: string;
+      status: OrderStatus;
+      totalCents: number;
+      createdAt: string;
+    }>;
+  };
+  addresses: number;
+  documents: number;
+  club: {
+    active: boolean;
+    status: string | null;
+    planName: string | null;
+    currentPeriodEnd: string | null;
+  };
+  loyalty: {
+    availablePoints: number;
+    pendingPoints: number;
+  };
+}
+
 export type UserRole = 'CUSTOMER' | 'STAFF' | 'ADMIN';
 
 export interface AuthUser {

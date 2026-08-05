@@ -32,6 +32,11 @@ export class AccountController {
     return this.auth.updateProfile(user.sub, body);
   }
 
+  @Get('dashboard')
+  dashboard(@CurrentUser() user: AuthPrincipal) {
+    return this.account.dashboard(user.sub);
+  }
+
   @Get('addresses')
   addresses(@CurrentUser() user: AuthPrincipal) {
     return this.account.addresses(user.sub);

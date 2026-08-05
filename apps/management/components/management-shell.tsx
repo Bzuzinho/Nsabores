@@ -1,11 +1,13 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useMemo, useState, type ReactNode } from 'react';
 import { useManagementAuth } from './management-auth';
 import {
   findManagementRoute,
+  managementGroupDashboards,
   managementGroups,
   managementRoutes,
 } from './management-routes';
@@ -47,6 +49,18 @@ function ArrowIcon() {
   );
 }
 
+function ChevronIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={`management-chevron ${open ? 'is-open' : ''}`}
+      viewBox="0 0 24 24"
+    >
+      <path d="m8 10 4 4 4-4" />
+    </svg>
+  );
+}
+
 function NavMark({ group }: { group: string }) {
   const letter =
     group === 'Visão geral'
@@ -58,7 +72,9 @@ function NavMark({ group }: { group: string }) {
 }
 
 export function ManagementShell({ children }: { children: ReactNode }) {
-  const websiteUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+  const websiteUrl =
+    process.env.NEXT_PUBLIC_APP_URL?.trim() || 'http://localhost:3000';
+  const logoUrl = `${websiteUrl.replace(/\/$/, '')}/images/logo-nsabores-white.png`;
   const auth = useManagementAuth();
   const pathname = usePathname();
   const router = useRouter();
@@ -73,6 +89,9 @@ export function ManagementShell({ children }: { children: ReactNode }) {
     [auth.user?.role],
   );
   const current = findManagementRoute(pathname) ?? managementRoutes[0]!;
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
+    () => new Set([current.group]),
+  );
   const normalizedQuery = query.trim().toLocaleLowerCase('pt-PT');
   const results = normalizedQuery
     ? routes.filter((route) =>
@@ -85,6 +104,22 @@ export function ManagementShell({ children }: { children: ReactNode }) {
 
   const closeNavigation = () => setNavigationOpen(false);
 
+  const openGroup = (group: (typeof managementGroups)[number]) => {
+    const hasChildren = routes.some(
+      (route) =>
+        route.group === group &&
+        route.href !== managementGroupDashboards[group],
+    );
+    setExpandedGroups((previous) => {
+      const next = new Set(previous);
+      if (next.has(group)) next.delete(group);
+      else next.add(group);
+      return next;
+    });
+    router.push(managementGroupDashboards[group]);
+    if (!hasChildren) closeNavigation();
+  };
+
   return (
     <div className="management-shell">
       <aside
@@ -92,10 +127,16 @@ export function ManagementShell({ children }: { children: ReactNode }) {
       >
         <div className="management-sidebar-head">
           <Link className="management-brand" href="/" onClick={closeNavigation}>
-            <span>N</span>
-            <strong>
-              Nsabores <small>Gestão</small>
-            </strong>
+            <Image
+              unoptimized
+              className="management-brand-logo"
+              src={logoUrl}
+              alt="Nsabores"
+              width={1789}
+              height={512}
+              priority
+            />
+            <small>Gestão</small>
           </Link>
           <button
             className="management-icon-button management-close-nav"
@@ -121,21 +162,37 @@ export function ManagementShell({ children }: { children: ReactNode }) {
           {managementGroups.map((group) => {
             const groupRoutes = routes.filter((route) => route.group === group);
             if (!groupRoutes.length) return null;
+            const dashboardHref = managementGroupDashboards[group];
+            const childRoutes = groupRoutes.filter(
+              (route) => route.href !== dashboardHref,
+            );
+            const expanded = expandedGroups.has(group);
             return (
               <section className="management-nav-group" key={group}>
-                <p>
-                  <NavMark group={group} /> {group}
-                </p>
-                {groupRoutes.map((route) => (
-                  <Link
-                    className={current.href === route.href ? 'active' : ''}
-                    href={route.href}
-                    key={route.href}
-                    onClick={closeNavigation}
-                  >
-                    {route.label}
-                  </Link>
-                ))}
+                <button
+                  className={current.group === group ? 'active' : ''}
+                  type="button"
+                  aria-expanded={childRoutes.length ? expanded : undefined}
+                  onClick={() => openGroup(group)}
+                >
+                  <NavMark group={group} />
+                  <span>{group}</span>
+                  {childRoutes.length > 0 && <ChevronIcon open={expanded} />}
+                </button>
+                {expanded && childRoutes.length > 0 && (
+                  <div className="management-nav-children">
+                    {childRoutes.map((route) => (
+                      <Link
+                        className={current.href === route.href ? 'active' : ''}
+                        href={route.href}
+                        key={route.href}
+                        onClick={closeNavigation}
+                      >
+                        {route.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </section>
             );
           })}
@@ -238,6 +295,9 @@ export function ManagementShell({ children }: { children: ReactNode }) {
                 href={route.href}
                 key={route.href}
                 onClick={() => {
+                  setExpandedGroups(
+                    (previous) => new Set([...previous, route.group]),
+                  );
                   setSearchOpen(false);
                   setQuery('');
                 }}

@@ -51,6 +51,11 @@ import { CommerceMailProvider } from './commerce/mail.provider';
 import { ManualPaymentService } from './commerce/manual-payment.service';
 import { PaymentProvider } from './commerce/payment.provider';
 import { CommerceService } from './commerce/commerce.service';
+import {
+  AdminBlogController,
+  PublicContentController,
+} from './content/content.controller';
+import { ContentService } from './content/content.service';
 import { CreditNoteService } from './fiscal/credit-note.service';
 import { FiscalProviderService } from './fiscal/fiscal-provider.service';
 import { FiscalReconciliationService } from './fiscal/fiscal-reconciliation.service';
@@ -199,9 +204,11 @@ import { ReceivablesService } from './receivables/receivables.service';
     AdminUsersController,
     CartController,
     CheckoutController,
+    PublicContentController,
     CustomerOrdersController,
     AccountReceivablesController,
     AdminOrdersController,
+    AdminBlogController,
     PublicOperationsController,
     BusinessOperationsController,
     AdminOperationsController,
@@ -265,6 +272,7 @@ import { ReceivablesService } from './receivables/receivables.service';
     ManualPaymentService,
     PaymentProvider,
     CommerceMailProvider,
+    ContentService,
     OperationsService,
     FulfillmentService,
     ShippingProvider,

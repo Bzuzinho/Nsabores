@@ -16,7 +16,7 @@ const footerGroups = [
     links: [
       ['Eventos', '/eventos'],
       ['Empresas', '/servicos'],
-      ['Receitas', '/receitas'],
+      ['Blog', '/blog'],
     ],
   },
   {
@@ -24,7 +24,7 @@ const footerGroups = [
     links: [
       ['Contactos', '/contactos'],
       ['Entregas e devoluções', '/contactos'],
-      ['Termos e condições', '/contactos'],
+      ['Termos e condições', '/termos'],
     ],
   },
 ] as const;
@@ -71,10 +71,12 @@ export function SiteFooter() {
           </nav>
         ))}
         <div className="footer-contact">
-          <strong>Contactos</strong>
-          <p>Email: a confirmar</p>
-          <p>Morada: a confirmar</p>
-          <Link href="/contactos">Falar connosco</Link>
+          <strong>Tem uma ideia em mente?</strong>
+          <p>
+            Envie-nos os detalhes através do formulário e a equipa responde por
+            email.
+          </p>
+          <Link href="/contactos">Abrir formulário</Link>
         </div>
       </div>
       <div className="footer-bottom">
@@ -85,8 +87,11 @@ export function SiteFooter() {
           <span>VISA</span>
         </div>
         <div>
-          <Link href="/contactos">Privacidade</Link>
-          <Link href="/contactos">Cookies</Link>
+          <Link href="/privacidade">Privacidade</Link>
+          <Link href="/termos">Termos</Link>
+          <Link className="footer-management-link" href="/gestao">
+            Gestão
+          </Link>
         </div>
       </div>
     </footer>
