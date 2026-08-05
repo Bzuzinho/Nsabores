@@ -7,7 +7,7 @@ export const navigation = [
   ['Início', '/'],
   ['Sobre nós', '/sobre'],
   ['Produtos', '/loja'],
-  ['Experiências e serviços', '/eventos'],
+  ['Serviços', '/eventos'],
   ['Clube Nsabores', '/clube'],
   ['Blog', '/blog'],
   ['Contactos', '/contactos'],
