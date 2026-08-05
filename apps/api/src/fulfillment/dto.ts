@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayMinSize,
   IsArray,
   IsBoolean,
   IsEmail,
@@ -91,6 +92,7 @@ export class CreateShipmentDto {
   @IsString() @IsNotEmpty() service!: string;
   @IsString() @IsNotEmpty() @MaxLength(100) idempotencyKey!: string;
   @IsArray()
+  @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => ShipmentLineDto)
   items!: ShipmentLineDto[];
@@ -128,6 +130,7 @@ export class CreateReturnDto {
   @IsString() @IsNotEmpty() reason!: string;
   @IsOptional() @IsString() @MaxLength(3000) customerNotes?: string;
   @IsArray()
+  @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => ReturnLineDto)
   items!: ReturnLineDto[];

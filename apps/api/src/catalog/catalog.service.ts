@@ -132,7 +132,7 @@ export class CatalogService {
   createProduct(data: CreateProductDto) {
     return this.unique(() =>
       this.prisma.product.create({
-        data,
+        data: { ...data, stockItem: { create: {} } },
         include: { category: { select: categorySummary } },
       }),
     );

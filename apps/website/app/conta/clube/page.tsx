@@ -143,9 +143,8 @@ export default function AccountClubPage() {
         <div>
           <h2>Alterar plano</h2>
           <p>
-            No billing mock, a alteração é imediata e não existe prorrata do
-            período atual. O novo preço fica como referência para a renovação
-            seguinte.
+            A alteração é imediata e não existe acerto proporcional do período
+            atual. O novo preço fica como referência para a renovação seguinte.
           </p>
           <label>
             Novo plano

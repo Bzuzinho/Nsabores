@@ -51,7 +51,7 @@ AUTH_COOKIE_SECURE=true
 
 ## Base de dados
 
-- 21 migrations versionadas e validadas numa base PostgreSQL limpa;
+- 23 migrations versionadas, incluindo o preenchimento de stock dos produtos;
 - migrations executadas em produção;
 - histórico Prisma alinhado com a estrutura real;
 - seed base separado do ambiente demo;

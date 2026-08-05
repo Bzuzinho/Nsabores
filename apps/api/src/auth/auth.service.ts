@@ -224,6 +224,7 @@ export class AuthService {
         emailVerificationExpiresAt: null,
       },
     });
+    await this.linkApprovedBusinessAccount(user.id, user.email);
     return { success: true };
   }
 
@@ -418,6 +419,28 @@ export class AuthService {
     if (!match) throw new Error(`Invalid duration in ${key}`);
     const unit = { m: 60_000, h: 3_600_000, d: 86_400_000 }[match[2]!]!;
     return new Date(Date.now() + Number(match[1]) * unit);
+  }
+
+  private async linkApprovedBusinessAccount(userId: string, email: string) {
+    const businessAccount = await this.prisma.businessAccount.findFirst({
+      where: { businessEmail: email, status: 'APPROVED' },
+      select: { id: true },
+    });
+    if (!businessAccount) return;
+    await this.prisma.businessAccountUser.upsert({
+      where: {
+        businessAccountId_userId: {
+          businessAccountId: businessAccount.id,
+          userId,
+        },
+      },
+      create: {
+        businessAccountId: businessAccount.id,
+        userId,
+        role: 'OWNER',
+      },
+      update: { isActive: true },
+    });
   }
 
   private toPublicUser(user: {

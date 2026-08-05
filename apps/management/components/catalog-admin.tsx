@@ -348,6 +348,9 @@ function ProductForm({
         .filter(Boolean),
       isActive: form.get('isActive') === 'on',
       isFeatured: form.get('isFeatured') === 'on',
+      minimumOrderQuantity: Number(payload.minimumOrderQuantity || 1),
+      orderMultiple: Number(payload.orderMultiple || 1),
+      caseSize: payload.caseSize ? Number(payload.caseSize) : undefined,
     });
     delete payload.price;
     delete payload.compareAtPrice;
@@ -473,6 +476,51 @@ function ProductForm({
               <option key={item}>{item}</option>
             ))}
           </select>
+        </label>
+        <label>
+          Canal de venda
+          <select name="channel" defaultValue={product?.channel ?? 'BOTH'}>
+            <option value="BOTH">Loja e profissional</option>
+            <option value="B2C_ONLY">Apenas loja</option>
+            <option value="B2B_ONLY">Apenas profissional</option>
+          </select>
+        </label>
+        <label>
+          Unidade de venda
+          <select name="saleUnit" defaultValue={product?.saleUnit ?? 'UNIT'}>
+            <option value="UNIT">Unidade</option>
+            <option value="PACK">Pack</option>
+            <option value="CASE">Caixa</option>
+          </select>
+        </label>
+        <label>
+          Quantidade mínima
+          <input
+            required
+            min="1"
+            type="number"
+            name="minimumOrderQuantity"
+            defaultValue={product?.minimumOrderQuantity ?? 1}
+          />
+        </label>
+        <label>
+          Múltiplo de encomenda
+          <input
+            required
+            min="1"
+            type="number"
+            name="orderMultiple"
+            defaultValue={product?.orderMultiple ?? 1}
+          />
+        </label>
+        <label>
+          Unidades por caixa
+          <input
+            min="1"
+            type="number"
+            name="caseSize"
+            defaultValue={product?.caseSize ?? ''}
+          />
         </label>
         <label className="check">
           <input

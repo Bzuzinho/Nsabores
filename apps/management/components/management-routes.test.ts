@@ -17,7 +17,13 @@ const requiredOperationalRoutes = [
   '/expedicoes',
   '/devolucoes',
   '/apoio',
+  '/stock',
   '/stock/movimentos',
+  '/stock/inventarios',
+  '/compras',
+  '/revendedores',
+  '/revendedores/candidaturas',
+  '/tabelas-precos',
   '/clube/subscricoes',
   '/clube/cobrancas',
   '/documentos/reconciliacao',
@@ -48,5 +54,20 @@ describe('management principal routes', () => {
     expect(findManagementRoute('/gestao/catalogo/produtos/123')?.href).toBe(
       '/catalogo/produtos',
     );
+  });
+
+  it('mantém páginas de detalhe para os novos fluxos operacionais', () => {
+    expect(
+      existsSync(resolve(process.cwd(), 'app/stock/inventarios/[id]/page.tsx')),
+    ).toBe(true);
+    expect(
+      existsSync(resolve(process.cwd(), 'app/compras/[id]/page.tsx')),
+    ).toBe(true);
+    expect(
+      existsSync(resolve(process.cwd(), 'app/revendedores/[id]/page.tsx')),
+    ).toBe(true);
+    expect(
+      existsSync(resolve(process.cwd(), 'app/tabelas-precos/[id]/page.tsx')),
+    ).toBe(true);
   });
 });
