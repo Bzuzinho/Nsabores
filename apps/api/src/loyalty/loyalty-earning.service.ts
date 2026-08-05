@@ -58,7 +58,7 @@ export class LoyaltyEarningService {
         AND ("channel" IS NULL OR "channel" = ${order.salesChannel}::"SalesChannel")
         AND ("validFrom" IS NULL OR "validFrom" <= CURRENT_TIMESTAMP)
         AND ("validUntil" IS NULL OR "validUntil" >= CURRENT_TIMESTAMP)
-      ORDER BY "createdAt" ASC LIMIT 1
+      ORDER BY "validFrom" DESC NULLS LAST, "createdAt" DESC LIMIT 1
     `;
     const rule = rules[0];
     if (!rule || rule.pointsPerEuro <= 0) return null;

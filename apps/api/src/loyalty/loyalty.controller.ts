@@ -64,6 +64,11 @@ export class AdminLoyaltyController {
     return this.loyalty.createRule(body);
   }
 
+  @Patch('rules/:id')
+  updateRule(@Param('id') id: string, @Body() body: LoyaltyRuleDto) {
+    return this.loyalty.updateRule(id, body);
+  }
+
   @Get('accounts/:userId')
   async account(@Param('userId') userId: string) {
     await this.releases.releaseDueForUser(userId);
@@ -92,5 +97,15 @@ export class AdminLoyaltyController {
   @Patch('gift-cards/:id/block')
   block(@Param('id') id: string, @Body() body: GiftCardBlockDto) {
     return this.loyalty.blockGiftCard(id, body);
+  }
+
+  @Patch('gift-cards/:id/unblock')
+  unblock(@Param('id') id: string) {
+    return this.loyalty.unblockGiftCard(id);
+  }
+
+  @Patch('gift-cards/:id/cancel')
+  cancel(@Param('id') id: string) {
+    return this.loyalty.cancelGiftCard(id);
   }
 }

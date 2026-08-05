@@ -99,6 +99,31 @@ export function ClubPendingCharges() {
     }
   }
 
+  async function cancelCharge(charge: PendingCharge) {
+    const note = window.prompt(
+      'Motivo da anulação:',
+      'Cobrança anulada administrativamente.',
+    );
+    if (note === null) return;
+    setBusyId(charge.id);
+    setError('');
+    try {
+      await managementApi.post(
+        `/v1/admin/club/subscriptions/${charge.subscriptionId}/charges/${charge.id}/cancel`,
+        { note },
+      );
+      await load();
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível anular a cobrança.',
+      );
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <>
       <header className="admin-header">
@@ -153,6 +178,12 @@ export function ClubPendingCharges() {
                     {busyId === charge.id
                       ? 'A confirmar e emitir…'
                       : 'Confirmar e emitir documento'}
+                  </button>{' '}
+                  <button
+                    disabled={busyId === charge.id}
+                    onClick={() => void cancelCharge(charge)}
+                  >
+                    Anular
                   </button>{' '}
                   <Link href={`/clube/subscricoes/${charge.subscriptionId}`}>
                     Abrir

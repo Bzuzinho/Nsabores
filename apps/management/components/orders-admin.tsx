@@ -99,6 +99,9 @@ export function OrdersAdmin() {
         <button className="admin-primary" onClick={exportCsv}>
           Exportar CSV
         </button>
+        <Link className="admin-primary" href="/encomendas/nova">
+          + Nova encomenda
+        </Link>
       </header>
       <div className="admin-filters">
         <input
@@ -115,6 +118,8 @@ export function OrdersAdmin() {
           <option value="">Todos os estados</option>
           {(
             [
+              'DRAFT',
+              'PENDING_APPROVAL',
               'PENDING_PAYMENT',
               'PAID',
               'PROCESSING',
@@ -122,6 +127,7 @@ export function OrdersAdmin() {
               'SHIPPED',
               'DELIVERED',
               'CANCELLED',
+              'REJECTED',
               'REFUNDED',
             ] satisfies OrderStatus[]
           ).map((value) => (
@@ -247,13 +253,17 @@ export function OrderAdmin({ id }: { id: string }) {
       <div className="admin-state">{error || 'A carregar a encomenda…'}</div>
     );
 
-  const act = async (path: string, body?: unknown) => {
+  const act = async (
+    path: string,
+    body?: unknown,
+    method: 'post' | 'patch' = body === undefined ? 'post' : 'patch',
+  ) => {
     if (!window.confirm('Confirma esta ação?')) return;
     setError('');
     try {
       setOrder(
-        body === undefined
-          ? await managementApi.post(path)
+        method === 'post'
+          ? await managementApi.post(path, body)
           : await managementApi.patch(path, body),
       );
     } catch (reason) {
@@ -338,7 +348,7 @@ export function OrderAdmin({ id }: { id: string }) {
     return { ...item, remaining: Math.max(0, item.quantity - shipped) };
   });
   const canCreateShipment =
-    ['PAID', 'PROCESSING', 'READY'].includes(order.status) &&
+    order.status === 'READY' &&
     remainingItems.some((item) => item.remaining > 0);
 
   const createShipment = async (event: FormEvent<HTMLFormElement>) => {
@@ -391,6 +401,38 @@ export function OrderAdmin({ id }: { id: string }) {
       </header>
       {error && <p className="admin-error">{error}</p>}
       <section className="user-detail">
+        {order.status === 'DRAFT' && (
+          <p>
+            <Link className="admin-primary" href={`/encomendas/${id}/editar`}>
+              Editar rascunho
+            </Link>{' '}
+            <button
+              className="admin-primary"
+              onClick={() => void act(`/v1/admin/orders/${id}/submit`)}
+            >
+              Submeter encomenda
+            </button>
+          </p>
+        )}
+        {order.status === 'PENDING_APPROVAL' && (
+          <p>
+            <button
+              className="admin-primary"
+              onClick={() =>
+                void act(`/v1/admin/orders/${id}/approve`, {}, 'post')
+              }
+            >
+              Aprovar
+            </button>{' '}
+            <button
+              onClick={() =>
+                void act(`/v1/admin/orders/${id}/reject`, {}, 'post')
+              }
+            >
+              Rejeitar
+            </button>
+          </p>
+        )}
         <p>
           Produção: <strong>{order.status}</strong> · Pagamento:{' '}
           <strong>{order.paymentStatus}</strong>

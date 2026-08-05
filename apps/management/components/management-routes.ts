@@ -209,6 +209,13 @@ export const managementRoutes: ManagementRoute[] = [
     pageFile: 'app/clientes/page.tsx',
   },
   {
+    href: '/clientes/newsletter',
+    label: 'Newsletter',
+    description: 'Subscrições, consentimentos e estado dos contactos.',
+    group: 'Clientes',
+    pageFile: 'app/clientes/newsletter/page.tsx',
+  },
+  {
     href: '/clube',
     label: 'Clube Nsabores',
     description: 'Planos, membros e desempenho.',

@@ -4,6 +4,7 @@ import {
   IsEmail,
   IsEnum,
   IsInt,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsPhoneNumber,
@@ -126,4 +127,41 @@ export class DeliveryMethodDto {
   @IsBoolean() isActive!: boolean;
   @IsInt() @Min(0) priceCents!: number;
   @IsOptional() @IsInt() @Min(0) freeShippingAboveCents?: number | null;
+}
+
+export class CreateDeliveryMethodDto extends DeliveryMethodDto {
+  @IsString() @IsNotEmpty() @MaxLength(60) code!: string;
+  @IsString() @IsNotEmpty() @MaxLength(120) name!: string;
+  @IsIn(['STANDARD', 'LOCAL_PICKUP']) type!: 'STANDARD' | 'LOCAL_PICKUP';
+}
+
+export class AdminOrderItemDto {
+  @IsUUID() productId!: string;
+  @IsInt() @Min(1) @Max(9999) quantity!: number;
+  @IsOptional() @IsInt() @Min(0) unitPriceCents?: number;
+}
+
+export class AdminOrderDraftDto {
+  @IsOptional() @IsUUID() userId?: string;
+  @IsEmail() email!: string;
+  @IsString() @IsNotEmpty() @MaxLength(150) customerName!: string;
+  @IsString() @IsNotEmpty() @MaxLength(40) phone!: string;
+  @ValidateNested()
+  @Type(() => AddressSnapshotDto)
+  shippingAddress!: AddressSnapshotDto;
+  @ValidateNested()
+  @Type(() => AddressSnapshotDto)
+  billingAddress!: AddressSnapshotDto;
+  @IsUUID() deliveryMethodId!: string;
+  @IsString() @IsNotEmpty() @MaxLength(30) source!: string;
+  @IsOptional() @IsBoolean() requiresApproval?: boolean;
+  @IsOptional() @IsString() @MaxLength(1000) customerNotes?: string;
+  @IsOptional() @IsString() @MaxLength(3000) internalNotes?: string;
+  @ValidateNested({ each: true })
+  @Type(() => AdminOrderItemDto)
+  items!: AdminOrderItemDto[];
+}
+
+export class OrderDecisionDto {
+  @IsOptional() @IsString() @MaxLength(1000) note?: string;
 }

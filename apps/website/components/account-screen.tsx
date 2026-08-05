@@ -324,6 +324,37 @@ export function AccountScreen({ mode }: { mode: Mode }) {
                   {address.postalCode} {address.city}
                 </p>
                 <button
+                  onClick={() => {
+                    const label = window.prompt('Etiqueta', address.label);
+                    if (label === null) return;
+                    const line1 = window.prompt('Morada', address.line1);
+                    if (line1 === null) return;
+                    const postalCode = window.prompt(
+                      'Código postal',
+                      address.postalCode,
+                    );
+                    if (postalCode === null) return;
+                    const city = window.prompt('Cidade', address.city);
+                    if (city === null) return;
+                    void run(
+                      () =>
+                        accountApi.patch(
+                          `/v1/account/addresses/${address.id}`,
+                          { label, line1, postalCode, city },
+                        ),
+                      'Morada atualizada.',
+                    ).then(
+                      async (ok) =>
+                        ok &&
+                        setAddresses(
+                          await accountApi.get('/v1/account/addresses'),
+                        ),
+                    );
+                  }}
+                >
+                  Editar
+                </button>
+                <button
                   onClick={() =>
                     void run(
                       () =>

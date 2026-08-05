@@ -29,6 +29,7 @@ const particularLinks = [
   ['/conta/clube', 'Clube Nsabores', 'Plano, benefícios e cobranças.'],
   ['/conta/fidelizacao', 'Fidelização', 'Pontos disponíveis e movimentos.'],
   ['/conta/documentos', 'Documentos', 'Faturas, recibos e notas de crédito.'],
+  ['/conta/apoio', 'Apoio', 'Pedidos e conversa com a equipa.'],
   ['/conta/perfil', 'Perfil', 'Dados pessoais e preferências.'],
   ['/conta/moradas', 'Moradas', 'Entrega e faturação.'],
   ['/conta/seguranca', 'Segurança', 'Password e sessões ativas.'],
@@ -44,6 +45,7 @@ const businessLinks = [
   ],
   ['/conta/encomendas', 'Encomendas', 'Pedidos B2B e respetivo estado.'],
   ['/conta/documentos', 'Documentos', 'Histórico comercial e fiscal.'],
+  ['/conta/apoio', 'Apoio', 'Pedidos e conversa com a equipa.'],
   ['/conta/perfil', 'Utilizador', 'Dados e contactos do seu acesso.'],
   ['/conta/seguranca', 'Segurança', 'Password e sessões ativas.'],
 ] as const;

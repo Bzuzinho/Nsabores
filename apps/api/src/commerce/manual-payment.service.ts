@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PaymentStatus } from '@prisma/client';
+import { OrderStatus, PaymentStatus } from '@prisma/client';
 import { LoyaltyEarningService } from '../loyalty/loyalty-earning.service';
 import { PrismaService } from '../prisma.service';
 import { ReceivablesService } from '../receivables/receivables.service';
@@ -123,6 +123,19 @@ export class ManualPaymentService {
           where: { id: orderId },
           data: {
             paymentStatus: PaymentStatus.PAID,
+            ...(order.status === OrderStatus.PENDING_PAYMENT
+              ? {
+                  status: OrderStatus.PAID,
+                  statusHistory: {
+                    create: {
+                      fromStatus: OrderStatus.PENDING_PAYMENT,
+                      toStatus: OrderStatus.PAID,
+                      authorId,
+                      note: 'Pagamento manual confirmado.',
+                    },
+                  },
+                }
+              : {}),
             internalNotes: body.note?.trim()
               ? [order.internalNotes, `Pagamento manual: ${body.note.trim()}`]
                   .filter(Boolean)

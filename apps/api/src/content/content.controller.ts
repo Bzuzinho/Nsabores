@@ -20,6 +20,8 @@ import {
   ContactRequestDto,
   CreateBlogPostDto,
   UpdateBlogPostDto,
+  NewsletterSubscriptionDto,
+  NewsletterStatusDto,
 } from './dto';
 
 @Controller('v1')
@@ -40,6 +42,12 @@ export class PublicContentController {
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   contact(@Body() body: ContactRequestDto) {
     return this.content.contact(body);
+  }
+
+  @Post('newsletter')
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  newsletter(@Body() body: NewsletterSubscriptionDto) {
+    return this.content.subscribeNewsletter(body);
   }
 }
 
@@ -72,5 +80,22 @@ export class AdminBlogController {
   @Delete(':id')
   delete(@Param('id') id: string) {
     return this.content.delete(id);
+  }
+}
+
+@UseGuards(AuthGuard, RolesGuard)
+@Roles(UserRole.STAFF, UserRole.ADMIN)
+@Controller('v1/admin/newsletter')
+export class AdminNewsletterController {
+  constructor(private readonly content: ContentService) {}
+
+  @Get()
+  list(@Query('search') search?: string) {
+    return this.content.newsletterSubscriptions(search);
+  }
+
+  @Patch(':id')
+  status(@Param('id') id: string, @Body() body: NewsletterStatusDto) {
+    return this.content.updateNewsletterSubscription(id, body.isActive);
   }
 }

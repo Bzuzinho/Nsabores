@@ -3,13 +3,21 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
-import { BlogPostStatus, Prisma } from '@prisma/client';
+import {
+  BlogPostStatus,
+  Prisma,
+  SupportCasePriority,
+  SupportCaseStatus,
+  SupportCaseType,
+} from '@prisma/client';
 import { deliverTransactionalMail } from '../mail/outlook-mail';
 import { PrismaService } from '../prisma.service';
 import type {
   BlogQueryDto,
   ContactRequestDto,
+  NewsletterSubscriptionDto,
   CreateBlogPostDto,
   UpdateBlogPostDto,
 } from './dto';
@@ -144,6 +152,21 @@ export class ContentService {
       this.config.get<string>('MAIL_FROM_ADDRESS')?.trim() ||
       'nsabores@outlook.pt';
     const topic = topicNames[body.topic] ?? 'Outro assunto';
+    const supportCase = await this.prisma.supportCase.create({
+      data: {
+        number: `SUP-${new Date().getUTCFullYear()}-${randomUUID().slice(0, 8).toUpperCase()}`,
+        type: SupportCaseType.OTHER,
+        priority: SupportCasePriority.NORMAL,
+        status: SupportCaseStatus.OPEN,
+        subject: `${topic} — ${body.name}`,
+        description: [
+          `Email: ${body.email}`,
+          `Telefone: ${body.phone || 'Não indicado'}`,
+          '',
+          body.message,
+        ].join('\n'),
+      },
+    });
     const text = [
       `Novo pedido de contacto — ${topic}`,
       '',
@@ -160,7 +183,39 @@ export class ContentService {
       text,
       html: `<h2>Novo pedido de contacto</h2><p><strong>Assunto:</strong> ${escapeHtml(topic)}</p><p><strong>Nome:</strong> ${escapeHtml(body.name)}<br><strong>Email:</strong> ${escapeHtml(body.email)}<br><strong>Telefone:</strong> ${escapeHtml(body.phone || 'Não indicado')}</p><p>${escapeHtml(body.message).replaceAll('\n', '<br>')}</p>`,
     });
-    return { accepted: true };
+    return { accepted: true, caseNumber: supportCase.number };
+  }
+
+  subscribeNewsletter(body: NewsletterSubscriptionDto) {
+    return this.prisma.newsletterSubscription.upsert({
+      where: { email: body.email.trim().toLowerCase() },
+      update: {
+        isActive: true,
+        consentedAt: new Date(),
+        source: body.source?.trim().toUpperCase() || 'WEBSITE',
+      },
+      create: {
+        email: body.email.trim().toLowerCase(),
+        source: body.source?.trim().toUpperCase() || 'WEBSITE',
+      },
+    });
+  }
+
+  newsletterSubscriptions(search?: string) {
+    return this.prisma.newsletterSubscription.findMany({
+      where: search
+        ? { email: { contains: search.trim(), mode: 'insensitive' } }
+        : {},
+      orderBy: { createdAt: 'desc' },
+      take: 500,
+    });
+  }
+
+  updateNewsletterSubscription(id: string, isActive: boolean) {
+    return this.prisma.newsletterSubscription.update({
+      where: { id },
+      data: { isActive },
+    });
   }
 
   private publishedAt(status?: BlogPostStatus, value?: string) {

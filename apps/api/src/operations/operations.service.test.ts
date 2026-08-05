@@ -116,7 +116,9 @@ describe('OperationsService — fluxos operacionais', () => {
       },
     });
     await expect(
-      service.createB2BOrder('user-id', 'product-id', 1),
+      service.createB2BOrder('user-id', [
+        { productId: 'product-id', quantity: 1 },
+      ]),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
@@ -164,8 +166,8 @@ describe('OperationsService — fluxos operacionais', () => {
     await expect(
       service.createB2BOrder(
         'user-id',
-        'product-id',
-        1,
+        [{ productId: 'product-id', quantity: 1 }],
+        undefined,
         undefined,
         'request-key',
       ),

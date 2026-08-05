@@ -167,13 +167,9 @@ export class FulfillmentService {
         include: { items: true },
       });
       if (!order) throw new NotFoundException('Encomenda não encontrada.');
-      if (
-        order.status !== OrderStatus.PAID &&
-        order.status !== OrderStatus.PROCESSING &&
-        order.status !== OrderStatus.READY
-      ) {
+      if (order.status !== OrderStatus.READY) {
         throw new ConflictException(
-          'A encomenda não está pronta para preparação.',
+          'A encomenda tem de estar pronta antes de criar a expedição.',
         );
       }
 
@@ -218,20 +214,6 @@ export class FulfillmentService {
           VALUES (${randomUUID()}::uuid, ${shipmentId}::uuid, ${line.orderItemId}::uuid,
             ${line.quantity}, CURRENT_TIMESTAMP)
         `;
-      }
-      if (order.status === OrderStatus.PAID) {
-        await tx.order.update({
-          where: { id: order.id },
-          data: { status: OrderStatus.PROCESSING },
-        });
-        await tx.orderStatusHistory.create({
-          data: {
-            orderId: order.id,
-            fromStatus: OrderStatus.PAID,
-            toStatus: OrderStatus.PROCESSING,
-            note: 'Preparação iniciada.',
-          },
-        });
       }
     }, serializable);
     return this.shipment(shipmentId);
@@ -279,42 +261,59 @@ export class FulfillmentService {
           orderItemId: string;
           quantity: number;
           productId: string | null;
+          componentProductId: string | null;
+          componentQuantity: number | null;
         }>
       >`
-        SELECT si."orderItemId", si."quantity", oi."productId"
+        SELECT si."orderItemId", si."quantity", oi."productId",
+          bs."componentProductId",
+          CASE WHEN bs."componentProductId" IS NULL THEN NULL
+            ELSE SUM(bs."quantity")::integer END AS "componentQuantity"
         FROM "ShipmentItem" si
         JOIN "OrderItem" oi ON oi."id" = si."orderItemId"
+        LEFT JOIN "OrderItemBundleSelection" bs ON bs."orderItemId" = oi."id"
         WHERE si."shipmentId" = ${id}::uuid
+        GROUP BY si."orderItemId", si."quantity", oi."productId", bs."componentProductId"
       `;
       for (const line of lines) {
-        if (!line.productId)
+        const stockProductId = line.componentProductId ?? line.productId;
+        const stockQuantity = line.quantity * (line.componentQuantity ?? 1);
+        if (!stockProductId)
           throw new ConflictException('Produto removido do catálogo.');
         const reservation = await tx.stockReservation.findFirst({
           where: {
             orderId: shipment.orderId,
-            productId: line.productId,
+            productId: stockProductId,
             status: StockReservationStatus.ACTIVE,
           },
         });
-        if (!reservation || reservation.quantity < line.quantity) {
+        if (!reservation || reservation.quantity < stockQuantity) {
           throw new ConflictException(
             'Reserva de stock insuficiente para expedir.',
           );
         }
+        const stock = await tx.stockItem.findUnique({
+          where: { productId: stockProductId },
+        });
+        if (!stock) throw new ConflictException('Stock não configurado.');
         const changed = await tx.stockItem.updateMany({
           where: {
-            productId: line.productId,
-            onHandQuantity: { gte: line.quantity },
-            reservedQuantity: { gte: line.quantity },
+            productId: stockProductId,
+            ...(stock.trackStock
+              ? { onHandQuantity: { gte: stockQuantity } }
+              : {}),
+            reservedQuantity: { gte: stockQuantity },
           },
           data: {
-            onHandQuantity: { decrement: line.quantity },
-            reservedQuantity: { decrement: line.quantity },
+            ...(stock.trackStock
+              ? { onHandQuantity: { decrement: stockQuantity } }
+              : {}),
+            reservedQuantity: { decrement: stockQuantity },
           },
         });
         if (changed.count !== 1)
           throw new ConflictException('Stock inconsistente.');
-        if (reservation.quantity === line.quantity) {
+        if (reservation.quantity === stockQuantity) {
           await tx.stockReservation.update({
             where: { id: reservation.id },
             data: { status: StockReservationStatus.CONSUMED },
@@ -322,18 +321,18 @@ export class FulfillmentService {
         } else {
           await tx.stockReservation.update({
             where: { id: reservation.id },
-            data: { quantity: { decrement: line.quantity } },
+            data: { quantity: { decrement: stockQuantity } },
           });
         }
         await tx.stockMovement.create({
           data: {
-            productId: line.productId,
+            productId: stockProductId,
             orderId: shipment.orderId,
             type: StockMovementType.ORDER_FULFILLMENT,
-            quantity: -line.quantity,
+            quantity: -stockQuantity,
             referenceType: 'Shipment',
             referenceId: id,
-            idempotencyKey: `shipment:${id}:fulfill:${line.orderItemId}`,
+            idempotencyKey: `shipment:${id}:fulfill:${line.orderItemId}:${stockProductId}`,
             authorId,
           },
         });
@@ -627,32 +626,41 @@ export class FulfillmentService {
             orderItemId: string;
             quantity: number;
             productId: string | null;
+            componentProductId: string | null;
+            componentQuantity: number | null;
           }>
         >`
-          SELECT ri."orderItemId", ri."quantity", oi."productId"
+          SELECT ri."orderItemId", ri."quantity", oi."productId",
+            bs."componentProductId",
+            CASE WHEN bs."componentProductId" IS NULL THEN NULL
+              ELSE SUM(bs."quantity")::integer END AS "componentQuantity"
           FROM "ReturnItem" ri JOIN "OrderItem" oi ON oi."id" = ri."orderItemId"
+          LEFT JOIN "OrderItemBundleSelection" bs ON bs."orderItemId" = oi."id"
           WHERE ri."returnRequestId" = ${id}::uuid
             AND ri."disposition" = 'RESTOCK'::"ReturnItemDisposition"
+          GROUP BY ri."orderItemId", ri."quantity", oi."productId", bs."componentProductId"
         `;
         for (const line of restock) {
-          if (!line.productId) continue;
+          const stockProductId = line.componentProductId ?? line.productId;
+          const stockQuantity = line.quantity * (line.componentQuantity ?? 1);
+          if (!stockProductId) continue;
           await tx.stockItem.upsert({
-            where: { productId: line.productId },
+            where: { productId: stockProductId },
             create: {
-              productId: line.productId,
-              onHandQuantity: line.quantity,
+              productId: stockProductId,
+              onHandQuantity: stockQuantity,
             },
-            update: { onHandQuantity: { increment: line.quantity } },
+            update: { onHandQuantity: { increment: stockQuantity } },
           });
           await tx.stockMovement.create({
             data: {
-              productId: line.productId,
+              productId: stockProductId,
               orderId: request.orderId,
               type: StockMovementType.CUSTOMER_RETURN,
-              quantity: line.quantity,
+              quantity: stockQuantity,
               referenceType: 'ReturnRequest',
               referenceId: id,
-              idempotencyKey: `return:${id}:restock:${line.orderItemId}`,
+              idempotencyKey: `return:${id}:restock:${line.orderItemId}:${stockProductId}`,
               authorId,
             },
           });
@@ -747,5 +755,17 @@ export class FulfillmentService {
         ${body.body}, ${body.isInternal ?? true}, CURRENT_TIMESTAMP)
     `;
     return this.supportCase(id);
+  }
+
+  async addCustomerSupportComment(id: string, body: string, userId: string) {
+    await this.supportCase(id, userId);
+    await this.prisma.supportCaseComment.create({
+      data: { supportCaseId: id, authorId: userId, body, isInternal: false },
+    });
+    await this.prisma.supportCase.update({
+      where: { id },
+      data: { status: 'OPEN' },
+    });
+    return this.supportCase(id, userId);
   }
 }

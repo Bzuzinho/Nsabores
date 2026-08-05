@@ -45,4 +45,9 @@ export class AdminGiftCardPurchaseController {
   markPaid(@Param('id') id: string) {
     return this.purchases.markPaid(id);
   }
+
+  @Post(':id/cancel')
+  cancel(@Param('id') id: string) {
+    return this.purchases.cancel(id);
+  }
 }

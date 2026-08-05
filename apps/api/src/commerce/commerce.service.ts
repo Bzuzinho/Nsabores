@@ -9,6 +9,8 @@ import {
 import { CartStatus, OrderStatus, PaymentStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import type {
+  AdminOrderDraftDto,
+  CreateDeliveryMethodDto,
   CheckoutDto,
   DeliveryMethodDto,
   MockWebhookDto,
@@ -36,7 +38,45 @@ const orderInclude = {
   statusHistory: { orderBy: { createdAt: 'asc' as const } },
 } as const;
 
+type RefundEntry = {
+  providerRefundId: string;
+  amountCents: number;
+  status: string;
+  idempotencyKey: string;
+};
+
+const refundEntries = (value: Prisma.JsonValue | undefined): RefundEntry[] => {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return [];
+    const candidate = entry;
+    return typeof candidate.providerRefundId === 'string' &&
+      typeof candidate.amountCents === 'number' &&
+      typeof candidate.status === 'string' &&
+      typeof candidate.idempotencyKey === 'string'
+      ? [
+          {
+            providerRefundId: candidate.providerRefundId,
+            amountCents: candidate.amountCents,
+            status: candidate.status,
+            idempotencyKey: candidate.idempotencyKey,
+          },
+        ]
+      : [];
+  });
+};
+
 const transitions: Record<OrderStatus, OrderStatus[]> = {
+  DRAFT: [
+    OrderStatus.PENDING_APPROVAL,
+    OrderStatus.PENDING_PAYMENT,
+    OrderStatus.CANCELLED,
+  ],
+  PENDING_APPROVAL: [
+    OrderStatus.PENDING_PAYMENT,
+    OrderStatus.REJECTED,
+    OrderStatus.CANCELLED,
+  ],
   PENDING_PAYMENT: [OrderStatus.PAID, OrderStatus.CANCELLED],
   PAID: [OrderStatus.PROCESSING, OrderStatus.CANCELLED, OrderStatus.REFUNDED],
   PROCESSING: [OrderStatus.READY, OrderStatus.CANCELLED],
@@ -44,6 +84,7 @@ const transitions: Record<OrderStatus, OrderStatus[]> = {
   SHIPPED: [OrderStatus.DELIVERED],
   DELIVERED: [OrderStatus.REFUNDED],
   CANCELLED: [OrderStatus.REFUNDED],
+  REJECTED: [],
   REFUNDED: [],
 };
 
@@ -184,6 +225,26 @@ export class CommerceService {
 
   updateDeliveryMethod(id: string, body: DeliveryMethodDto) {
     return this.prisma.deliveryMethod.update({ where: { id }, data: body });
+  }
+
+  createDeliveryMethod(body: CreateDeliveryMethodDto) {
+    return this.prisma.deliveryMethod.create({
+      data: { ...body, code: body.code.trim().toUpperCase() },
+    });
+  }
+
+  async deleteDeliveryMethod(id: string) {
+    const orders = await this.prisma.order.count({
+      where: { deliveryMethodId: id },
+    });
+    if (orders) {
+      return this.prisma.deliveryMethod.update({
+        where: { id },
+        data: { isActive: false },
+      });
+    }
+    await this.prisma.deliveryMethod.delete({ where: { id } });
+    return { success: true };
   }
 
   async checkout(
@@ -488,6 +549,151 @@ export class CommerceService {
     return order;
   }
 
+  async createAdminDraft(body: AdminOrderDraftDto, authorId: string) {
+    return this.writeAdminDraft(undefined, body, authorId);
+  }
+
+  async updateAdminDraft(id: string, body: AdminOrderDraftDto) {
+    const order = await this.adminOrder(id);
+    if (order.status !== OrderStatus.DRAFT) {
+      throw new ConflictException(
+        'Só é possível editar uma encomenda em rascunho.',
+      );
+    }
+    return this.writeAdminDraft(id, body);
+  }
+
+  async submitAdminDraft(id: string, authorId: string) {
+    const order = await this.adminOrder(id);
+    if (order.status !== OrderStatus.DRAFT) {
+      throw new ConflictException('A encomenda já foi submetida.');
+    }
+    const target = order.requiresApproval
+      ? OrderStatus.PENDING_APPROVAL
+      : OrderStatus.PENDING_PAYMENT;
+    if (!order.requiresApproval) await this.operations.reserveOrder(id);
+    return this.changeStatus(id, target, authorId, 'Rascunho submetido.');
+  }
+
+  async approveOrder(id: string, authorId: string, note?: string) {
+    const order = await this.adminOrder(id);
+    if (order.status !== OrderStatus.PENDING_APPROVAL) {
+      throw new ConflictException('A encomenda não aguarda aprovação.');
+    }
+    await this.operations.reserveOrder(id);
+    await this.prisma.order.update({
+      where: { id },
+      data: { approvedBy: authorId, approvedAt: new Date() },
+    });
+    return this.changeStatus(
+      id,
+      OrderStatus.PENDING_PAYMENT,
+      authorId,
+      note ?? 'Encomenda aprovada.',
+    );
+  }
+
+  async rejectOrder(id: string, authorId: string, note?: string) {
+    const order = await this.adminOrder(id);
+    if (order.status !== OrderStatus.PENDING_APPROVAL) {
+      throw new ConflictException('A encomenda não aguarda aprovação.');
+    }
+    return this.changeStatus(
+      id,
+      OrderStatus.REJECTED,
+      authorId,
+      note ?? 'Encomenda rejeitada.',
+    );
+  }
+
+  private async writeAdminDraft(
+    id: string | undefined,
+    body: AdminOrderDraftDto,
+    authorId?: string,
+  ) {
+    if (!body.items.length)
+      throw new BadRequestException('Adicione pelo menos um artigo.');
+    const [delivery, products] = await Promise.all([
+      this.prisma.deliveryMethod.findUnique({
+        where: { id: body.deliveryMethodId },
+      }),
+      this.prisma.product.findMany({
+        where: {
+          id: { in: body.items.map((item) => item.productId) },
+          isActive: true,
+        },
+      }),
+    ]);
+    if (!delivery) throw new BadRequestException('Método de entrega inválido.');
+    if (
+      products.length !== new Set(body.items.map((item) => item.productId)).size
+    ) {
+      throw new BadRequestException('Um ou mais produtos são inválidos.');
+    }
+    const lines = body.items.map((item) => {
+      const product = products.find(
+        (candidate) => candidate.id === item.productId,
+      )!;
+      const unitPriceCents = item.unitPriceCents ?? product.priceCents;
+      return {
+        productId: product.id,
+        productName: product.name,
+        sku: product.sku,
+        imageUrl: product.imageUrl,
+        unitPriceCents,
+        quantity: item.quantity,
+        totalCents: unitPriceCents * item.quantity,
+      };
+    });
+    const subtotalCents = lines.reduce((sum, line) => sum + line.totalCents, 0);
+    const shippingCents =
+      delivery.freeShippingAboveCents !== null &&
+      subtotalCents >= delivery.freeShippingAboveCents
+        ? 0
+        : delivery.priceCents;
+    const data = {
+      userId: body.userId ?? null,
+      email: body.email.trim().toLowerCase(),
+      customerName: body.customerName.trim(),
+      phone: body.phone.trim(),
+      billingAddress: body.billingAddress as unknown as Prisma.InputJsonValue,
+      shippingAddress: body.shippingAddress as unknown as Prisma.InputJsonValue,
+      customerNotes: body.customerNotes?.trim() || null,
+      internalNotes: body.internalNotes?.trim() || null,
+      source: body.source.trim().toUpperCase(),
+      deliveryMethodId: delivery.id,
+      requiresApproval: body.requiresApproval ?? false,
+      subtotalCents,
+      shippingCents,
+      totalCents: subtotalCents + shippingCents,
+    };
+    if (id) {
+      return this.prisma.order.update({
+        where: { id },
+        data: { ...data, items: { deleteMany: {}, create: lines } },
+        include: orderInclude,
+      });
+    }
+    const number = `NS-${new Date().getUTCFullYear()}-${randomBytes(4).toString('hex').toUpperCase()}`;
+    return this.prisma.order.create({
+      data: {
+        ...data,
+        number,
+        status: OrderStatus.DRAFT,
+        idempotencyKey: `admin:${randomBytes(16).toString('hex')}`,
+        statusHistory: {
+          create: {
+            toStatus: OrderStatus.DRAFT,
+            authorId,
+            note: 'Rascunho criado na Gestão.',
+          },
+        },
+        items: { create: lines },
+      },
+      include: orderInclude,
+    });
+  }
+
   async changeStatus(
     id: string,
     status: OrderStatus,
@@ -549,10 +755,47 @@ export class CommerceService {
     });
     if (!payment)
       throw new ConflictException('Não existe pagamento liquidado.');
+    const idempotencyKey = `order:${id}:refund`;
+    const metadata =
+      payment.metadata &&
+      typeof payment.metadata === 'object' &&
+      !Array.isArray(payment.metadata)
+        ? payment.metadata
+        : {};
+    const history = refundEntries(metadata.refunds);
+    const previous = history.find(
+      (entry) => entry.idempotencyKey === idempotencyKey,
+    );
+    const providerRefund: RefundEntry = previous
+      ? previous
+      : {
+          ...this.payments.refund(
+            payment.providerPaymentId,
+            payment.amountCents,
+            idempotencyKey,
+          ),
+          status: this.payments.refundStatus(),
+        };
+    if (
+      order.status !== OrderStatus.SHIPPED &&
+      order.status !== OrderStatus.DELIVERED
+    ) {
+      await this.operations.releaseOrder(
+        id,
+        'Reserva libertada após reembolso administrativo.',
+      );
+    }
     const updated = await this.prisma.$transaction(async (tx) => {
       await tx.payment.update({
         where: { id: payment.id },
-        data: { status: this.payments.refundStatus() },
+        data: {
+          status: this.payments.refundStatus(),
+          metadata: {
+            ...metadata,
+            refundedCents: payment.amountCents,
+            refunds: [...history, ...(previous ? [] : [providerRefund])],
+          },
+        },
       });
       return tx.order.update({
         where: { id },
@@ -564,7 +807,9 @@ export class CommerceService {
               fromStatus: order.status,
               toStatus: OrderStatus.REFUNDED,
               authorId,
-              note: 'Reembolso confirmado pelo provider.',
+              note: `Reembolso confirmado pelo provider (${String(
+                providerRefund.providerRefundId,
+              )}).`,
             },
           },
         },

@@ -26,6 +26,8 @@ enum CartStatus {
 }
 
 enum OrderStatus {
+  DRAFT
+  PENDING_APPROVAL
   PENDING_PAYMENT
   PAID
   PROCESSING
@@ -33,6 +35,7 @@ enum OrderStatus {
   SHIPPED
   DELIVERED
   CANCELLED
+  REJECTED
   REFUNDED
 }
 
@@ -1043,6 +1046,18 @@ model SupportCaseComment {
   author        User?       @relation("SupportCaseCommentAuthor", fields: [authorId], references: [id], onDelete: SetNull)
 
   @@index([supportCaseId, createdAt])
+}
+
+model NewsletterSubscription {
+  id          String   @id @default(uuid()) @db.Uuid
+  email       String   @unique
+  source      String   @default("WEBSITE")
+  isActive    Boolean  @default(true)
+  consentedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive, createdAt])
 }
 
 model Promotion {

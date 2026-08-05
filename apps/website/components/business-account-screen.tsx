@@ -38,6 +38,12 @@ type BusinessProduct = {
   orderMultiple: number;
   availableQuantity: number | null;
 };
+type DeliveryMethod = {
+  id: string;
+  name: string;
+  type: string;
+  priceCents: number;
+};
 
 export function BusinessAccountScreen({ mode }: { mode: Mode }) {
   const [account, setAccount] = useState<BusinessAccount | null>(null);
@@ -165,23 +171,44 @@ function Prices({
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [customerReference, setCustomerReference] = useState('');
   const [busyId, setBusyId] = useState('');
+  const [basket, setBasket] = useState<Record<string, number>>({});
+  const [deliveryMethods, setDeliveryMethods] = useState<DeliveryMethod[]>([]);
+  const [deliveryMethodId, setDeliveryMethodId] = useState('');
   const [error, setError] = useState('');
   const [order, setOrder] = useState<{ id: string; number: string }>();
 
-  async function createOrder(product: BusinessProduct) {
-    setBusyId(product.id);
+  useEffect(() => {
+    void accountApi
+      .get<DeliveryMethod[]>('/v1/delivery-methods')
+      .then((methods) => {
+        setDeliveryMethods(methods);
+        setDeliveryMethodId(methods[0]?.id ?? '');
+      });
+  }, []);
+
+  async function createOrder() {
+    const items = Object.entries(basket).map(([productId, quantity]) => ({
+      productId,
+      quantity,
+    }));
+    if (!items.length) {
+      setError('Adicione pelo menos um produto ao pedido.');
+      return;
+    }
+    setBusyId('submit');
     setError('');
     try {
       const result = await accountApi.post<{ id: string; number: string }>(
         '/v1/business/orders',
         {
-          productId: product.id,
-          quantity: quantities[product.id] ?? product.minimumOrderQuantity,
+          items,
+          deliveryMethodId,
           customerReference: customerReference || undefined,
           idempotencyKey: crypto.randomUUID(),
         },
       );
       setOrder(result);
+      setBasket({});
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Erro inesperado.');
     } finally {
@@ -201,14 +228,29 @@ function Prices({
         <span>{products.length} produtos</span>
       </div>
       {account.membershipRole !== 'VIEWER' && (
-        <label className="professional-reference">
-          Referência da encomenda (opcional)
-          <input
-            value={customerReference}
-            onChange={(event) => setCustomerReference(event.target.value)}
-            placeholder="Ex.: encomenda interna 2026/145"
-          />
-        </label>
+        <>
+          <label className="professional-reference">
+            Referência da encomenda (opcional)
+            <input
+              value={customerReference}
+              onChange={(event) => setCustomerReference(event.target.value)}
+              placeholder="Ex.: encomenda interna 2026/145"
+            />
+          </label>
+          <label className="professional-reference">
+            Entrega
+            <select
+              value={deliveryMethodId}
+              onChange={(event) => setDeliveryMethodId(event.target.value)}
+            >
+              {deliveryMethods.map((method) => (
+                <option key={method.id} value={method.id}>
+                  {method.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </>
       )}
       {account.membershipRole === 'VIEWER' && (
         <p className="account-notice">
@@ -260,12 +302,19 @@ function Prices({
                   </label>
                   <button
                     className="button button-primary"
-                    disabled={
-                      busyId === product.id || product.availableQuantity === 0
+                    disabled={product.availableQuantity === 0}
+                    onClick={() =>
+                      setBasket((current) => ({
+                        ...current,
+                        [product.id]:
+                          quantities[product.id] ??
+                          product.minimumOrderQuantity,
+                      }))
                     }
-                    onClick={() => void createOrder(product)}
                   >
-                    {busyId === product.id ? 'A criar…' : 'Encomendar'}
+                    {basket[product.id]
+                      ? 'Atualizar pedido'
+                      : 'Adicionar ao pedido'}
                   </button>
                 </div>
               )}
@@ -273,6 +322,19 @@ function Prices({
           </article>
         ))}
       </div>
+      {account.membershipRole !== 'VIEWER' &&
+        Object.keys(basket).length > 0 && (
+          <div className="professional-reference">
+            <strong>{Object.keys(basket).length} produto(s) no pedido</strong>
+            <button
+              className="button button-primary"
+              disabled={busyId === 'submit' || !deliveryMethodId}
+              onClick={() => void createOrder()}
+            >
+              {busyId === 'submit' ? 'A submeter…' : 'Submeter encomenda B2B'}
+            </button>
+          </div>
+        )}
     </section>
   );
 }

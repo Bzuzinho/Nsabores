@@ -114,6 +114,32 @@ export class LoyaltyService {
     return this.rule(id);
   }
 
+  async updateRule(id: string, body: LoyaltyRuleDto) {
+    await this.rule(id);
+    try {
+      await this.prisma.$executeRaw`
+        UPDATE "LoyaltyRule" SET
+          "name" = ${body.name.trim()}, "code" = ${normalizeCode(body.code)},
+          "isActive" = ${body.isActive}, "channel" = ${body.channel ?? null}::"SalesChannel",
+          "pointsPerEuro" = ${body.pointsPerEuro},
+          "clubMultiplierBasisPoints" = ${body.clubMultiplierBasisPoints},
+          "minimumOrderCents" = ${body.minimumOrderCents ?? null},
+          "maximumPointsPerOrder" = ${body.maximumPointsPerOrder ?? null},
+          "pendingDays" = ${body.pendingDays},
+          "validFrom" = ${body.validFrom ? new Date(body.validFrom) : null},
+          "validUntil" = ${body.validUntil ? new Date(body.validUntil) : null},
+          "configuration" = ${JSON.stringify(body.configuration)}::jsonb,
+          "updatedAt" = CURRENT_TIMESTAMP
+        WHERE "id" = ${id}::uuid
+      `;
+    } catch (error) {
+      if (this.isUnique(error))
+        throw new ConflictException('Já existe uma regra com esse código.');
+      throw error;
+    }
+    return this.rule(id);
+  }
+
   async rule(id: string) {
     const rows = await this.prisma.$queryRaw<Array<Record<string, unknown>>>`
       SELECT * FROM "LoyaltyRule" WHERE "id" = ${id}::uuid LIMIT 1
@@ -179,6 +205,29 @@ export class LoyaltyService {
     `;
     if (changed !== 1)
       throw new ConflictException('O vale não está ativo ou não existe.');
+    return this.giftCardById(id);
+  }
+
+  async unblockGiftCard(id: string) {
+    const changed = await this.prisma.$executeRaw`
+      UPDATE "GiftCard" SET "status" = 'ACTIVE'::"GiftCardStatus", "blockedAt" = NULL,
+        "blockReason" = NULL, "updatedAt" = CURRENT_TIMESTAMP
+      WHERE "id" = ${id}::uuid AND "status" = 'BLOCKED'::"GiftCardStatus"
+    `;
+    if (changed !== 1)
+      throw new ConflictException('O vale não está bloqueado ou não existe.');
+    return this.giftCardById(id);
+  }
+
+  async cancelGiftCard(id: string) {
+    const changed = await this.prisma.$executeRaw`
+      UPDATE "GiftCard" SET "status" = 'CANCELLED'::"GiftCardStatus", "updatedAt" = CURRENT_TIMESTAMP
+      WHERE "id" = ${id}::uuid AND "status" IN ('ACTIVE','BLOCKED') AND "reservedCents" = 0
+    `;
+    if (changed !== 1)
+      throw new ConflictException(
+        'O vale não pode ser cancelado porque está usado, reservado ou já terminou.',
+      );
     return this.giftCardById(id);
   }
 

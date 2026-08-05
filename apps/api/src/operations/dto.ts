@@ -113,9 +113,18 @@ export class ResellerApplicationDto {
   @IsOptional() @IsString() @MaxLength(3000) message?: string;
 }
 
-export class BusinessOrderDto {
+export class BusinessOrderLineDto {
   @IsUUID() productId!: string;
   @IsInt() @Min(1) quantity!: number;
+}
+
+export class BusinessOrderDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => BusinessOrderLineDto)
+  items!: BusinessOrderLineDto[];
+  @IsOptional() @IsUUID() deliveryMethodId?: string;
   @IsOptional() @IsString() @MaxLength(120) customerReference?: string;
   @IsString() @IsNotEmpty() @MaxLength(100) idempotencyKey!: string;
 }

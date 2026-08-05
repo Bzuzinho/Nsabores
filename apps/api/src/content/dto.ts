@@ -11,6 +11,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsBoolean,
   Matches,
   Max,
   MaxLength,
@@ -59,4 +60,14 @@ export class ContactRequestDto {
   @IsString() @IsNotEmpty() @MaxLength(5000) message!: string;
   @Equals(true) privacyAccepted!: boolean;
   @IsOptional() @IsString() @MaxLength(0) website?: string;
+}
+
+export class NewsletterSubscriptionDto {
+  @IsEmail() @MaxLength(180) email!: string;
+  @Equals(true) consentAccepted!: boolean;
+  @IsOptional() @IsString() @MaxLength(40) source?: string;
+}
+
+export class NewsletterStatusDto {
+  @IsBoolean() isActive!: boolean;
 }

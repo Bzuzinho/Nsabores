@@ -53,6 +53,7 @@ import { PaymentProvider } from './commerce/payment.provider';
 import { CommerceService } from './commerce/commerce.service';
 import {
   AdminBlogController,
+  AdminNewsletterController,
   PublicContentController,
 } from './content/content.controller';
 import { ContentService } from './content/content.service';
@@ -209,6 +210,7 @@ import { ReceivablesService } from './receivables/receivables.service';
     AccountReceivablesController,
     AdminOrdersController,
     AdminBlogController,
+    AdminNewsletterController,
     PublicOperationsController,
     BusinessOperationsController,
     AdminOperationsController,

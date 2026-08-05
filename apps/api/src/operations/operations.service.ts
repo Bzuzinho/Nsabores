@@ -22,6 +22,7 @@ import {
   StockReservationStatus,
 } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
+import { ReceivablesService } from '../receivables/receivables.service';
 import { sendTransactionalMail } from '../mail/outlook-mail';
 import type {
   ApplicationDecisionDto,
@@ -59,6 +60,7 @@ const purchaseTransitions: Record<PurchaseOrderStatus, PurchaseOrderStatus[]> =
 export class OperationsService {
   constructor(
     private readonly prisma: PrismaService,
+    @Optional() private readonly receivables?: ReceivablesService,
     @Optional() private readonly config?: ConfigService,
   ) {}
 
@@ -336,6 +338,60 @@ export class OperationsService {
         },
       },
       include: { items: true, supplier: true },
+    });
+  }
+
+  async updatePurchase(id: string, body: PurchaseOrderDto) {
+    const current = await this.prisma.purchaseOrder.findUnique({
+      where: { id },
+      include: { receipts: true },
+    });
+    if (!current)
+      throw new NotFoundException('Ordem de compra não encontrada.');
+    if (
+      current.status !== PurchaseOrderStatus.DRAFT ||
+      current.receipts.length
+    ) {
+      throw new ConflictException(
+        'Só é possível editar uma compra em rascunho e sem receções.',
+      );
+    }
+    if (!body.items.length)
+      throw new BadRequestException('A compra não tem artigos.');
+    const subtotalCents = body.items.reduce(
+      (sum, item) => sum + item.unitCostCents * item.orderedQuantity,
+      0,
+    );
+    const taxCents = body.items.reduce(
+      (sum, item) =>
+        sum +
+        Math.round(
+          (item.unitCostCents *
+            item.orderedQuantity *
+            (item.taxRateBasisPoints ?? 0)) /
+            10_000,
+        ),
+      0,
+    );
+    return this.prisma.purchaseOrder.update({
+      where: { id },
+      data: {
+        supplierId: body.supplierId,
+        expectedAt: body.expectedAt ? new Date(body.expectedAt) : null,
+        paymentTermsSnapshot: body.paymentTermsSnapshot,
+        notes: body.notes,
+        subtotalCents,
+        taxCents,
+        totalCents: subtotalCents + taxCents,
+        items: {
+          deleteMany: {},
+          create: body.items.map((item) => ({
+            ...item,
+            totalCents: item.unitCostCents * item.orderedQuantity,
+          })),
+        },
+      },
+      include: { supplier: true, items: true, receipts: true },
     });
   }
 
@@ -1349,8 +1405,8 @@ export class OperationsService {
 
   async createB2BOrder(
     userId: string,
-    productId: string,
-    quantity: number,
+    items: Array<{ productId: string; quantity: number }>,
+    deliveryMethodId?: string,
     reference?: string,
     idempotencyKey?: string,
   ) {
@@ -1374,24 +1430,31 @@ export class OperationsService {
       }
     }
     const catalog = await this.resolvedCatalog(userId);
-    const product = catalog.find((item) => item.id === productId);
-    if (!product) throw new NotFoundException('Produto B2B indisponível.');
-    if (
-      quantity < product.minimumOrderQuantity ||
-      quantity % product.orderMultiple !== 0
-    )
-      throw new BadRequestException(
-        'Quantidade não respeita mínimos e múltiplos.',
-      );
-    if (
-      product.availableQuantity !== null &&
-      quantity > product.availableQuantity
-    )
-      throw new ConflictException('Stock insuficiente para esta quantidade.');
-    const delivery = await this.prisma.deliveryMethod.findFirstOrThrow({
-      where: { isActive: true },
+    const lines = items.map((line) => {
+      const product = catalog.find((item) => item.id === line.productId);
+      if (!product) throw new NotFoundException('Produto B2B indisponível.');
+      if (
+        line.quantity < product.minimumOrderQuantity ||
+        line.quantity % product.orderMultiple !== 0
+      )
+        throw new BadRequestException(
+          `A quantidade de ${product.name} não respeita mínimos e múltiplos.`,
+        );
+      if (
+        product.availableQuantity !== null &&
+        line.quantity > product.availableQuantity
+      )
+        throw new ConflictException(`Stock insuficiente para ${product.name}.`);
+      return {
+        product,
+        quantity: line.quantity,
+        totalCents: product.priceCents * line.quantity,
+      };
     });
-    const subtotalCents = product.priceCents * quantity;
+    const delivery = await this.prisma.deliveryMethod.findFirstOrThrow({
+      where: { id: deliveryMethodId, isActive: true },
+    });
+    const subtotalCents = lines.reduce((sum, line) => sum + line.totalCents, 0);
     if (account.minimumOrderCents && subtotalCents < account.minimumOrderCents)
       throw new BadRequestException('Encomenda inferior ao mínimo comercial.');
     const order = await this.prisma.order.create({
@@ -1401,7 +1464,9 @@ export class OperationsService {
         email: account.businessEmail,
         customerName: account.tradeName,
         phone: account.phone,
-        status: OrderStatus.PENDING_PAYMENT,
+        status: account.requiresApproval
+          ? OrderStatus.PENDING_APPROVAL
+          : OrderStatus.PENDING_PAYMENT,
         paymentStatus: PaymentStatus.PENDING,
         subtotalCents,
         shippingCents: account.shippingCents ?? 0,
@@ -1421,23 +1486,34 @@ export class OperationsService {
         customerReference: reference,
         requiresApproval: account.requiresApproval,
         items: {
-          create: {
+          create: lines.map(({ product, quantity, totalCents }) => ({
             productId: product.id,
             productName: product.name,
             sku: product.sku,
             unitPriceCents: product.priceCents,
             quantity,
-            totalCents: subtotalCents,
+            totalCents,
             imageUrl: product.imageUrl,
+          })),
+        },
+        statusHistory: {
+          create: {
+            toStatus: account.requiresApproval
+              ? OrderStatus.PENDING_APPROVAL
+              : OrderStatus.PENDING_PAYMENT,
           },
         },
-        statusHistory: { create: { toStatus: OrderStatus.PENDING_PAYMENT } },
       },
     });
     try {
-      await this.reserveOrder(order.id);
+      if (!account.requiresApproval) await this.reserveOrder(order.id);
+      await this.receivables?.ensureAgreement(order.id);
     } catch (error) {
-      await this.prisma.order.delete({ where: { id: order.id } });
+      await this.releaseOrder(
+        order.id,
+        'Criação da encomenda B2B revertida por falha operacional.',
+      ).catch(() => undefined);
+      await this.prisma.order.deleteMany({ where: { id: order.id } });
       throw error;
     }
     return this.prisma.order.findUniqueOrThrow({

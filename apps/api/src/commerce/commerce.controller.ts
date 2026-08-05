@@ -24,6 +24,7 @@ import {
   CartQuantityDto,
   CheckoutDto,
   DeliveryMethodDto,
+  CreateDeliveryMethodDto,
   InternalNoteDto,
   ManualPaymentDto,
   MockWebhookDto,
@@ -31,6 +32,8 @@ import {
   OrderStatusDto,
   PaymentStartDto,
   ShippingQuoteDto,
+  AdminOrderDraftDto,
+  OrderDecisionDto,
 } from './dto';
 import { ManualPaymentService } from './manual-payment.service';
 
@@ -192,9 +195,45 @@ export class AdminOrdersController {
     return this.commerce.adminOrders(query);
   }
 
+  @Post('orders')
+  createDraft(
+    @CurrentUser() user: AuthPrincipal,
+    @Body() body: AdminOrderDraftDto,
+  ) {
+    return this.commerce.createAdminDraft(body, user.sub);
+  }
+
   @Get('orders/:id')
   detail(@Param('id') id: string) {
     return this.commerce.adminOrder(id);
+  }
+
+  @Patch('orders/:id/draft')
+  updateDraft(@Param('id') id: string, @Body() body: AdminOrderDraftDto) {
+    return this.commerce.updateAdminDraft(id, body);
+  }
+
+  @Post('orders/:id/submit')
+  submit(@CurrentUser() user: AuthPrincipal, @Param('id') id: string) {
+    return this.commerce.submitAdminDraft(id, user.sub);
+  }
+
+  @Post('orders/:id/approve')
+  approve(
+    @CurrentUser() user: AuthPrincipal,
+    @Param('id') id: string,
+    @Body() body: OrderDecisionDto,
+  ) {
+    return this.commerce.approveOrder(id, user.sub, body.note);
+  }
+
+  @Post('orders/:id/reject')
+  reject(
+    @CurrentUser() user: AuthPrincipal,
+    @Param('id') id: string,
+    @Body() body: OrderDecisionDto,
+  ) {
+    return this.commerce.rejectOrder(id, user.sub, body.note);
   }
 
   @Patch('orders/:id/status')
@@ -248,5 +287,17 @@ export class AdminOrdersController {
   @Roles(UserRole.ADMIN)
   updateDelivery(@Param('id') id: string, @Body() body: DeliveryMethodDto) {
     return this.commerce.updateDeliveryMethod(id, body);
+  }
+
+  @Post('delivery-methods')
+  @Roles(UserRole.ADMIN)
+  createDelivery(@Body() body: CreateDeliveryMethodDto) {
+    return this.commerce.createDeliveryMethod(body);
+  }
+
+  @Delete('delivery-methods/:id')
+  @Roles(UserRole.ADMIN)
+  deleteDelivery(@Param('id') id: string) {
+    return this.commerce.deleteDeliveryMethod(id);
   }
 }

@@ -131,4 +131,14 @@ export class AdminClubController {
       body.note,
     );
   }
+
+  @Post('subscriptions/:id/charges/:chargeId/cancel')
+  cancelCharge(
+    @Param('id') id: string,
+    @Param('chargeId') chargeId: string,
+    @CurrentUser() user: AuthPrincipal,
+    @Body() body: { note?: string },
+  ) {
+    return this.manual.cancelCharge(id, chargeId, user.sub, body.note);
+  }
 }

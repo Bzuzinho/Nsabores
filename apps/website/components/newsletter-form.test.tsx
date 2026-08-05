@@ -1,7 +1,12 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { NewsletterForm } from './newsletter-form';
+
+const { post } = vi.hoisted(() => ({
+  post: vi.fn().mockResolvedValue({ id: 'subscription-1' }),
+}));
+vi.mock('./auth-provider', () => ({ accountApi: { post } }));
 
 describe('NewsletterForm', () => {
   it('validates the email and confirms a valid subscription', async () => {
@@ -19,9 +24,15 @@ describe('NewsletterForm', () => {
 
     await user.clear(email);
     await user.type(email, 'cliente@example.com');
+    await user.click(screen.getByRole('checkbox'));
     await user.click(submit);
-    expect(screen.getByRole('status')).toHaveTextContent(
+    expect(await screen.findByRole('status')).toHaveTextContent(
       'Subscrição registada. Obrigado!',
     );
+    expect(post).toHaveBeenCalledWith('/v1/newsletter', {
+      email: 'cliente@example.com',
+      consentAccepted: true,
+      source: 'WEBSITE',
+    });
   });
 });
