@@ -91,6 +91,22 @@ export class GiftCardPurchaseService {
     return this.finalize(id);
   }
 
+  async cancel(id: string) {
+    const purchase = await this.prisma.giftCardPurchase.findUnique({
+      where: { id },
+    });
+    if (!purchase)
+      throw new NotFoundException('Compra de vale-oferta não encontrada.');
+    if (purchase.status !== 'PENDING_PAYMENT')
+      throw new ConflictException('Só é possível cancelar um pedido pendente.');
+    return this.present(
+      await this.prisma.giftCardPurchase.update({
+        where: { id },
+        data: { status: 'CANCELLED' },
+      }),
+    );
+  }
+
   async list() {
     return this.prisma.giftCardPurchase.findMany({
       orderBy: { createdAt: 'desc' },

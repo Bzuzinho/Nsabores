@@ -112,6 +112,60 @@ export function PurchaseDetailAdmin({ id }: { id: string }) {
     }
   }
 
+  async function editDraft() {
+    if (!purchase) return;
+    const items = purchase.items.map((item) => {
+      const quantity = window.prompt(
+        `Quantidade — ${item.product.name}`,
+        String(item.orderedQuantity),
+      );
+      const cost = window.prompt(
+        `Custo unitário em euros — ${item.product.name}`,
+        (item.unitCostCents / 100).toFixed(2),
+      );
+      return {
+        productId: item.productId,
+        supplierSku: item.supplierSku,
+        description: item.product.name,
+        orderedQuantity: Math.max(1, Number(quantity ?? item.orderedQuantity)),
+        unitCostCents: Math.max(
+          0,
+          Math.round(
+            Number(
+              (cost ?? String(item.unitCostCents / 100)).replace(',', '.'),
+            ) * 100,
+          ),
+        ),
+        taxRateBasisPoints: 2300,
+      };
+    });
+    const notes =
+      window.prompt('Notas da compra', purchase.notes ?? '') ??
+      purchase.notes ??
+      '';
+    setBusy(true);
+    setError('');
+    try {
+      await managementApi.put(`/v1/admin/purchases/${id}`, {
+        supplierId: purchase.supplier.id,
+        expectedAt: purchase.expectedAt ?? undefined,
+        paymentTermsSnapshot: purchase.paymentTermsSnapshot ?? undefined,
+        notes,
+        items,
+      });
+      setMessage('Rascunho atualizado.');
+      await load();
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível editar a compra.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function receive(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!purchase) return;
@@ -181,13 +235,22 @@ export function PurchaseDetailAdmin({ id }: { id: string }) {
             Voltar
           </Link>
           {purchase.status === 'DRAFT' && (
-            <button
-              className="admin-primary"
-              disabled={busy}
-              onClick={() => void changeStatus('SUBMITTED')}
-            >
-              Submeter compra
-            </button>
+            <>
+              <button
+                className="admin-secondary"
+                disabled={busy}
+                onClick={() => void editDraft()}
+              >
+                Editar rascunho
+              </button>
+              <button
+                className="admin-primary"
+                disabled={busy}
+                onClick={() => void changeStatus('SUBMITTED')}
+              >
+                Submeter compra
+              </button>
+            </>
           )}
           {purchase.status === 'SUBMITTED' && (
             <button

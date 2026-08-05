@@ -86,6 +86,15 @@ export class CustomerFulfillmentController {
   ) {
     return this.fulfillment.createSupportCase(user.sub, body);
   }
+
+  @Post('support-cases/:id/comments')
+  comment(
+    @CurrentUser() user: AuthPrincipal,
+    @Param('id') id: string,
+    @Body() body: SupportCaseCommentDto,
+  ) {
+    return this.fulfillment.addCustomerSupportComment(id, body.body, user.sub);
+  }
 }
 
 @UseGuards(AuthGuard, RolesGuard)

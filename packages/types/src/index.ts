@@ -158,6 +158,8 @@ export interface AuthSessionView {
 }
 
 export type OrderStatus =
+  | 'DRAFT'
+  | 'PENDING_APPROVAL'
   | 'PENDING_PAYMENT'
   | 'PAID'
   | 'PROCESSING'
@@ -165,6 +167,7 @@ export type OrderStatus =
   | 'SHIPPED'
   | 'DELIVERED'
   | 'CANCELLED'
+  | 'REJECTED'
   | 'REFUNDED';
 export type PaymentStatus =
   | 'PENDING'
@@ -259,6 +262,9 @@ export interface CommerceOrder {
   shippingAddress: Record<string, unknown>;
   customerNotes: string | null;
   internalNotes?: string | null;
+  source?: string;
+  salesChannel?: 'B2C' | 'B2B';
+  requiresApproval?: boolean;
   paymentTermsSnapshot?: ManualOrderTerms | null;
   createdAt: string;
   deliveryMethod: DeliveryMethod;

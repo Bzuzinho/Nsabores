@@ -50,6 +50,45 @@ export function DeliveryMethodsAdmin() {
     }
   }
 
+  async function create(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    try {
+      await managementApi.post('/v1/admin/delivery-methods', {
+        code: form.get('code'),
+        name: form.get('name'),
+        type: form.get('type'),
+        isActive: true,
+        priceCents: Math.round(Number(form.get('price')) * 100),
+        freeShippingAboveCents: null,
+      });
+      event.currentTarget.reset();
+      setMessage('Método de entrega criado.');
+      await load();
+    } catch (reason) {
+      setError(
+        reason instanceof Error ? reason.message : 'Não foi possível criar.',
+      );
+    }
+  }
+
+  async function remove(method: DeliveryMethod) {
+    if (
+      !confirm(
+        `Eliminar ${method.name}? Se tiver histórico será apenas desativado.`,
+      )
+    )
+      return;
+    try {
+      await managementApi.delete(`/v1/admin/delivery-methods/${method.id}`);
+      await load();
+    } catch (reason) {
+      setError(
+        reason instanceof Error ? reason.message : 'Não foi possível eliminar.',
+      );
+    }
+  }
+
   return (
     <section className="admin-page operational-stack">
       {message && <div className="admin-message">{message}</div>}
@@ -61,6 +100,36 @@ export function DeliveryMethodsAdmin() {
           <p>Disponibilidade, custo base e limiar para portes gratuitos.</p>
         </div>
       </header>
+      <form className="admin-card operational-form" onSubmit={create}>
+        <h2>Novo método</h2>
+        <label>
+          Código
+          <input name="code" required />
+        </label>
+        <label>
+          Nome
+          <input name="name" required />
+        </label>
+        <label>
+          Tipo
+          <select name="type">
+            <option value="STANDARD">Entrega</option>
+            <option value="LOCAL_PICKUP">Recolha local</option>
+          </select>
+        </label>
+        <label>
+          Preço (€)
+          <input
+            name="price"
+            type="number"
+            min="0"
+            step="0.01"
+            defaultValue="0"
+            required
+          />
+        </label>
+        <button className="admin-primary">Criar método</button>
+      </form>
       <div className="delivery-method-grid">
         {methods.map((method) => (
           <form
@@ -108,6 +177,9 @@ export function DeliveryMethodsAdmin() {
             </label>
             <button className="admin-primary" disabled={busyId === method.id}>
               {busyId === method.id ? 'A guardar…' : 'Guardar'}
+            </button>
+            <button type="button" onClick={() => void remove(method)}>
+              Eliminar/desativar
             </button>
           </form>
         ))}

@@ -234,20 +234,28 @@ export class ClubService {
     const current = await this.requireAccountSubscription(userId);
     if (current.status === 'CANCEL_AT_PERIOD_END')
       return this.subscriptionDetail(current.id, userId);
+    const pending = current.status === 'PENDING_ACTIVATION';
     await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`
         UPDATE "ClubSubscription" SET
-          "status" = 'CANCEL_AT_PERIOD_END', "cancelAtPeriodEnd" = true,
+          "status" = ${pending ? 'CANCELLED' : 'CANCEL_AT_PERIOD_END'}::"ClubSubscriptionStatus",
+          "cancelAtPeriodEnd" = ${!pending},
+          "cancelledAt" = CASE WHEN ${pending} THEN CURRENT_TIMESTAMP ELSE "cancelledAt" END,
           "updatedAt" = CURRENT_TIMESTAMP WHERE "id" = ${current.id}::uuid
       `;
+      if (pending)
+        await tx.$executeRaw`UPDATE "ClubSubscriptionCharge" SET "status" = 'CANCELLED'::"ClubChargeStatus", "updatedAt" = CURRENT_TIMESTAMP WHERE "subscriptionId" = ${current.id}::uuid AND "status" = 'PENDING'::"ClubChargeStatus"`;
       await this.event(
         tx,
         current.id,
         'CANCEL_SCHEDULED',
         current.status,
-        'CANCEL_AT_PERIOD_END',
+        pending ? 'CANCELLED' : 'CANCEL_AT_PERIOD_END',
         userId,
-        body.reason ?? 'Cancelamento agendado pelo cliente.',
+        body.reason ??
+          (pending
+            ? 'Adesão pendente cancelada pelo cliente.'
+            : 'Cancelamento agendado pelo cliente.'),
       );
     });
     return this.subscriptionDetail(current.id, userId);

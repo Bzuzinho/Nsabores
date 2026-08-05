@@ -5,8 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { OrderStatus, PaymentStatus, Prisma } from '@prisma/client';
+import { BundleInventoryService } from '../bundles/bundle-inventory.service';
 import { PrismaService } from '../prisma.service';
-import { OperationsService } from '../operations/operations.service';
 
 interface ReturnReplacementRow {
   id: string;
@@ -32,7 +32,7 @@ const replacementNumber = () =>
 export class ReturnReplacementService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly operations: OperationsService,
+    private readonly bundleInventory: BundleInventoryService,
   ) {}
 
   async createReplacement(returnRequestId: string, authorId: string) {
@@ -84,67 +84,87 @@ export class ReturnReplacementService {
     }
 
     const replacementId = randomUUID();
+    const replacementItems = items.map((item) => ({
+      ...item,
+      replacementOrderItemId: randomUUID(),
+    }));
     try {
-      await this.prisma.order.create({
-        data: {
-          id: replacementId,
-          number: replacementNumber(),
-          userId: original.userId,
-          email: original.email,
-          customerName: original.customerName,
-          phone: original.phone,
-          status: OrderStatus.PAID,
-          paymentStatus: PaymentStatus.PAID,
-          subtotalCents: 0,
-          shippingCents: 0,
-          discountCents: 0,
-          taxCents: 0,
-          totalCents: 0,
-          currency: original.currency,
-          billingAddress:
-            original.billingAddress === null
-              ? Prisma.JsonNull
-              : original.billingAddress,
-          shippingAddress:
-            original.shippingAddress === null
-              ? Prisma.JsonNull
-              : original.shippingAddress,
-          customerNotes: undefined,
-          internalNotes: `Encomenda de substituição criada a partir da devolução ${request.number} e da encomenda ${original.number}.`,
-          source: 'RETURN_REPLACEMENT',
-          deliveryMethodId: original.deliveryMethodId,
-          idempotencyKey,
-          salesChannel: original.salesChannel,
-          businessAccountId: original.businessAccountId,
-          priceListId: original.priceListId,
-          paymentTermsSnapshot: original.paymentTermsSnapshot ?? undefined,
-          customerReference: request.number,
-          requiresApproval: false,
-          approvedBy: authorId,
-          approvedAt: new Date(),
-          items: {
-            create: items.map((item) => ({
-              productId: item.productId!,
-              productName: item.productName,
-              sku: item.sku,
-              unitPriceCents: 0,
-              quantity: item.quantity,
-              totalCents: 0,
-              imageUrl: item.imageUrl,
-            })),
-          },
-          statusHistory: {
-            create: {
-              fromStatus: null,
-              toStatus: OrderStatus.PAID,
-              authorId,
-              note: `Substituição autorizada na devolução ${request.number}.`,
+      await this.prisma.$transaction(async (tx) => {
+        await tx.order.create({
+          data: {
+            id: replacementId,
+            number: replacementNumber(),
+            userId: original.userId,
+            email: original.email,
+            customerName: original.customerName,
+            phone: original.phone,
+            status: OrderStatus.PAID,
+            paymentStatus: PaymentStatus.PAID,
+            subtotalCents: 0,
+            shippingCents: 0,
+            discountCents: 0,
+            taxCents: 0,
+            totalCents: 0,
+            currency: original.currency,
+            billingAddress:
+              original.billingAddress === null
+                ? Prisma.JsonNull
+                : original.billingAddress,
+            shippingAddress:
+              original.shippingAddress === null
+                ? Prisma.JsonNull
+                : original.shippingAddress,
+            customerNotes: undefined,
+            internalNotes: `Encomenda de substituição criada a partir da devolução ${request.number} e da encomenda ${original.number}.`,
+            source: 'RETURN_REPLACEMENT',
+            deliveryMethodId: original.deliveryMethodId,
+            idempotencyKey,
+            salesChannel: original.salesChannel,
+            businessAccountId: original.businessAccountId,
+            priceListId: original.priceListId,
+            paymentTermsSnapshot: original.paymentTermsSnapshot ?? undefined,
+            customerReference: request.number,
+            requiresApproval: false,
+            approvedBy: authorId,
+            approvedAt: new Date(),
+            items: {
+              create: replacementItems.map((item) => ({
+                id: item.replacementOrderItemId,
+                productId: item.productId!,
+                productName: item.productName,
+                sku: item.sku,
+                unitPriceCents: 0,
+                quantity: item.quantity,
+                totalCents: 0,
+                imageUrl: item.imageUrl,
+              })),
+            },
+            statusHistory: {
+              create: {
+                fromStatus: null,
+                toStatus: OrderStatus.PAID,
+                authorId,
+                note: `Substituição autorizada na devolução ${request.number}.`,
+              },
             },
           },
-        },
+        });
+        for (const item of replacementItems) {
+          await tx.$executeRaw`
+            INSERT INTO "OrderItemBundleSelection" (
+              "id", "orderItemId", "componentProductId", "componentName",
+              "componentSku", "quantity", "unitPriceDeltaCents", "createdAt"
+            )
+            SELECT gen_random_uuid(), ${item.replacementOrderItemId}::uuid,
+              "componentProductId", "componentName", "componentSku", "quantity",
+              "unitPriceDeltaCents", CURRENT_TIMESTAMP
+            FROM "OrderItemBundleSelection"
+            WHERE "orderItemId" = ${item.orderItemId}::uuid
+          `;
+        }
       });
 
-      await this.operations.reserveOrder(replacementId);
+      await this.bundleInventory.reserveOrder(replacementId);
     } catch (error) {
       await this.prisma.order.deleteMany({ where: { id: replacementId } });
       throw error;

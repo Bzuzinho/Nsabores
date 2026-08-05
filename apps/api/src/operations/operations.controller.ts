@@ -67,8 +67,8 @@ export class BusinessOperationsController {
   order(@CurrentUser() user: AuthPrincipal, @Body() body: BusinessOrderDto) {
     return this.operations.createB2BOrder(
       user.sub,
-      body.productId,
-      body.quantity,
+      body.items,
+      body.deliveryMethodId,
       body.customerReference,
       body.idempotencyKey,
     );
@@ -133,6 +133,12 @@ export class AdminOperationsController {
     @Body() body: PurchaseOrderDto,
   ) {
     return this.operations.createPurchase(body, user.sub);
+  }
+  @Put('purchases/:id') updatePurchase(
+    @Param('id') id: string,
+    @Body() body: PurchaseOrderDto,
+  ) {
+    return this.operations.updatePurchase(id, body);
   }
   @Post('purchases/:id/receipts') receive(
     @CurrentUser() user: AuthPrincipal,

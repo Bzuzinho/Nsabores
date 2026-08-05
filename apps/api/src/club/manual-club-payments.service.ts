@@ -282,6 +282,24 @@ export class ManualClubPaymentsService {
     return this.club.subscriptionDetail(subscriptionId);
   }
 
+  async cancelCharge(
+    subscriptionId: string,
+    chargeId: string,
+    authorId: string,
+    note?: string,
+  ) {
+    const changed = await this.prisma.$executeRaw`
+      UPDATE "ClubSubscriptionCharge" SET "status" = 'CANCELLED'::"ClubChargeStatus",
+        "metadata" = COALESCE("metadata", '{}'::jsonb) || ${JSON.stringify({ cancelledBy: authorId, note: note?.trim() || null })}::jsonb,
+        "updatedAt" = CURRENT_TIMESTAMP
+      WHERE "id" = ${chargeId}::uuid AND "subscriptionId" = ${subscriptionId}::uuid
+        AND "status" = 'PENDING'::"ClubChargeStatus"
+    `;
+    if (changed !== 1)
+      throw new ConflictException('A cobrança não está pendente.');
+    return { success: true };
+  }
+
   private async subscription(id: string) {
     const rows = await this.prisma.$queryRaw<SubscriptionRow[]>`
       SELECT "id", "userId", "status", "currentPeriodStart", "currentPeriodEnd",

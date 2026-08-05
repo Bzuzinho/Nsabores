@@ -10,7 +10,12 @@ vi.mock('../mail/outlook-mail', () => ({
 }));
 
 describe('ContentService', () => {
+  const supportCaseCreate =
+    vi.fn<
+      (input: { data: { status: string } }) => Promise<{ number: string }>
+    >();
   const prisma = {
+    supportCase: { create: supportCaseCreate },
     blogPost: {
       create: vi.fn(),
       findMany: vi.fn(),
@@ -34,6 +39,7 @@ describe('ContentService', () => {
   });
 
   it('sends contact requests to the configured recipient with a safe reply-to', async () => {
+    prisma.supportCase.create.mockResolvedValue({ number: 'SUP-2026-TEST' });
     await expect(
       service.contact({
         name: 'Maria <Cliente>',
@@ -43,7 +49,11 @@ describe('ContentService', () => {
         message: 'Quero saber mais.\nObrigada.',
         privacyAccepted: true,
       }),
-    ).resolves.toEqual({ accepted: true });
+    ).resolves.toEqual({ accepted: true, caseNumber: 'SUP-2026-TEST' });
+
+    expect(prisma.supportCase.create.mock.calls[0]?.[0].data.status).toBe(
+      'OPEN',
+    );
 
     const mailCall = vi.mocked(deliverTransactionalMail).mock.calls[0];
     expect(mailCall?.[0]).toBe(config);

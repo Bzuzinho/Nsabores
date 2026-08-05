@@ -13,7 +13,7 @@ import { CurrentUser, Roles } from './auth.decorators';
 import { AuthGuard, RolesGuard } from './auth.guards';
 import type { AuthPrincipal } from './auth.types';
 import { AdminUsersService } from './admin-users.service';
-import { UpdateUserAdminDto, UsersQueryDto } from './dto';
+import { InviteUserDto, UpdateUserAdminDto, UsersQueryDto } from './dto';
 
 @UseGuards(AuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN)
@@ -24,6 +24,11 @@ export class AdminUsersController {
   @Get()
   list(@Query() query: UsersQueryDto) {
     return this.users.list(query);
+  }
+
+  @Post()
+  invite(@Body() body: InviteUserDto) {
+    return this.users.invite(body);
   }
 
   @Get(':id')

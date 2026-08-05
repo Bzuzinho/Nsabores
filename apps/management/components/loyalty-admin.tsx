@@ -29,6 +29,9 @@ interface LoyaltyRule {
   minimumOrderCents?: number | null;
   maximumPointsPerOrder?: number | null;
   pendingDays: number;
+  validFrom?: string | null;
+  validUntil?: string | null;
+  configuration?: Record<string, unknown>;
 }
 
 interface GiftCard {
@@ -125,6 +128,8 @@ export function LoyaltyAdmin({
           ? Number(data.get('maximumPointsPerOrder'))
           : undefined,
         pendingDays: Number(data.get('pendingDays')),
+        validFrom: String(data.get('validFrom') || '') || undefined,
+        validUntil: String(data.get('validUntil') || '') || undefined,
         configuration: {},
       });
       form.reset();
@@ -137,6 +142,58 @@ export function LoyaltyAdmin({
       );
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function editRule(rule: LoyaltyRule) {
+    const points = window.prompt(
+      'Pontos por euro:',
+      String(rule.pointsPerEuro),
+    );
+    if (points === null) return;
+    const pending = window.prompt('Dias pendentes:', String(rule.pendingDays));
+    if (pending === null) return;
+    const active = window.confirm('A regra deve ficar ativa?');
+    try {
+      await managementApi.patch(`/v1/admin/loyalty/rules/${rule.id}`, {
+        ...rule,
+        isActive: active,
+        pointsPerEuro: Number(points),
+        pendingDays: Number(pending),
+        channel: rule.channel || undefined,
+        minimumOrderCents: rule.minimumOrderCents ?? undefined,
+        maximumPointsPerOrder: rule.maximumPointsPerOrder ?? undefined,
+        validFrom: rule.validFrom ?? undefined,
+        validUntil: rule.validUntil ?? undefined,
+        configuration: rule.configuration ?? {},
+      });
+      await load();
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível atualizar a regra.',
+      );
+    }
+  }
+
+  async function giftAction(card: GiftCard, action: 'unblock' | 'cancel') {
+    if (
+      !confirm(
+        action === 'unblock'
+          ? 'Desbloquear este vale?'
+          : 'Cancelar definitivamente este vale?',
+      )
+    )
+      return;
+    try {
+      await managementApi.patch(
+        `/v1/admin/loyalty/gift-cards/${card.id}/${action}`,
+        {},
+      );
+      await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Operação falhou.');
     }
   }
 
@@ -308,6 +365,14 @@ export function LoyaltyAdmin({
                 />
               </label>
               <label>
+                Início da validade
+                <input name="validFrom" type="datetime-local" />
+              </label>
+              <label>
+                Fim da validade
+                <input name="validUntil" type="datetime-local" />
+              </label>
+              <label>
                 <input name="isActive" type="checkbox" defaultChecked /> Ativa
               </label>
               <button className="admin-primary" disabled={busy}>
@@ -323,6 +388,9 @@ export function LoyaltyAdmin({
                   <strong>{rule.name}</strong> · {rule.code} ·{' '}
                   {rule.isActive ? 'Ativa' : 'Inativa'}
                 </p>
+                <button onClick={() => void editRule(rule)}>
+                  Editar/ativar
+                </button>
                 <p>
                   {rule.pointsPerEuro} ponto(s)/€ · Clube{' '}
                   {rule.clubMultiplierBasisPoints / 100}% · pendência{' '}
@@ -393,6 +461,16 @@ export function LoyaltyAdmin({
                 <Link href={`/vales-oferta/${card.id}`}>
                   Detalhe e movimentos
                 </Link>
+                {card.status === 'BLOCKED' && (
+                  <button onClick={() => void giftAction(card, 'unblock')}>
+                    Desbloquear
+                  </button>
+                )}
+                {['ACTIVE', 'BLOCKED'].includes(card.status) && (
+                  <button onClick={() => void giftAction(card, 'cancel')}>
+                    Cancelar vale
+                  </button>
+                )}
               </article>
             ))}
           </section>

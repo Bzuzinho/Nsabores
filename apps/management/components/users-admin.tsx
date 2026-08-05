@@ -44,6 +44,35 @@ export function UsersAdmin({ selectedId }: { selectedId?: string }) {
     }
   };
 
+  const invite = async () => {
+    const email = window.prompt('Email do novo utilizador:');
+    if (!email) return;
+    const firstName = window.prompt('Nome:');
+    if (!firstName) return;
+    const lastName = window.prompt('Apelido:');
+    if (!lastName) return;
+    const role = window.prompt('Função: STAFF ou ADMIN', 'STAFF');
+    if (role !== 'STAFF' && role !== 'ADMIN') {
+      setError('Função inválida.');
+      return;
+    }
+    try {
+      await managementApi.post('/v1/admin/users', {
+        email,
+        firstName,
+        lastName,
+        role,
+      });
+      await load();
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível enviar o convite.',
+      );
+    }
+  };
+
   if (selectedId) {
     if (!selected)
       return <div className="admin-state">A carregar utilizador...</div>;
@@ -103,6 +132,9 @@ export function UsersAdmin({ selectedId }: { selectedId?: string }) {
           <h1>Utilizadores</h1>
           <p>Contas de clientes e equipa.</p>
         </div>
+        <button className="admin-primary" onClick={() => void invite()}>
+          + Convidar utilizador
+        </button>
       </header>
       <input
         className="user-search"

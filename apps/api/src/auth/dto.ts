@@ -3,6 +3,7 @@ import {
   IsBoolean,
   IsEmail,
   IsIn,
+  IsNotEmpty,
   IsOptional,
   IsString,
   Length,
@@ -104,4 +105,11 @@ export class UpdateUserAdminDto {
     'CUSTOMER' | 'STAFF' | 'ADMIN';
   @IsOptional() @IsBoolean() isActive?: boolean;
   @IsOptional() @IsString() @MaxLength(2000) notes?: string;
+}
+
+export class InviteUserDto {
+  @IsEmail() email!: string;
+  @IsString() @IsNotEmpty() @MaxLength(100) firstName!: string;
+  @IsString() @IsNotEmpty() @MaxLength(100) lastName!: string;
+  @IsIn(['CUSTOMER', 'STAFF', 'ADMIN']) role!: 'CUSTOMER' | 'STAFF' | 'ADMIN';
 }
