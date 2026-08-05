@@ -1,10 +1,4 @@
-import { OperationsModule } from '../../components/operations-module';
+import { StockAdmin } from '../../components/stock-admin';
 export default function Page() {
-  return (
-    <OperationsModule
-      title="Stock"
-      endpoint="stock"
-      description="Disponível, reservado e pontos de reposição."
-    />
-  );
+  return <StockAdmin />;
 }

@@ -40,6 +40,11 @@ export interface CatalogProduct {
   isActive: boolean;
   isFeatured: boolean;
   stockStatus: StockStatus;
+  channel: 'B2C_ONLY' | 'B2B_ONLY' | 'BOTH';
+  minimumOrderQuantity: number;
+  orderMultiple: number;
+  caseSize: number | null;
+  saleUnit: 'UNIT' | 'PACK' | 'CASE';
   category: Pick<CatalogCategory, 'id' | 'name' | 'slug'>;
   createdAt: string;
   updatedAt: string;

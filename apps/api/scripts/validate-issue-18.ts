@@ -5,6 +5,7 @@ import {
   PaymentStatus,
   PriceListType,
   Prisma,
+  PurchaseOrderStatus,
   UserRole,
 } from '@prisma/client';
 import { PrismaService } from '../src/prisma.service';
@@ -63,6 +64,14 @@ async function main() {
   const beforeReceipt = await prisma.stockItem.findUniqueOrThrow({
     where: { productId: product.id },
   });
+  await operations.setPurchaseStatus(
+    purchase.id,
+    PurchaseOrderStatus.SUBMITTED,
+  );
+  await operations.setPurchaseStatus(
+    purchase.id,
+    PurchaseOrderStatus.CONFIRMED,
+  );
   await operations.receivePurchase(
     purchase.id,
     {

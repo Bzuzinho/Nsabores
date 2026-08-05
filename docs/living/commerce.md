@@ -1,6 +1,6 @@
 # Comércio: carrinho, checkout, encomendas e pagamentos
 
-Última revisão: 2026-07-24 — Codex
+Última revisão: 2026-08-05 — Codex
 
 ## Fluxo
 
@@ -29,41 +29,38 @@ carrinho convertido deixa de ser reutilizado.
 Cada transição operacional gera `OrderStatusHistory`. Os snapshots de produto,
 preço, cliente e moradas não são alterados pela gestão.
 
-## Pagamentos e webhooks
+## Pagamentos manuais e providers
 
-`PAYMENT_PROVIDER=mock` cria uma sessão local. A confirmação mock percorre a
-mesma operação idempotente usada pelo webhook. `POST /v1/payments/webhook`
-valida HMAC-SHA256 em `x-payment-signature` com `PAYMENT_WEBHOOK_SECRET`; eventos
-repetidos são registados apenas uma vez. O redirect nunca é a fonte de verdade.
+Em produção, `PAYMENT_FLOW_MODE=manual` regista a preferência do cliente e a
+Gestão confirma o pagamento recebido com referência, nota e autor. O transporte
+caso a caso pode ser orçamentado no detalhe antes da confirmação do valor.
 
-O valor `stripe` está aceite pela configuração para futura instalação do
-adaptador real. Até existirem credenciais e autorização, retorna uma resposta
-explícita de não implementado e não contacta serviços externos.
+`PAYMENT_PROVIDER=mock` continua disponível apenas para desenvolvimento e testes.
+O webhook valida HMAC-SHA256, é idempotente e nunca confia no redirect. O valor
+`stripe` está reservado na configuração, mas falha explicitamente até existir
+um adaptador autorizado e credenciais do operador.
 
 Variáveis: `PAYMENT_PROVIDER`, `PAYMENT_SECRET_KEY`,
 `PAYMENT_WEBHOOK_SECRET`, `PAYMENT_SUCCESS_URL` e `PAYMENT_CANCEL_URL`.
 
 ## Entrega e gestão
 
-O seed cria entrega standard em Portugal Continental (4,90 €, gratuita a partir
-de 50 €) e recolha local. A API administrativa permite ativar, desativar e
-alterar estes valores persistidos.
+A Gestão permite ativar/desativar métodos de entrega e alterar preço e limiar de
+portes gratuitos. O modo caso a caso e a recolha local permanecem disponíveis.
 
 `/encomendas` na aplicação de gestão oferece pesquisa, filtros e CSV.
 `/encomendas/[id]` apresenta snapshots, pagamento, histórico, notas, transições,
-cancelamento e reembolso com confirmação.
+cancelamento, reembolso e criação de expedições parciais/totais.
 
 ## Emails
 
-Os templates preparados cobrem receção, pagamento, preparação, envio,
-cancelamento e reembolso. O provider atual apenas escreve eventos estruturados
-de teste, ocultando o endereço local do destinatário. Nenhum email real é
-enviado.
+Os templates cobrem receção, pagamento, preparação, envio, cancelamento e
+reembolso. O provider de log é usado em desenvolvimento; Microsoft Graph envia
+email real quando o OAuth delegado está configurado no ambiente.
 
 ## Limitações
 
-- Não existe stock quantitativo nem reserva de unidades; `stockStatus` continua
-  a ser validado antes da encomenda e do pagamento.
-- Não existem faturação certificada, transportadoras, cupões ou multi-moeda.
-- O adaptador Stripe e emails reais dependem de credenciais e autorização.
+- Não existem faturação certificada, transportadora automática ou multi-moeda.
+- O adaptador de pagamento digital e o provider de transporte dependem de
+  contrato, credenciais e autorização.
 - Termos e privacidade têm texto provisório para revisão jurídica.

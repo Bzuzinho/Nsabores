@@ -153,6 +153,11 @@ export class FulfillmentService {
     if (duplicate[0]) return this.shipment(duplicate[0].id);
     if (!body.items.length)
       throw new BadRequestException('A expedição não tem artigos.');
+    if (
+      new Set(body.items.map((item) => item.orderItemId)).size !==
+      body.items.length
+    )
+      throw new BadRequestException('A expedição contém artigos repetidos.');
 
     const shipmentId = randomUUID();
     const shipmentNumber = number('SHP');

@@ -245,6 +245,7 @@ export class AdminOrdersController {
   }
 
   @Patch('delivery-methods/:id')
+  @Roles(UserRole.ADMIN)
   updateDelivery(@Param('id') id: string, @Body() body: DeliveryMethodDto) {
     return this.commerce.updateDeliveryMethod(id, body);
   }

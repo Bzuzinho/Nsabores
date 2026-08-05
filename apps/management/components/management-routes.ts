@@ -303,6 +303,15 @@ export const managementRoutes: ManagementRoute[] = [
     adminOnly: true,
     pageFile: 'app/utilizadores/page.tsx',
   },
+  {
+    href: '/administracao/entregas',
+    label: 'Métodos de entrega',
+    description: 'Custos, disponibilidade e portes gratuitos.',
+    group: 'Administração',
+    keywords: ['transportes', 'portes', 'checkout'],
+    adminOnly: true,
+    pageFile: 'app/administracao/entregas/page.tsx',
+  },
 ];
 
 export const managementGroups: ManagementGroup[] = [

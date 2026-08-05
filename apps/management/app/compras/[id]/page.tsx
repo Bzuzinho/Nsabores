@@ -1,15 +1,9 @@
-import { OperationsModule } from '../../../components/operations-module';
+import { PurchaseDetailAdmin } from '../../../components/purchase-detail-admin';
 export default async function Page({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return (
-    <OperationsModule
-      title="Ordem de compra"
-      endpoint={`purchases/${id}`}
-      description="Linhas, pendentes e receções."
-    />
-  );
+  return <PurchaseDetailAdmin id={id} />;
 }

@@ -1,10 +1,4 @@
-import { OperationsModule } from '../../components/operations-module';
+import { PriceListsAdmin } from '../../components/price-lists-admin';
 export default function Page() {
-  return (
-    <OperationsModule
-      title="Tabelas de preços"
-      endpoint="price-lists"
-      description="Preços retail, revendedor e personalizados."
-    />
-  );
+  return <PriceListsAdmin />;
 }

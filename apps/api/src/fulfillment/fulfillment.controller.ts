@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
@@ -99,8 +100,8 @@ export class AdminFulfillmentController {
   }
 
   @Get('shipments')
-  shipments() {
-    return this.fulfillment.shipments();
+  shipments(@Query('orderId') orderId?: string) {
+    return this.fulfillment.shipments(orderId);
   }
 
   @Get('shipments/:id')

@@ -91,6 +91,11 @@ export class CreateProductDto {
   @IsOptional() @IsBoolean() isFeatured?: boolean;
   @IsOptional() @IsEnum(StockStatus) stockStatus?: StockStatus;
   @IsString() @IsNotEmpty() categoryId!: string;
+  @IsOptional() @IsEnum(ProductChannel) channel?: ProductChannel;
+  @IsOptional() @IsInt() @Min(1) minimumOrderQuantity?: number;
+  @IsOptional() @IsInt() @Min(1) orderMultiple?: number;
+  @IsOptional() @IsInt() @Min(1) caseSize?: number;
+  @IsOptional() @IsEnum(SaleUnit) saleUnit?: SaleUnit;
 
   @ValidateIf(
     (item: CreateProductDto) => item.compareAtPriceCents !== undefined,

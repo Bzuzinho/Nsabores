@@ -39,6 +39,8 @@ function setup() {
       findUniqueOrThrow: vi.fn(),
       update: vi.fn(),
     },
+    businessAccount: { findFirst: vi.fn() },
+    businessAccountUser: { upsert: vi.fn().mockResolvedValue({}) },
     authSession: {
       create: vi.fn().mockResolvedValue({}),
       findUnique: vi.fn(),
@@ -109,6 +111,7 @@ describe('AuthService', () => {
       }),
     );
     expect(mail.sendEmailVerification).toHaveBeenCalled();
+    expect(prisma.businessAccountUser.upsert).not.toHaveBeenCalled();
     expect(response.cookie).toHaveBeenCalledTimes(2);
   });
 
@@ -132,6 +135,22 @@ describe('AuthService', () => {
         response as never,
       ),
     ).rejects.toBeInstanceOf(Error);
+  });
+
+  it('associa a conta empresarial apenas depois de verificar o email', async () => {
+    const { service, prisma } = setup();
+    prisma.user.findFirst.mockResolvedValue(user);
+    prisma.businessAccount.findFirst.mockResolvedValue({ id: 'business-id' });
+    await service.verifyEmail('verification-token');
+    expect(prisma.businessAccountUser.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          businessAccountId: 'business-id',
+          userId: user.id,
+          role: 'OWNER',
+        }) as unknown,
+      }),
+    );
   });
 
   it('accepts valid login and rejects invalid credentials or inactive accounts', async () => {

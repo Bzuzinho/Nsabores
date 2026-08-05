@@ -24,6 +24,7 @@ type BusinessAccount = {
   minimumOrderCents: number | null;
   shippingCents: number | null;
   requiresApproval: boolean;
+  membershipRole: 'OWNER' | 'BUYER' | 'VIEWER';
   priceList?: { name: string; code: string } | null;
 };
 
@@ -161,6 +162,33 @@ function Prices({
   products: BusinessProduct[];
   account: BusinessAccount;
 }) {
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [customerReference, setCustomerReference] = useState('');
+  const [busyId, setBusyId] = useState('');
+  const [error, setError] = useState('');
+  const [order, setOrder] = useState<{ id: string; number: string }>();
+
+  async function createOrder(product: BusinessProduct) {
+    setBusyId(product.id);
+    setError('');
+    try {
+      const result = await accountApi.post<{ id: string; number: string }>(
+        '/v1/business/orders',
+        {
+          productId: product.id,
+          quantity: quantities[product.id] ?? product.minimumOrderQuantity,
+          customerReference: customerReference || undefined,
+          idempotencyKey: crypto.randomUUID(),
+        },
+      );
+      setOrder(result);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Erro inesperado.');
+    } finally {
+      setBusyId('');
+    }
+  }
+
   return (
     <section>
       <div className="professional-section-heading">
@@ -172,6 +200,28 @@ function Prices({
         </div>
         <span>{products.length} produtos</span>
       </div>
+      {account.membershipRole !== 'VIEWER' && (
+        <label className="professional-reference">
+          Referência da encomenda (opcional)
+          <input
+            value={customerReference}
+            onChange={(event) => setCustomerReference(event.target.value)}
+            placeholder="Ex.: encomenda interna 2026/145"
+          />
+        </label>
+      )}
+      {account.membershipRole === 'VIEWER' && (
+        <p className="account-notice">
+          Este acesso permite consultar preços, mas não criar encomendas.
+        </p>
+      )}
+      {error && <p className="auth-error">{error}</p>}
+      {order && (
+        <p className="account-success">
+          Encomenda {order.number} criada.{' '}
+          <Link href={`/conta/encomendas/${order.id}`}>Abrir encomenda</Link>
+        </p>
+      )}
       <div className="professional-price-grid">
         {products.map((product) => (
           <article key={product.id}>
@@ -189,6 +239,36 @@ function Prices({
                   ? 'Disponibilidade sob consulta'
                   : `${product.availableQuantity} disponíveis`}
               </span>
+              {account.membershipRole !== 'VIEWER' && (
+                <div className="professional-order-action">
+                  <label>
+                    Quantidade
+                    <input
+                      min={product.minimumOrderQuantity}
+                      step={product.orderMultiple}
+                      type="number"
+                      value={
+                        quantities[product.id] ?? product.minimumOrderQuantity
+                      }
+                      onChange={(event) =>
+                        setQuantities((current) => ({
+                          ...current,
+                          [product.id]: Number(event.target.value),
+                        }))
+                      }
+                    />
+                  </label>
+                  <button
+                    className="button button-primary"
+                    disabled={
+                      busyId === product.id || product.availableQuantity === 0
+                    }
+                    onClick={() => void createOrder(product)}
+                  >
+                    {busyId === product.id ? 'A criar…' : 'Encomendar'}
+                  </button>
+                </div>
+              )}
             </div>
           </article>
         ))}

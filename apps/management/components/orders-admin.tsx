@@ -7,7 +7,7 @@ import type {
   Paginated,
 } from '@nsabores/types';
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { managementApi } from './management-auth';
 
 const money = (cents: number) =>
@@ -25,6 +25,13 @@ const paymentPreferenceLabels: Record<ManualPaymentPreference, string> = {
 const paymentPreference = (order: CommerceOrder) => {
   const preference = order.paymentTermsSnapshot?.preference;
   return preference ? paymentPreferenceLabels[preference] : 'A combinar';
+};
+
+type OrderShipment = {
+  id: string;
+  number: string;
+  status: string;
+  items: Array<{ orderItemId: string; quantity: number }>;
 };
 
 export function OrdersAdmin() {
@@ -191,17 +198,54 @@ export function OrdersAdmin() {
 
 export function OrderAdmin({ id }: { id: string }) {
   const [order, setOrder] = useState<CommerceOrder | null>(null);
+  const [shipments, setShipments] = useState<OrderShipment[]>([]);
+  const [shipmentQuantities, setShipmentQuantities] = useState<
+    Record<string, number>
+  >({});
   const [error, setError] = useState('');
-  const reload = useCallback(
-    () =>
-      managementApi.get<CommerceOrder>(`/v1/admin/orders/${id}`).then(setOrder),
-    [id],
-  );
+  const [shippingBusy, setShippingBusy] = useState(false);
+  const reload = useCallback(async () => {
+    const [currentOrder, currentShipments] = await Promise.all([
+      managementApi.get<CommerceOrder>(`/v1/admin/orders/${id}`),
+      managementApi.get<OrderShipment[]>(
+        `/v1/admin/shipments?orderId=${encodeURIComponent(id)}`,
+      ),
+    ]);
+    setOrder(currentOrder);
+    setShipments(currentShipments);
+  }, [id]);
   useEffect(() => {
-    void reload();
-  }, [reload]);
+    let cancelled = false;
 
-  if (!order) return <div className="admin-state">A carregar…</div>;
+    Promise.all([
+      managementApi.get<CommerceOrder>(`/v1/admin/orders/${id}`),
+      managementApi.get<OrderShipment[]>(
+        `/v1/admin/shipments?orderId=${encodeURIComponent(id)}`,
+      ),
+    ])
+      .then(([currentOrder, currentShipments]) => {
+        if (cancelled) return;
+        setOrder(currentOrder);
+        setShipments(currentShipments);
+      })
+      .catch((reason: unknown) => {
+        if (cancelled) return;
+        setError(
+          reason instanceof Error
+            ? reason.message
+            : 'Não foi possível carregar a encomenda.',
+        );
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  if (!order)
+    return (
+      <div className="admin-state">{error || 'A carregar a encomenda…'}</div>
+    );
 
   const act = async (path: string, body?: unknown) => {
     if (!window.confirm('Confirma esta ação?')) return;
@@ -280,6 +324,60 @@ export function OrderAdmin({ id }: { id: string }) {
 
   const shippingPending =
     order.paymentTermsSnapshot?.shippingQuoteStatus === 'PENDING';
+  const remainingItems = order.items.map((item) => {
+    const shipped = shipments.reduce(
+      (total, shipment) =>
+        total +
+        (shipment.status === 'CANCELLED'
+          ? 0
+          : shipment.items
+              .filter((line) => line.orderItemId === item.id)
+              .reduce((sum, line) => sum + line.quantity, 0)),
+      0,
+    );
+    return { ...item, remaining: Math.max(0, item.quantity - shipped) };
+  });
+  const canCreateShipment =
+    ['PAID', 'PROCESSING', 'READY'].includes(order.status) &&
+    remainingItems.some((item) => item.remaining > 0);
+
+  const createShipment = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const items = remainingItems
+      .map((item) => ({
+        orderItemId: item.id,
+        quantity: shipmentQuantities[item.id] ?? item.remaining,
+      }))
+      .filter((item) => item.quantity > 0);
+    if (!items.length) {
+      setError('Selecione pelo menos um artigo para expedir.');
+      return;
+    }
+    setShippingBusy(true);
+    setError('');
+    try {
+      await managementApi.post('/v1/admin/shipments', {
+        orderId: id,
+        service: form.get('service'),
+        idempotencyKey: crypto.randomUUID(),
+        items,
+        weightGrams: form.get('weightGrams')
+          ? Number(form.get('weightGrams'))
+          : undefined,
+        costCents: form.get('cost')
+          ? Math.round(Number(form.get('cost')) * 100)
+          : undefined,
+      });
+      setShipmentQuantities({});
+      event.currentTarget.reset();
+      await reload();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Operação falhou.');
+    } finally {
+      setShippingBusy(false);
+    }
+  };
 
   return (
     <>
@@ -329,6 +427,58 @@ export function OrderAdmin({ id }: { id: string }) {
             {money(item.totalCents)}
           </p>
         ))}
+        {canCreateShipment && (
+          <form className="operational-form" onSubmit={createShipment}>
+            <h2>Nova expedição</h2>
+            {remainingItems
+              .filter((item) => item.remaining > 0)
+              .map((item) => (
+                <label key={item.id}>
+                  {item.productName} · {item.remaining} por expedir
+                  <input
+                    min="0"
+                    max={item.remaining}
+                    type="number"
+                    value={shipmentQuantities[item.id] ?? item.remaining}
+                    onChange={(event) =>
+                      setShipmentQuantities((current) => ({
+                        ...current,
+                        [item.id]: Number(event.target.value),
+                      }))
+                    }
+                  />
+                </label>
+              ))}
+            <label>
+              Serviço/transportadora
+              <input name="service" required defaultValue="standard" />
+            </label>
+            <label>
+              Peso total (gramas)
+              <input min="1" name="weightGrams" type="number" />
+            </label>
+            <label>
+              Custo (€)
+              <input min="0" name="cost" step="0.01" type="number" />
+            </label>
+            <button className="admin-primary" disabled={shippingBusy}>
+              {shippingBusy ? 'A criar…' : 'Criar expedição'}
+            </button>
+          </form>
+        )}
+        {shipments.length > 0 && (
+          <div>
+            <h2>Expedições</h2>
+            {shipments.map((shipment) => (
+              <p key={shipment.id}>
+                <Link href={`/expedicoes/${shipment.id}`}>
+                  {shipment.number}
+                </Link>{' '}
+                · {shipment.status}
+              </p>
+            ))}
+          </div>
+        )}
         <p>Morada: {JSON.stringify(order.shippingAddress)}</p>
         <p>
           <strong>
@@ -353,7 +503,7 @@ export function OrderAdmin({ id }: { id: string }) {
             }
           >
             <option value="">Selecionar…</option>
-            {['PROCESSING', 'READY', 'SHIPPED', 'DELIVERED'].map((value) => (
+            {['PROCESSING', 'READY'].map((value) => (
               <option key={value}>{value}</option>
             ))}
           </select>
