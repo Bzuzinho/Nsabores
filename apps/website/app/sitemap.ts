@@ -7,7 +7,7 @@ const routes = [
   '/servicos',
   '/clube',
   '/eventos',
-  '/receitas',
+  '/blog',
   '/contactos',
 ];
 
@@ -16,7 +16,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   return routes.map((route) => ({
     url: `${baseUrl}${route}`,
-    lastModified: new Date('2026-07-24'),
+    lastModified: new Date('2026-08-05'),
     changeFrequency: route === '' ? 'weekly' : 'monthly',
     priority: route === '' ? 1 : 0.7,
   }));

@@ -1,74 +1,52 @@
 # Estado vivo do website
 
-**Última revisão:** 2026-07-24
+**Última revisão:** 2026-08-05
 
 **Responsável:** equipa Nsabores
 
-## Referência visual
+## Páginas e integrações
 
-O website segue o mockup aprovado `Nsabores_mockup_funcional.html`: paleta verde
-escuro, creme e dourado, composição editorial, tipografia serifada nos títulos,
-fotografia gastronómica e linguagem centrada em curadoria, proximidade,
-tradição e experiências.
+- `/`: homepage ligada ao catálogo da API, com hero compacto;
+- `/loja`: catálogo real, pesquisa, filtros e estado de carregamento visual;
+- `/sobre`, `/servicos` e `/eventos`: páginas editoriais responsivas com hero
+  compacto;
+- `/blog` e `/blog/[slug]`: listagem e leitura dos artigos publicados na API;
+- `/contactos`: hero fotográfico e formulário entregue ao serviço de email;
+- `/clube`, `/vales-oferta`, carrinho, checkout e acompanhamento: fluxos
+  funcionais ligados à API;
+- `/conta`: área autenticada com encomendas, documentos, moradas, Clube,
+  fidelização e área profissional diferenciada entre particular, revendedor e
+  B2B;
+- `/receitas`: redirecionamento de compatibilidade para `/blog`.
 
-Os assets foram fornecidos com o mockup e estão versionados em
-`apps/website/public/images/`. Não existem imagens base64 no código.
+O acesso à Gestão está no canto inferior direito do rodapé. O cabeçalho deixou
+de apresentar esse atalho.
 
-## Páginas públicas
+## Conteúdo e contacto
 
-- `/`: homepage completa;
-- `/sobre`: história, posicionamento e pilares;
-- `/loja`: catálogo demonstrativo e filtros;
-- `/servicos`: tábuas, cabazes e catering;
-- `/clube`: conceito e funcionamento previsto;
-- `/eventos`: empresas, celebrações e processo;
-- `/receitas`: guias e inspiração;
-- `/contactos`: necessidades de contacto e dados explicitamente por confirmar.
+Os artigos são persistidos como rascunho ou publicação e geridos em
+`/gestao/blog`. O website público mostra apenas artigos publicados cuja data de
+publicação já chegou.
 
-Todas reutilizam o cabeçalho, rodapé, newsletter e sistema visual comum.
+O formulário de contacto valida consentimento, limita o ritmo de submissões,
+usa um campo honeypot e envia a mensagem para `CONTACT_RECIPIENT_EMAIL`. A
+resposta é dirigida ao email do visitante através de `replyTo`.
 
-## Componentes principais
+## Configuração operacional obrigatória
 
-- `SiteHeader` e `MobileNavigation`;
-- `Hero` e `ValueStrip`;
-- `SectionHeading`;
-- `ExperienceCard`;
-- `ProductCard` e `ProductShowcase`;
-- `NewsletterForm`;
-- `EditorialPage`;
-- `SiteFooter`;
-- `ShopProvider` para estado local do carrinho.
+- executar a migration Prisma de agosto antes de arrancar a nova versão;
+- configurar `API_ORIGIN` no serviço website com a origem pública da API;
+- configurar `CONTACT_RECIPIENT_EMAIL`;
+- manter `MAIL_PROVIDER=outlook-graph` e as credenciais Outlook válidas para
+  envio real. Sem essa configuração, o provider mantém o comportamento seguro
+  de registo em log.
 
-## Comportamento atual
+## Limitações conhecidas
 
-- menu mobile com abertura e fecho;
-- pesquisa local sobre os produtos de demonstração;
-- filtros por categoria;
-- adição e remoção no carrinho em memória;
-- contador e total local;
-- newsletter com validação frontend e mensagem de sucesso;
-- metadata global e por página, Open Graph base, `robots.txt` e sitemap;
-- navegação por teclado, skip link, focus visível e textos alternativos;
-- layouts específicos para 360, 768, 1024 e 1440 px.
-
-## Dados e limitações
-
-- produtos, categorias, preços, receitas e experiências são estáticos;
-- o carrinho perde o conteúdo ao recarregar;
-- não existem checkout, pagamentos, stock, encomendas ou conta de cliente;
-- a newsletter não envia dados para um serviço externo;
-- contactos, morada, redes sociais e dados legais finais ainda não foram
-  fornecidos e aparecem como informação por confirmar;
-- os meios de pagamento no rodapé são apenas placeholders visuais;
-- não existe ligação à API nem ao backoffice;
-- não foram alterados Railway, domínios ou deployment.
-
-## Próximos passos
-
-1. Modelar catálogo, categorias, preços e stock na API.
-2. Substituir os dados locais por queries com estados de loading e erro.
-3. Persistir carrinho e definir regras de entrega.
-4. Implementar autenticação, conta e encomendas.
-5. Integrar checkout e pagamentos apenas após decisão e autorização.
-6. Ligar newsletter e formulários a serviços aprovados.
-7. Substituir placeholders por contactos e informação legal confirmados.
+- o blog inicia vazio até existir pelo menos um artigo publicado;
+- redes sociais e dados jurídicos finais continuam dependentes de informação
+  oficial da empresa;
+- os identificadores visuais dos meios de pagamento no rodapé não são logótipos
+  oficiais;
+- a newsletter valida e confirma no frontend, mas ainda não está ligada a uma
+  lista externa aprovada.

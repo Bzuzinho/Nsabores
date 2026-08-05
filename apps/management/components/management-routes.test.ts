@@ -10,6 +10,7 @@ import {
 
 const requiredOperationalRoutes = [
   '/',
+  '/vendas',
   '/operacoes',
   '/operacoes/preparacao',
   '/operacoes/producao',
@@ -20,6 +21,11 @@ const requiredOperationalRoutes = [
   '/clube/subscricoes',
   '/clube/cobrancas',
   '/documentos/reconciliacao',
+  '/catalogo',
+  '/blog',
+  '/compras-stock',
+  '/clientes',
+  '/administracao',
 ];
 
 describe('management principal routes', () => {

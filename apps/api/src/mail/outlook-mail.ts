@@ -6,6 +6,7 @@ export type TransactionalMailMessage = {
   subject: string;
   text: string;
   html?: string;
+  replyTo?: string;
 };
 
 type TokenResponse = {
@@ -21,7 +22,7 @@ export function sendTransactionalMail(
   config: ConfigService,
   message: TransactionalMailMessage,
 ) {
-  void deliver(config, message).catch((error: unknown) => {
+  void deliverTransactionalMail(config, message).catch((error: unknown) => {
     logger.error(
       `Falha no envio de email para ${recipientDomain(message.to)}: ${
         error instanceof Error ? error.message : String(error)
@@ -30,7 +31,7 @@ export function sendTransactionalMail(
   });
 }
 
-async function deliver(
+export async function deliverTransactionalMail(
   config: ConfigService,
   message: TransactionalMailMessage,
 ) {
@@ -38,7 +39,9 @@ async function deliver(
   const from =
     config.get<string>('MAIL_FROM_ADDRESS')?.trim() || 'nsabores@outlook.pt';
   const replyTo =
-    config.get<string>('MAIL_REPLY_TO')?.trim() || 'nsabores@outlook.pt';
+    message.replyTo?.trim() ||
+    config.get<string>('MAIL_REPLY_TO')?.trim() ||
+    'nsabores@outlook.pt';
 
   if (provider !== 'outlook-graph') {
     logger.log(

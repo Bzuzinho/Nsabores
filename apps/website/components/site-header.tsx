@@ -7,10 +7,8 @@ import { formatPrice, products } from '@/data/site';
 import { BagIcon, CloseIcon, MenuIcon, SearchIcon, UserIcon } from './icons';
 import { MobileNavigation, navigation } from './mobile-navigation';
 import { useShop } from './shop-context';
-import { useOptionalAuth } from './auth-provider';
 
 export function SiteHeader() {
-  const auth = useOptionalAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -34,9 +32,6 @@ export function SiteHeader() {
   }, [query]);
 
   const total = cartItems.reduce((sum, item) => sum + item.totalCents, 0);
-  const showManagement =
-    auth?.user?.role === 'STAFF' || auth?.user?.role === 'ADMIN';
-
   return (
     <>
       <header className="site-header">
@@ -57,11 +52,6 @@ export function SiteHeader() {
               {label}
             </Link>
           ))}
-          {showManagement && (
-            <Link className="management-access-link" href="/gestao">
-              Gestão
-            </Link>
-          )}
         </nav>
 
         <div className="header-actions">
@@ -101,11 +91,7 @@ export function SiteHeader() {
         </div>
       </header>
 
-      <MobileNavigation
-        open={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        showManagement={showManagement}
-      />
+      <MobileNavigation open={menuOpen} onClose={() => setMenuOpen(false)} />
 
       <div
         className={`search-overlay ${searchOpen ? 'search-overlay-open' : ''}`}

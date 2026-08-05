@@ -6,6 +6,7 @@ import {
   IsEnum,
   IsInt,
   IsNotEmpty,
+  IsObject,
   IsOptional,
   IsString,
   IsUUID,
@@ -29,7 +30,7 @@ export class SupplierDto {
   @IsString() @IsNotEmpty() phone!: string;
   @IsOptional() @IsString() website?: string;
   @IsOptional() @IsString() primaryContact?: string;
-  address!: Record<string, unknown>;
+  @IsObject() address!: Record<string, unknown>;
   @IsOptional() @IsString() paymentTerms?: string;
   @IsOptional() @IsInt() @Min(0) averageLeadTimeDays?: number;
   @IsOptional() @IsString() internalNotes?: string;
@@ -92,7 +93,7 @@ export class ResellerApplicationDto {
   @IsString() @IsNotEmpty() contactName!: string;
   @IsEmail() email!: string;
   @IsString() @IsNotEmpty() phone!: string;
-  address!: Record<string, unknown>;
+  @IsObject() address!: Record<string, unknown>;
   @IsOptional() @IsString() website?: string;
   @IsOptional() @IsString() socialMedia?: string;
   @IsString() @IsNotEmpty() activity!: string;

@@ -9,7 +9,7 @@ export const navigation = [
   ['Produtos', '/loja'],
   ['Experiências', '/eventos'],
   ['Serviços', '/servicos'],
-  ['Blog', '/receitas'],
+  ['Blog', '/blog'],
   ['Contactos', '/contactos'],
 ] as const;
 

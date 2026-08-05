@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -98,6 +99,9 @@ export class AdminOperationsController {
     @Body() body: SupplierDto,
   ) {
     return this.operations.updateSupplier(id, body);
+  }
+  @Delete('suppliers/:id') deleteSupplier(@Param('id') id: string) {
+    return this.operations.deleteSupplier(id);
   }
   @Get('purchases') purchases() {
     return this.operations.purchases();

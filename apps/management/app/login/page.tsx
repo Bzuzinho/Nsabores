@@ -1,12 +1,15 @@
 'use client';
 
 import { useManagementAuth } from '@/components/management-auth';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useState } from 'react';
 
 export default function LoginPage() {
-  const websiteUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+  const websiteUrl =
+    process.env.NEXT_PUBLIC_APP_URL?.trim() || 'http://localhost:3000';
+  const logoUrl = `${websiteUrl.replace(/\/$/, '')}/images/logo-nsabores-white.png`;
   const auth = useManagementAuth();
   const router = useRouter();
   const [error, setError] = useState('');
@@ -42,8 +45,14 @@ export default function LoginPage() {
     <main className="management-login">
       <section className="management-login-story">
         <Link className="management-login-brand" href={websiteUrl}>
-          <span>N</span>
-          <strong>Nsabores</strong>
+          <Image
+            unoptimized
+            src={logoUrl}
+            alt="Nsabores"
+            width={1789}
+            height={512}
+            priority
+          />
         </Link>
         <div>
           <p className="eyebrow">Gestão integrada</p>

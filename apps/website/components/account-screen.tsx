@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FormEvent, useEffect, useState } from 'react';
 import { accountApi, useAuth } from './auth-provider';
+import { CustomerDashboard } from './customer-dashboard';
 
 type Mode =
   | 'login'
@@ -209,12 +210,8 @@ export function AccountScreen({ mode }: { mode: Mode }) {
   const user = auth.user!;
   if (mode === 'overview') {
     return (
-      <AccountFrame title={`Olá, ${user.firstName}`}>
-        <nav className="account-menu">
-          <Link href="/conta/perfil">Perfil</Link>
-          <Link href="/conta/moradas">Moradas</Link>
-          <Link href="/conta/seguranca">Segurança</Link>
-        </nav>
+      <AccountFrame title={`Olá, ${user.firstName}`} wide>
+        <CustomerDashboard user={user} />
         {!user.emailVerifiedAt && (
           <button
             className="text-button"
@@ -466,12 +463,17 @@ export function AccountScreen({ mode }: { mode: Mode }) {
 function AccountFrame({
   title,
   children,
+  wide = false,
 }: {
   title: string;
   children: React.ReactNode;
+  wide?: boolean;
 }) {
   return (
-    <main id="conteudo" className="account-page">
+    <main
+      id="conteudo"
+      className={`account-page ${wide ? 'account-page-wide' : ''}`}
+    >
       <header>
         <p className="eyebrow">Conta Nsabores</p>
         <h1>{title}</h1>
