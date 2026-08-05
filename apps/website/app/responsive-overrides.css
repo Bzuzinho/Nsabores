@@ -1,0 +1,158 @@
+/* Responsive layout stabilisation.
+ * Keep horizontal spacing tied to each bounded content frame rather than 100vw.
+ */
+
+@media (min-width: 821px) {
+  .site-header {
+    width: min(1160px, calc(100% - 48px));
+    padding-inline: clamp(18px, 2vw, 28px);
+  }
+
+  .hero,
+  .value-strip,
+  .occasion-section,
+  .product-section,
+  .split-banner,
+  .why-section,
+  .instagram-section,
+  .page-hero,
+  .editorial-content,
+  .newsletter,
+  .store-hero,
+  .store-note,
+  .contact-page,
+  .site-footer {
+    width: min(1280px, calc(100% - 24px));
+  }
+
+  .value-strip {
+    padding-inline: clamp(34px, 6vw, 88px);
+  }
+
+  .occasion-section,
+  .instagram-section,
+  .section,
+  .site-footer {
+    padding-inline: clamp(28px, 5vw, 72px);
+  }
+
+  .product-grid,
+  .instagram-grid {
+    width: 100%;
+    max-width: 1160px;
+    margin-inline: auto;
+  }
+
+  .feature-panel {
+    padding-inline: clamp(48px, 6vw, 96px);
+  }
+}
+
+.occasion-grid {
+  width: 100%;
+  max-width: 1080px;
+  margin-inline: auto;
+  grid-template-columns: repeat(8, minmax(72px, 1fr));
+  column-gap: clamp(12px, 2vw, 28px);
+  row-gap: 24px;
+}
+
+.occasion-grid a {
+  min-width: 0;
+}
+
+.occasion-grid strong {
+  max-width: 100%;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.value-strip article,
+.product-card,
+.why-grid article,
+.footer-main > * {
+  min-width: 0;
+}
+
+.product-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.instagram-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+@media (max-width: 1100px) {
+  .desktop-navigation {
+    gap: clamp(10px, 1.4vw, 18px);
+  }
+
+  .hero-content {
+    padding-right: 48%;
+  }
+
+  .occasion-grid {
+    grid-template-columns: repeat(4, minmax(110px, 1fr));
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .instagram-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  .site-header,
+  .hero,
+  .value-strip,
+  .occasion-section,
+  .product-section,
+  .split-banner,
+  .why-section,
+  .instagram-section,
+  .page-hero,
+  .editorial-content,
+  .newsletter,
+  .store-hero,
+  .store-note,
+  .contact-page,
+  .site-footer {
+    width: 100%;
+    max-width: none;
+  }
+
+  .occasion-section,
+  .instagram-section,
+  .section,
+  .site-footer {
+    padding-inline: clamp(20px, 5vw, 40px);
+  }
+
+  .occasion-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .instagram-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .hero-content {
+    width: calc(100% - 40px);
+    padding-right: 0;
+  }
+
+  .occasion-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 14px;
+  }
+
+  .product-grid,
+  .instagram-grid {
+    grid-template-columns: 1fr;
+  }
+}
