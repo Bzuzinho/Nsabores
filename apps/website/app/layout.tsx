@@ -5,6 +5,7 @@ import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
 import { AuthProvider } from '@/components/auth-provider';
 import './globals.css';
+import './responsive-overrides.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL(
