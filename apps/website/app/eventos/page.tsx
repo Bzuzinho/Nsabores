@@ -2,46 +2,76 @@ import type { Metadata } from 'next';
 import { EditorialPage } from '@/components/editorial-page';
 
 export const metadata: Metadata = {
-  title: 'Eventos',
+  title: 'Experiências e serviços',
   description:
-    'Soluções gastronómicas Nsabores para celebrações, equipas e presentes empresariais.',
+    'Tábuas, cabazes, catering e soluções gastronómicas Nsabores para particulares, empresas e eventos.',
 };
 
-export default function EventsPage() {
+const solutions = [
+  [
+    'Tábuas por medida',
+    'Combinações ajustadas ao número de pessoas, ao momento e às preferências dos convidados.',
+  ],
+  [
+    'Cabazes personalizados',
+    'Presentes com seleção de produtos, mensagem, embalagem e entrega preparadas consigo.',
+  ],
+  [
+    'Eventos e catering',
+    'Propostas gastronómicas para celebrações, equipas, reuniões e momentos especiais.',
+  ],
+  [
+    'Soluções para empresas',
+    'Ofertas institucionais e experiências alinhadas com a dimensão, orçamento e identidade da empresa.',
+  ],
+] as const;
+
+export default function ExperiencesAndServicesPage() {
   return (
     <EditorialPage
-      eyebrow="Empresas e eventos"
-      title="Soluções feitas à medida."
-      introduction="Cabazes empresariais, tábuas, catering e presentes especiais pensados para a dimensão, contexto e identidade de cada evento."
+      eyebrow="Experiências e serviços"
+      title="Uma solução clara para cada ocasião."
+      introduction="Reunimos numa única área as tábuas, cabazes personalizados, catering, eventos e ofertas empresariais. Diga-nos o contexto; tratamos da seleção, apresentação e entrega."
       image="/images/events-clean.jpg"
-      imageAlt="Apresentação Nsabores preparada para empresas e eventos"
-      cta={{ href: '/contactos', label: 'Contar-nos o seu evento' }}
+      imageAlt="Apresentação Nsabores preparada para uma experiência gastronómica"
+      cta={{ href: '/contactos?assunto=proposta', label: 'Pedir uma proposta' }}
     >
       <div className="editorial-intro">
-        <p className="eyebrow">Do primeiro contacto à entrega</p>
-        <h2>Uma proposta clara, acompanhada por pessoas.</h2>
+        <p className="eyebrow">O que fazemos</p>
+        <h2>Sem páginas repetidas nem pacotes confusos.</h2>
         <p>
-          Começamos por perceber a ocasião, número de convidados, preferências e
-          orçamento. Depois apresentamos uma seleção e combinamos todos os
-          detalhes de apresentação e entrega.
+          Pode partir de uma solução existente ou pedir uma proposta feita à
+          medida. Em ambos os casos, indicamos claramente o que está incluído,
+          os prazos, as quantidades e o preço antes de avançar.
         </p>
       </div>
+
+      <div className="editorial-grid editorial-grid-two">
+        {solutions.map(([title, description], index) => (
+          <article key={title}>
+            <span>{String(index + 1).padStart(2, '0')}</span>
+            <h3>{title}</h3>
+            <p>{description}</p>
+          </article>
+        ))}
+      </div>
+
       <div className="process-list">
         <p>
-          <strong>01 · Conversa</strong>
-          <span>Contexto, necessidades e preferências.</span>
+          <strong>01 · Contexto</strong>
+          <span>Ocasião, pessoas, preferências, local e orçamento.</span>
         </p>
         <p>
           <strong>02 · Proposta</strong>
-          <span>Seleção, quantidades e apresentação.</span>
+          <span>Seleção, quantidades, apresentação, entrega e preço.</span>
         </p>
         <p>
-          <strong>03 · Preparação</strong>
-          <span>Montagem cuidada e confirmação final.</span>
+          <strong>03 · Confirmação</strong>
+          <span>Ajustes finais e validação do que será preparado.</span>
         </p>
         <p>
-          <strong>04 · Entrega</strong>
-          <span>Coordenação no local e hora combinados.</span>
+          <strong>04 · Preparação e entrega</strong>
+          <span>Execução cuidada no local e horário combinados.</span>
         </p>
       </div>
     </EditorialPage>

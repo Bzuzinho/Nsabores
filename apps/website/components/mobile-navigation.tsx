@@ -7,8 +7,8 @@ export const navigation = [
   ['Início', '/'],
   ['Sobre nós', '/sobre'],
   ['Produtos', '/loja'],
-  ['Experiências', '/eventos'],
-  ['Serviços', '/servicos'],
+  ['Experiências e serviços', '/eventos'],
+  ['Clube Nsabores', '/clube'],
   ['Blog', '/blog'],
   ['Contactos', '/contactos'],
 ] as const;

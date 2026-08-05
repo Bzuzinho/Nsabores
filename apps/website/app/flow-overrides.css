@@ -1,0 +1,77 @@
+/* Ajustes finais para fluxos internos existentes. */
+
+.account-page-wide > header {
+  display: none;
+}
+
+main.section > .account-card {
+  display: grid;
+  gap: 16px;
+  width: min(100%, var(--content-frame));
+  margin: 0 auto 24px;
+}
+
+main.section > .account-card label {
+  display: grid;
+  gap: 8px;
+}
+
+main.section > .account-card input:not([type='checkbox']),
+main.section > .account-card textarea,
+main.section > .account-card select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #aaa69d;
+  border-radius: 8px;
+  padding: 9px 11px;
+  color: var(--ink);
+  background: #fff;
+}
+
+main.section > .account-card textarea {
+  min-height: 110px;
+}
+
+main.section > .account-card .cart-item {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) 90px;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+main.section > .account-card .cart-item img {
+  width: 76px;
+  height: 76px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+main.section > .account-card .cart-item input[type='number'] {
+  width: 86px;
+}
+
+.store-note form,
+.store-filters,
+.catalog-toolbar {
+  max-width: var(--content-frame);
+  margin-inline: auto;
+}
+
+.store-note form > *,
+.store-filters > *,
+.catalog-toolbar > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 820px) {
+  main.section > .account-card .cart-item {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  main.section > .account-card .cart-item input[type='number'] {
+    grid-column: 2;
+  }
+}
