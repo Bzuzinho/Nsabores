@@ -2838,9 +2838,30 @@ h3,
 }
 
 .desktop-navigation {
+  align-items: center;
   justify-content: flex-end;
   gap: clamp(18px, 2vw, 31px);
-  font-size: 9px;
+  padding: 8px 14px;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 999px;
+  background: rgb(5 7 6 / 52%);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 16%);
+  font-size: 11px;
+  letter-spacing: 0.055em;
+  backdrop-filter: blur(9px);
+}
+
+.desktop-navigation a {
+  color: rgb(255 255 255 / 94%);
+  text-shadow: 0 1px 8px rgb(0 0 0 / 70%);
+  transition:
+    color 160ms ease,
+    opacity 160ms ease;
+}
+
+.desktop-navigation a:hover,
+.desktop-navigation a:focus-visible {
+  color: #f1d39e;
 }
 
 .hero {
@@ -3079,11 +3100,11 @@ h3,
 @media (min-width: 641px) {
   .hero,
   .page-hero {
-    min-height: 320px;
+    min-height: 380px;
   }
 
   .hero {
-    padding-top: 68px;
+    padding-top: 100px;
   }
 
   .hero-content {
@@ -3092,20 +3113,22 @@ h3,
 
   .hero h1 {
     font-size: clamp(34px, 3.4vw, 46px);
+    line-height: 1.08;
   }
 
   .hero-script {
-    margin: 5px 0 12px;
+    margin: 12px 0 18px;
     font-size: clamp(21px, 2vw, 29px);
+    line-height: 1.15;
   }
 
   .hero-description {
     margin: 0;
-    line-height: 1.45;
+    line-height: 1.6;
   }
 
   .hero-actions {
-    margin-top: 14px;
+    margin-top: 20px;
   }
 
   .page-hero {
@@ -3370,7 +3393,12 @@ h3,
 
 @media (max-width: 640px) {
   .hero {
-    min-height: 360px;
+    min-height: 420px;
+  }
+
+  .hero-content {
+    padding-top: 18px;
+    padding-bottom: 14px;
   }
 
   .hero h1 {
