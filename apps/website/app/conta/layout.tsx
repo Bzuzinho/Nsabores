@@ -10,8 +10,10 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
         </main>
       }
     >
-      <AccountSubpageNavigation />
-      {children}
+      <div className="account-shell">
+        <AccountSubpageNavigation />
+        <div className="account-shell-content">{children}</div>
+      </div>
     </Suspense>
   );
 }
