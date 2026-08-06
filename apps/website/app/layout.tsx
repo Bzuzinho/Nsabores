@@ -13,6 +13,7 @@ import './contact-services-fixes.css';
 import './hero-consistency.css';
 import './account-area-fixes.css';
 import './customer-account-final.css';
+import './mobile-account-access.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL(
