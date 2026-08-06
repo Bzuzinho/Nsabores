@@ -15,10 +15,13 @@
     "test": "turbo test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "demo:install": "pnpm --filter @nsabores/api prisma:seed:demo",
-    "demo:clear": "pnpm --filter @nsabores/api prisma:seed:demo:clear",
-    "demo:reset": "pnpm --filter @nsabores/api prisma:seed:demo:reset",
-    "demo:validate": "pnpm --filter @nsabores/api prisma:seed:demo:validate"
+    "demo:load": "pnpm --filter @nsabores/api demo:load",
+    "demo:install": "pnpm run demo:load",
+    "demo:remove": "pnpm --filter @nsabores/api demo:remove",
+    "demo:clear": "pnpm run demo:remove",
+    "demo:reset": "pnpm --filter @nsabores/api demo:reset",
+    "demo:check": "pnpm --filter @nsabores/api demo:check",
+    "demo:validate": "pnpm run demo:check"
   },
   "devDependencies": {
     "cross-env": "^10.0.0",
