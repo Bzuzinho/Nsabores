@@ -19,7 +19,10 @@ export function AccountSubpageNavigation() {
   if (publicAccountRoutes.has(pathname)) return null;
 
   return (
-    <nav className="account-subpage-navigation" aria-label="Navegação da área de cliente">
+    <nav
+      className="account-subpage-navigation"
+      aria-label="Navegação da área de cliente"
+    >
       <button type="button" onClick={() => router.back()}>
         ← Voltar
       </button>
