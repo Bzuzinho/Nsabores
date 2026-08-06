@@ -8,3 +8,4 @@ pnpm-lock.yaml
 apps/website/app/website-fixes.css
 apps/website/app/contact-services-fixes.css
 apps/website/app/eventos/page.tsx
+apps/website/app/account-area-fixes.css
