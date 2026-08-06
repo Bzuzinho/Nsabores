@@ -64,7 +64,7 @@ export function SiteHeader() {
             <SearchIcon />
           </button>
           <Link
-            className="icon-button desktop-action"
+            className="icon-button mobile-account-action"
             href="/conta"
             aria-label="A minha conta"
           >
