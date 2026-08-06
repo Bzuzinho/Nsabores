@@ -1,0 +1,5 @@
+/* Mantém o acesso à área de cliente disponível no cabeçalho móvel. */
+
+.mobile-account-action {
+  display: inline-flex;
+}
