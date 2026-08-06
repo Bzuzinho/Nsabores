@@ -12,6 +12,7 @@ import './header-alignment.css';
 import './contact-services-fixes.css';
 import './hero-consistency.css';
 import './account-area-fixes.css';
+import './customer-account-final.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL(
