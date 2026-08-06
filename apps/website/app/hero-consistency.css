@@ -1,36 +1,15 @@
-/* Consistência visual dos cabeçalhos e heros públicos. */
+/* Cabeçalhos públicos compactos, com o ritmo da página Clube como referência. */
 
 :root {
-  --public-hero-height: 500px;
-  --public-hero-top: 132px;
-  --public-hero-bottom: 54px;
-  --public-hero-title: clamp(36px, 3.6vw, 50px);
-  --public-hero-copy-gap: 14px;
+  --public-hero-height: 375px;
+  --public-hero-top: 102px;
+  --public-hero-bottom: 34px;
+  --public-hero-title: clamp(30px, 3vw, 40px);
+  --public-hero-copy-gap: 12px;
 }
 
 @media (min-width: 821px) {
-  /* A landing page aproxima o primeiro texto da marca em cerca de 25%,
-     mantendo ainda uma margem de respiração no fim do título. */
-  .hero {
-    min-height: var(--public-hero-height);
-    padding-top: var(--public-hero-top);
-  }
-
-  .hero-content {
-    padding-top: 25px;
-  }
-
-  .hero h1 {
-    margin-bottom: 12px;
-    font-size: var(--public-hero-title);
-  }
-
-  .hero-script {
-    margin-top: 6px;
-    margin-bottom: 22px;
-  }
-
-  /* O Clube é a referência para o ritmo vertical de todos os heros internos. */
+  .hero,
   .page-hero,
   .store-hero,
   .services-hero,
@@ -40,34 +19,46 @@
     padding-bottom: var(--public-hero-bottom);
   }
 
+  .hero-content {
+    padding-top: 18px;
+    padding-bottom: 18px;
+  }
+
   .page-hero-copy,
   .store-hero > div,
   .services-hero-copy,
   .contact-hero .page-hero-copy {
-    padding-top: 0;
-    padding-bottom: 0;
+    padding-top: 12px;
+    padding-bottom: 18px;
   }
 
+  .hero h1,
   .page-hero h1,
   .store-hero h1,
   .services-hero h1,
   .contact-hero h1 {
-    max-width: 620px;
-    margin-top: 8px;
+    max-width: 600px;
+    margin-top: 6px;
     margin-bottom: var(--public-hero-copy-gap);
     font-size: var(--public-hero-title);
     line-height: 1.04;
   }
 
+  .hero-script {
+    margin-top: 6px;
+    margin-bottom: 18px;
+    font-size: clamp(23px, 2.2vw, 30px);
+  }
+
+  .hero-description,
   .page-hero p:not(.eyebrow),
   .store-hero p:not(.eyebrow),
   .services-hero p:not(.eyebrow),
   .contact-hero p:not(.eyebrow) {
     margin-top: 0;
+    margin-bottom: 14px;
   }
 
-  /* Nunca deixar um cabeçalho público sem corpo visual, mesmo quando uma
-     página não fornece uma imagem específica. */
   .page-hero,
   .store-hero,
   .services-hero,
@@ -77,21 +68,24 @@
     color: #fff;
     background-color: #101713;
     background-image:
-      linear-gradient(90deg, rgb(5 8 6 / 92%), rgb(5 8 6 / 62%) 48%, rgb(5 8 6 / 30%)),
+      linear-gradient(
+        90deg,
+        rgb(5 8 6 / 92%),
+        rgb(5 8 6 / 62%) 48%,
+        rgb(5 8 6 / 30%)
+      ),
       var(--page-hero-image, url('/images/hero-clean.jpg'));
     background-position: center;
     background-size: cover;
     background-repeat: no-repeat;
   }
 
-  /* Páginas internas que não têm um hero próprio recebem uma faixa visual
-     compacta atrás da área de cabeçalho, sem alterar o conteúdo funcional. */
   main.section,
   .account-page,
   .contact-page:not(:has(.contact-hero)) {
     position: relative;
     isolation: isolate;
-    padding-top: 150px;
+    padding-top: 118px;
   }
 
   main.section::before,
@@ -100,18 +94,23 @@
     position: absolute;
     z-index: -1;
     inset: 0 0 auto;
-    height: 124px;
+    height: 94px;
     content: '';
     background:
-      linear-gradient(90deg, rgb(5 8 6 / 93%), rgb(5 8 6 / 72%), rgb(5 8 6 / 44%)),
+      linear-gradient(
+        90deg,
+        rgb(5 8 6 / 93%),
+        rgb(5 8 6 / 72%),
+        rgb(5 8 6 / 44%)
+      ),
       url('/images/hero-clean.jpg') center / cover no-repeat;
   }
 }
 
 @media (max-width: 820px) {
   :root {
-    --public-hero-height: 460px;
-    --public-hero-title: clamp(32px, 9vw, 42px);
+    --public-hero-height: 330px;
+    --public-hero-title: clamp(28px, 7.5vw, 36px);
   }
 
   .hero,
