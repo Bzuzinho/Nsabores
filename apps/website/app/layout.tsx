@@ -8,6 +8,7 @@ import './globals.css';
 import './responsive-overrides.css';
 import './website-fixes.css';
 import './flow-overrides.css';
+import './header-alignment.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL(
