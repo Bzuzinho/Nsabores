@@ -2,7 +2,13 @@
 
 import { usePathname } from 'next/navigation';
 
-const routeCopy: Record<string, { eyebrow: string; title: string; description?: string }> = {
+type RouteCopy = {
+  eyebrow: string;
+  title: string;
+  description?: string;
+};
+
+const routeCopy: Record<string, RouteCopy> = {
   '/conta/encomendas': {
     eyebrow: 'Conta',
     title: 'Encomendas',
@@ -60,8 +66,9 @@ const routeCopy: Record<string, { eyebrow: string; title: string; description?: 
   },
 };
 
-function resolveCopy(pathname: string) {
+function resolveCopy(pathname: string): RouteCopy {
   if (routeCopy[pathname]) return routeCopy[pathname];
+
   if (pathname.startsWith('/conta/encomendas/')) {
     return {
       eyebrow: 'Encomendas',
@@ -72,9 +79,11 @@ function resolveCopy(pathname: string) {
           : 'Detalhe da encomenda',
     };
   }
+
   if (pathname.startsWith('/conta/documentos/')) {
     return { eyebrow: 'Documentos', title: 'Detalhe do documento' };
   }
+
   return { eyebrow: 'Conta Nsabores', title: 'Área de cliente' };
 }
 
