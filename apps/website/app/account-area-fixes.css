@@ -1,16 +1,21 @@
-/* Área de cliente: todas as subpáginas com navegação, tipografia e cartões coerentes. */
+/* Área de cliente: subpáginas compactas, coerentes e sem interferir no cabeçalho global. */
+
+.account-shell {
+  box-sizing: border-box;
+  width: min(1280px, calc(100% - 24px));
+  margin-inline: auto;
+  padding-top: 112px;
+}
 
 .account-subpage-navigation {
-  position: relative;
-  z-index: 4;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  width: min(1280px, calc(100% - 24px));
-  margin: 0 auto -1px;
-  padding: 116px clamp(24px, 4vw, 64px) 18px;
-  background: #fffdf9;
+  width: min(100%, 1160px);
+  margin: 0 auto 16px;
+  padding: 0;
+  background: transparent;
 }
 
 .account-subpage-navigation button,
@@ -30,20 +35,52 @@
   cursor: pointer;
 }
 
-.account-page {
+.account-shell-content {
+  min-width: 0;
+}
+
+.account-shell-content > .account-page,
+.account-shell-content > .support-center,
+.account-shell-content > .customer-support,
+.account-shell-content > main {
   box-sizing: border-box;
-  width: min(1280px, calc(100% - 24px));
+  width: min(100%, 1160px);
   margin-inline: auto;
-  padding-top: 28px !important;
+}
+
+.account-page {
+  padding: 0 0 64px !important;
+  background: transparent !important;
 }
 
 .account-page > header,
 .account-page > section,
 .account-page > div,
 .account-page > form,
-.account-page > article {
-  width: min(100%, 1160px);
+.account-page > article,
+.support-center > header,
+.support-center > section,
+.support-center > div,
+.support-center > form,
+.customer-support > header,
+.customer-support > section,
+.customer-support > div,
+.customer-support > form {
+  width: 100%;
   margin-inline: auto;
+}
+
+.account-page > header,
+.support-center > header,
+.customer-support > header {
+  box-sizing: border-box;
+  min-height: 132px;
+  padding: 28px 38px;
+  border-radius: 14px 14px 0 0;
+  color: #fff;
+  background:
+    linear-gradient(90deg, rgb(4 8 6 / 94%), rgb(4 8 6 / 72%), rgb(4 8 6 / 34%)),
+    url('/images/hero-clean.jpg') center / cover no-repeat;
 }
 
 .account-page h1,
@@ -51,32 +88,41 @@
 .support-center h1,
 .customer-support h1 {
   max-width: 760px;
-  margin: 8px 0 18px;
-  font-size: clamp(30px, 3vw, 40px) !important;
+  margin: 8px 0 0;
+  font-size: clamp(28px, 2.5vw, 36px) !important;
   font-weight: 400;
   line-height: 1.08;
+}
+
+.account-page > header .eyebrow,
+.support-center > header .eyebrow,
+.customer-support > header .eyebrow {
+  color: var(--gold);
+}
+
+.account-page > section,
+.account-page > form,
+.account-page > div:not(.customer-dashboard),
+.support-center > section,
+.support-center > form,
+.support-center > div,
+.customer-support > section,
+.customer-support > form,
+.customer-support > div {
+  box-sizing: border-box;
+  padding: clamp(24px, 3vw, 38px);
+  border: 1px solid var(--line);
+  border-top: 0;
+  border-radius: 0 0 14px 14px;
+  background: #fffdf9;
 }
 
 .account-page h2,
 .account-card h2,
 .support-center h2,
 .customer-support h2 {
-  font-size: clamp(21px, 2vw, 28px);
+  font-size: clamp(20px, 1.8vw, 26px);
   line-height: 1.15;
-}
-
-.account-page > header > p:not(.eyebrow),
-.account-card > p,
-.support-center > p,
-.customer-support > p {
-  max-width: 760px;
-  line-height: 1.6;
-}
-
-.account-page section:not(.customer-dashboard-hero):not(.customer-metrics),
-.support-center section,
-.customer-support section {
-  border-radius: 14px;
 }
 
 .account-page form,
@@ -131,20 +177,38 @@
 }
 
 @media (max-width: 820px) {
-  .account-subpage-navigation {
+  .account-shell {
     width: 100%;
-    padding: 92px 20px 14px;
+    padding: 92px 20px 0;
   }
 
-  .account-page {
-    width: 100%;
-    padding: 22px 20px 48px !important;
+  .account-subpage-navigation {
+    margin-bottom: 12px;
+  }
+
+  .account-page > header,
+  .support-center > header,
+  .customer-support > header {
+    min-height: 118px;
+    padding: 24px 22px;
   }
 
   .account-page h1,
   .account-card > h1,
   .support-center h1,
   .customer-support h1 {
-    font-size: clamp(28px, 8vw, 34px) !important;
+    font-size: clamp(26px, 7vw, 32px) !important;
+  }
+
+  .account-page > section,
+  .account-page > form,
+  .account-page > div:not(.customer-dashboard),
+  .support-center > section,
+  .support-center > form,
+  .support-center > div,
+  .customer-support > section,
+  .customer-support > form,
+  .customer-support > div {
+    padding: 22px;
   }
 }
