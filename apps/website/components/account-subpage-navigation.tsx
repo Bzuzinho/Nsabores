@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { AccountSubpageHeader } from './account-subpage-header';
 
 const publicAccountRoutes = new Set([
   '/conta',
@@ -19,14 +20,17 @@ export function AccountSubpageNavigation() {
   if (publicAccountRoutes.has(pathname)) return null;
 
   return (
-    <nav
-      className="account-subpage-navigation"
-      aria-label="Navegação da área de cliente"
-    >
-      <button type="button" onClick={() => router.back()}>
-        ← Voltar
-      </button>
-      <Link href="/conta">Área de cliente</Link>
-    </nav>
+    <>
+      <nav
+        className="account-subpage-navigation"
+        aria-label="Navegação da área de cliente"
+      >
+        <button type="button" onClick={() => router.back()}>
+          ← Voltar
+        </button>
+        <Link href="/conta">Área de cliente</Link>
+      </nav>
+      <AccountSubpageHeader />
+    </>
   );
 }
