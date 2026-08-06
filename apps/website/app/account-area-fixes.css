@@ -1,0 +1,150 @@
+/* Área de cliente: todas as subpáginas com navegação, tipografia e cartões coerentes. */
+
+.account-subpage-navigation {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: min(1280px, calc(100% - 24px));
+  margin: 0 auto -1px;
+  padding: 116px clamp(24px, 4vw, 64px) 18px;
+  background: #fffdf9;
+}
+
+.account-subpage-navigation button,
+.account-subpage-navigation a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.account-page {
+  box-sizing: border-box;
+  width: min(1280px, calc(100% - 24px));
+  margin-inline: auto;
+  padding-top: 28px !important;
+}
+
+.account-page > header,
+.account-page > section,
+.account-page > div,
+.account-page > form,
+.account-page > article {
+  width: min(100%, 1160px);
+  margin-inline: auto;
+}
+
+.account-page h1,
+.account-card > h1,
+.support-center h1,
+.customer-support h1 {
+  max-width: 760px;
+  margin: 8px 0 18px;
+  font-size: clamp(30px, 3vw, 40px) !important;
+  font-weight: 400;
+  line-height: 1.08;
+}
+
+.account-page h2,
+.account-card h2,
+.support-center h2,
+.customer-support h2 {
+  font-size: clamp(21px, 2vw, 28px);
+  line-height: 1.15;
+}
+
+.account-page > header > p:not(.eyebrow),
+.account-card > p,
+.support-center > p,
+.customer-support > p {
+  max-width: 760px;
+  line-height: 1.6;
+}
+
+.account-page section:not(.customer-dashboard-hero):not(.customer-metrics),
+.support-center section,
+.customer-support section {
+  border-radius: 14px;
+}
+
+.account-page form,
+.support-center form,
+.customer-support form {
+  display: grid;
+  gap: 20px;
+}
+
+.account-page form label,
+.support-center form label,
+.customer-support form label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.account-page input,
+.account-page select,
+.account-page textarea,
+.support-center input,
+.support-center select,
+.support-center textarea,
+.customer-support input,
+.customer-support select,
+.customer-support textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid #b8b8ae;
+  border-radius: 9px;
+  padding: 11px 13px;
+  color: var(--ink);
+  background: #fff;
+  font: inherit;
+}
+
+.account-page textarea,
+.support-center textarea,
+.customer-support textarea {
+  min-height: 130px;
+  resize: vertical;
+}
+
+.account-page .editorial-grid-three > article {
+  min-width: 0;
+  padding: 26px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+}
+
+@media (max-width: 820px) {
+  .account-subpage-navigation {
+    width: 100%;
+    padding: 92px 20px 14px;
+  }
+
+  .account-page {
+    width: 100%;
+    padding: 22px 20px 48px !important;
+  }
+
+  .account-page h1,
+  .account-card > h1,
+  .support-center h1,
+  .customer-support h1 {
+    font-size: clamp(28px, 8vw, 34px) !important;
+  }
+}

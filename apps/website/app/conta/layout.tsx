@@ -1,4 +1,5 @@
 import { Suspense, type ReactNode } from 'react';
+import { AccountSubpageNavigation } from '@/components/account-subpage-navigation';
 
 export default function AccountLayout({ children }: { children: ReactNode }) {
   return (
@@ -9,6 +10,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
         </main>
       }
     >
+      <AccountSubpageNavigation />
       {children}
     </Suspense>
   );
