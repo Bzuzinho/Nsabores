@@ -1,79 +1,146 @@
 import type { Metadata } from 'next';
-import { EditorialPage } from '@/components/editorial-page';
+import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Experiências e serviços',
+  title: 'Serviços',
   description:
-    'Tábuas, cabazes, catering e soluções gastronómicas Nsabores para particulares, empresas e eventos.',
+    'Tábuas, cabazes personalizados e soluções para eventos e empresas, preparadas pela Nsabores.',
 };
 
-const solutions = [
-  [
-    'Tábuas por medida',
-    'Combinações ajustadas ao número de pessoas, ao momento e às preferências dos convidados.',
-  ],
-  [
-    'Cabazes personalizados',
-    'Presentes com seleção de produtos, mensagem, embalagem e entrega preparadas consigo.',
-  ],
-  [
-    'Eventos e catering',
-    'Propostas gastronómicas para celebrações, equipas, reuniões e momentos especiais.',
-  ],
-  [
-    'Soluções para empresas',
-    'Ofertas institucionais e experiências alinhadas com a dimensão, orçamento e identidade da empresa.',
-  ],
+const services = [
+  {
+    title: 'Tábuas por medida',
+    description:
+      'Seleções ajustadas ao número de pessoas, à ocasião e às preferências de quem vai partilhar a mesa.',
+  },
+  {
+    title: 'Cabazes personalizados',
+    description:
+      'Presentes com produtos, mensagem, embalagem e entrega definidos consigo, sem fórmulas fechadas.',
+  },
+  {
+    title: 'Eventos e empresas',
+    description:
+      'Soluções para reuniões, celebrações e ofertas institucionais com proposta, quantidades e preço claros.',
+  },
 ] as const;
 
-export default function ExperiencesAndServicesPage() {
+const audiences = [
+  {
+    title: 'Para particulares',
+    description:
+      'Jantares, aniversários, presentes e outras ocasiões em que quer servir ou oferecer algo especial.',
+  },
+  {
+    title: 'Para empresas',
+    description:
+      'Cabazes, ofertas institucionais e momentos de equipa alinhados com orçamento, imagem e quantidade.',
+  },
+  {
+    title: 'Para eventos',
+    description:
+      'Propostas adaptadas à data, local, número de pessoas e formato do evento.',
+  },
+] as const;
+
+export default function ServicesPage() {
   return (
-    <EditorialPage
-      eyebrow="Experiências e serviços"
-      title="Uma solução clara para cada ocasião."
-      introduction="Reunimos numa única área as tábuas, cabazes personalizados, catering, eventos e ofertas empresariais. Diga-nos o contexto; tratamos da seleção, apresentação e entrega."
-      image="/images/events-clean.jpg"
-      imageAlt="Apresentação Nsabores preparada para uma experiência gastronómica"
-      cta={{ href: '/contactos?assunto=proposta', label: 'Pedir uma proposta' }}
-    >
-      <div className="editorial-intro">
-        <p className="eyebrow">O que fazemos</p>
-        <h2>Sem páginas repetidas nem pacotes confusos.</h2>
-        <p>
-          Pode partir de uma solução existente ou pedir uma proposta feita à
-          medida. Em ambos os casos, indicamos claramente o que está incluído,
-          os prazos, as quantidades e o preço antes de avançar.
-        </p>
-      </div>
+    <main id="conteudo" className="services-page">
+      <header className="services-hero">
+        <div className="services-hero-copy">
+          <p className="eyebrow">Serviços</p>
+          <h1>Tratamos da seleção. Você aproveita a ocasião.</h1>
+          <p>
+            Criamos tábuas, cabazes e soluções para eventos e empresas com uma
+            proposta simples: perceber o que precisa, definir tudo com clareza
+            e entregar como combinado.
+          </p>
+          <Link
+            className="button button-primary"
+            href="/contactos?assunto=proposta"
+          >
+            Pedir uma proposta
+          </Link>
+        </div>
+      </header>
 
-      <div className="editorial-grid editorial-grid-two">
-        {solutions.map(([title, description], index) => (
-          <article key={title}>
-            <span>{String(index + 1).padStart(2, '0')}</span>
-            <h3>{title}</h3>
-            <p>{description}</p>
+      <section className="services-intro" aria-labelledby="services-title">
+        <header>
+          <p className="eyebrow">O que fazemos</p>
+          <h2 id="services-title">Três serviços. Sem misturas nem rodeios.</h2>
+          <p>
+            Pode escolher uma base existente ou pedir uma solução totalmente
+            adaptada. Antes de avançar, sabe sempre o que está incluído, quanto
+            custa e quando será entregue.
+          </p>
+        </header>
+
+        <div className="services-grid">
+          {services.map((service, index) => (
+            <article className="services-card" key={service.title}>
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <h3>{service.title}</h3>
+              <p>{service.description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="services-audiences" aria-labelledby="audiences-title">
+        <div>
+          <p className="eyebrow">Para quem</p>
+          <h2 id="audiences-title">A mesma exigência, contextos diferentes.</h2>
+          <p>
+            A solução muda consoante a ocasião. O processo não: perceber,
+            propor, confirmar e entregar.
+          </p>
+        </div>
+
+        <div className="services-audience-list">
+          {audiences.map((audience) => (
+            <article key={audience.title}>
+              <h3>{audience.title}</h3>
+              <p>{audience.description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="services-process" aria-labelledby="process-title">
+        <p className="eyebrow">Como funciona</p>
+        <h2 id="process-title">Do pedido à entrega em quatro passos.</h2>
+        <div className="services-steps">
+          <article className="services-step">
+            <strong>01 · Pedido</strong>
+            <p>Indique ocasião, quantidade, preferências, local e orçamento.</p>
           </article>
-        ))}
-      </div>
+          <article className="services-step">
+            <strong>02 · Proposta</strong>
+            <p>Recebe uma solução com composição, apresentação, prazo e preço.</p>
+          </article>
+          <article className="services-step">
+            <strong>03 · Confirmação</strong>
+            <p>Ajustamos o necessário e validamos todos os detalhes consigo.</p>
+          </article>
+          <article className="services-step">
+            <strong>04 · Entrega</strong>
+            <p>Preparamos e entregamos no local e horário combinados.</p>
+          </article>
+        </div>
+      </section>
 
-      <div className="process-list">
-        <p>
-          <strong>01 · Contexto</strong>
-          <span>Ocasião, pessoas, preferências, local e orçamento.</span>
-        </p>
-        <p>
-          <strong>02 · Proposta</strong>
-          <span>Seleção, quantidades, apresentação, entrega e preço.</span>
-        </p>
-        <p>
-          <strong>03 · Confirmação</strong>
-          <span>Ajustes finais e validação do que será preparado.</span>
-        </p>
-        <p>
-          <strong>04 · Preparação e entrega</strong>
-          <span>Execução cuidada no local e horário combinados.</span>
-        </p>
-      </div>
-    </EditorialPage>
+      <section className="services-cta">
+        <div>
+          <p className="eyebrow">Tem uma ocasião em mente?</p>
+          <h2>Explique-nos o essencial. Respondemos com uma proposta concreta.</h2>
+        </div>
+        <Link
+          className="button button-primary"
+          href="/contactos?assunto=proposta"
+        >
+          Falar connosco
+        </Link>
+      </section>
+    </main>
   );
 }

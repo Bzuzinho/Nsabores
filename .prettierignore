@@ -6,3 +6,5 @@ pnpm-lock.yaml
 .turbo
 **/next-env.d.ts
 apps/website/app/website-fixes.css
+apps/website/app/contact-services-fixes.css
+apps/website/app/eventos/page.tsx
