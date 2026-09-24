@@ -75,6 +75,8 @@ import { ReturnRefundService } from './fulfillment/refund.service';
 import { ReturnReplacementService } from './fulfillment/replacement.service';
 import { ShippingProvider } from './fulfillment/shipping.provider';
 import { HealthController } from './health.controller';
+import { AutomaticPaymentGuard } from './launch-scope/automatic-payment.guard';
+import { DeferredFeatureGuard } from './launch-scope/deferred-feature.guard';
 import {
   AdminGiftCardPurchaseController,
   GiftCardPurchaseController,
@@ -156,6 +158,7 @@ import { ReceivablesService } from './receivables/receivables.service';
         PAYMENT_FLOW_MODE: Joi.string()
           .valid('manual', 'automatic')
           .default('manual'),
+        DEFERRED_FEATURES_ENABLED: Joi.boolean().default(true),
         PAYMENT_PROVIDER: Joi.string().valid('mock', 'stripe').default('mock'),
         PAYMENT_SECRET_KEY: Joi.string().allow('').optional(),
         PAYMENT_WEBHOOK_SECRET: Joi.string()
@@ -252,6 +255,8 @@ import { ReceivablesService } from './receivables/receivables.service';
     AdminUsersService,
     AuthGuard,
     RolesGuard,
+    DeferredFeatureGuard,
+    AutomaticPaymentGuard,
     MailProvider,
     ReceivablesService,
     ProductionService,
