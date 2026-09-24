@@ -19,6 +19,19 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
+  if (pathname === '/acompanhar') {
+    return NextResponse.redirect(new URL('/contactos', request.url));
+  }
+
+  const accountTracking = pathname.match(
+    /^\/conta\/encomendas\/([^/]+)\/tracking(?:\/|$)/,
+  );
+  if (accountTracking) {
+    return NextResponse.redirect(
+      new URL(`/conta/encomendas/${accountTracking[1]}`, request.url),
+    );
+  }
+
   if (
     accountPhase2Prefixes.some(
       (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
@@ -34,6 +47,8 @@ export const config = {
   matcher: [
     '/clube/:path*',
     '/vales-oferta/:path*',
+    '/acompanhar',
+    '/conta/encomendas/:path*',
     '/conta/clube/:path*',
     '/conta/fidelizacao/:path*',
     '/conta/documentos/:path*',
