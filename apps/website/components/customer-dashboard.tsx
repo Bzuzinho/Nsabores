@@ -10,25 +10,22 @@ const labels = {
   PARTICULAR: {
     badge: 'Cliente particular',
     title: 'A sua Nsabores, num só lugar.',
-    description: 'Compras, benefícios, documentos e dados pessoais.',
+    description: 'Compras, apoio e dados pessoais.',
   },
   RESELLER: {
     badge: 'Revendedor',
     title: 'A sua operação profissional, sem atalhos escondidos.',
-    description: 'Preços atribuídos, condições comerciais e encomendas B2B.',
+    description: 'Conta profissional, utilizadores e apoio.',
   },
   B2B: {
     badge: 'Cliente empresarial',
     title: 'Compras e relação comercial numa única área.',
-    description: 'Condições, catálogo profissional e histórico da empresa.',
+    description: 'Conta empresarial, utilizadores e apoio.',
   },
 } as const;
 
 const particularLinks = [
   ['/conta/encomendas', 'Encomendas', 'Acompanhar, repetir ou devolver.'],
-  ['/conta/clube', 'Clube Nsabores', 'Plano, benefícios e cobranças.'],
-  ['/conta/fidelizacao', 'Fidelização', 'Pontos disponíveis e movimentos.'],
-  ['/conta/documentos', 'Documentos', 'Faturas, recibos e notas de crédito.'],
   ['/conta/apoio', 'Apoio', 'Pedidos e conversa com a equipa.'],
   ['/conta/perfil', 'Perfil', 'Dados pessoais e preferências.'],
   ['/conta/moradas', 'Moradas', 'Entrega e faturação.'],
@@ -37,14 +34,6 @@ const particularLinks = [
 
 const businessLinks = [
   ['/conta/empresa', 'A minha empresa', 'Identificação e estado da conta.'],
-  ['/conta/precos', 'Preços profissionais', 'Catálogo e tabela atribuída.'],
-  [
-    '/conta/condicoes-comerciais',
-    'Condições comerciais',
-    'Pagamento, mínimos, crédito e portes.',
-  ],
-  ['/conta/encomendas', 'Encomendas', 'Pedidos B2B e respetivo estado.'],
-  ['/conta/documentos', 'Documentos', 'Histórico comercial e fiscal.'],
   ['/conta/apoio', 'Apoio', 'Pedidos e conversa com a equipa.'],
   ['/conta/perfil', 'Utilizador', 'Dados e contactos do seu acesso.'],
   ['/conta/seguranca', 'Segurança', 'Password e sessões ativas.'],
@@ -113,40 +102,15 @@ export function CustomerDashboard({ user }: { user: AuthUser }) {
           <strong>{data.orders.total}</strong>
           <small>{data.orders.active} em curso</small>
         </article>
-        {data.accountType === 'PARTICULAR' ? (
-          <>
-            <article>
-              <span>Pontos</span>
-              <strong>{data.loyalty.availablePoints}</strong>
-              <small>{data.loyalty.pendingPoints} pendentes</small>
-            </article>
-            <article>
-              <span>Clube</span>
-              <strong>{data.club.active ? 'Ativo' : '—'}</strong>
-              <small>{data.club.planName ?? 'Sem plano'}</small>
-            </article>
-          </>
-        ) : (
-          <>
-            <article>
-              <span>Tabela</span>
-              <strong>{data.businessAccount?.priceListName ?? '—'}</strong>
-              <small>Preços profissionais</small>
-            </article>
-            <article>
-              <span>Canal</span>
-              <strong>
-                {data.accountType === 'RESELLER' ? 'Revenda' : 'B2B'}
-              </strong>
-              <small>Conta profissional</small>
-            </article>
-          </>
+        {data.accountType !== 'PARTICULAR' && (
+          <article>
+            <span>Canal</span>
+            <strong>
+              {data.accountType === 'RESELLER' ? 'Revenda' : 'B2B'}
+            </strong>
+            <small>Conta profissional</small>
+          </article>
         )}
-        <article>
-          <span>Documentos</span>
-          <strong>{data.documents}</strong>
-          <small>Disponíveis na conta</small>
-        </article>
       </section>
 
       <section className="customer-dashboard-grid">
