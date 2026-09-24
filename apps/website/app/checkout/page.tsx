@@ -27,6 +27,8 @@ type CheckoutOrder = CommerceOrder & {
   paymentFlowMode?: 'manual' | 'automatic';
 };
 
+const phase2LoyaltyEnabled = false;
+
 const paymentPreferences: Array<{
   value: ManualPaymentPreference;
   label: string;
@@ -60,7 +62,7 @@ export default function CheckoutPage() {
   }, []);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !phase2LoyaltyEnabled) return;
     void api
       .get<LoyaltyAccount>('/v1/account/loyalty')
       .then(setLoyalty)
@@ -246,7 +248,7 @@ export default function CheckoutPage() {
           </small>
         </label>
 
-        {user && loyalty && (
+        {phase2LoyaltyEnabled && user && loyalty && (
           <label>
             Pontos a utilizar
             <input
@@ -265,16 +267,18 @@ export default function CheckoutPage() {
           </label>
         )}
 
-        <label>
-          Vale-oferta
-          <input
-            value={giftCardCode}
-            onChange={(event) => setGiftCardCode(event.target.value)}
-            placeholder="NS-XXXXXXXXXXXX"
-            autoComplete="off"
-          />
-          <small>O saldo e a validade são confirmados no servidor.</small>
-        </label>
+        {phase2LoyaltyEnabled && (
+          <label>
+            Vale-oferta
+            <input
+              value={giftCardCode}
+              onChange={(event) => setGiftCardCode(event.target.value)}
+              placeholder="NS-XXXXXXXXXXXX"
+              autoComplete="off"
+            />
+            <small>O saldo e a validade são confirmados no servidor.</small>
+          </label>
+        )}
 
         <label>
           Notas
