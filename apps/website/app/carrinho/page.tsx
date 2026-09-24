@@ -3,10 +3,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
-
-const phase2CouponsEnabled = false;
 import { formatPrice } from '@/data/site';
 import { useShop } from '@/components/shop-context';
+
+const phase2CouponsEnabled = false;
 
 export default function CartPage() {
   const {
