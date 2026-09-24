@@ -88,11 +88,13 @@ export class AdminOperationsController {
     return this.operations.dashboard();
   }
   @Get('stock')
-  @UseGuards(DeferredFeatureGuard) stock() {
+  @UseGuards(DeferredFeatureGuard)
+  stock() {
     return this.operations.stock();
   }
   @Get('stock/movements')
-  @UseGuards(DeferredFeatureGuard) movements() {
+  @UseGuards(DeferredFeatureGuard)
+  movements() {
     return this.operations.movements();
   }
   @Patch('stock/:productId')
@@ -112,52 +114,62 @@ export class AdminOperationsController {
     return this.operations.adjustStock(body, user.sub);
   }
   @Get('suppliers')
-  @UseGuards(DeferredFeatureGuard) suppliers() {
+  @UseGuards(DeferredFeatureGuard)
+  suppliers() {
     return this.operations.suppliers();
   }
   @Get('suppliers/:id')
-  @UseGuards(DeferredFeatureGuard) supplier(@Param('id') id: string) {
+  @UseGuards(DeferredFeatureGuard)
+  supplier(@Param('id') id: string) {
     return this.operations.supplier(id);
   }
   @Post('suppliers')
-  @UseGuards(DeferredFeatureGuard) createSupplier(@Body() body: SupplierDto) {
+  @UseGuards(DeferredFeatureGuard)
+  createSupplier(@Body() body: SupplierDto) {
     return this.operations.createSupplier(body);
   }
   @Put('suppliers/:id')
-  @UseGuards(DeferredFeatureGuard) updateSupplier(
+  @UseGuards(DeferredFeatureGuard)
+  updateSupplier(
     @Param('id') id: string,
     @Body() body: SupplierDto,
   ) {
     return this.operations.updateSupplier(id, body);
   }
   @Delete('suppliers/:id')
-  @UseGuards(DeferredFeatureGuard) deleteSupplier(@Param('id') id: string) {
+  @UseGuards(DeferredFeatureGuard)
+  deleteSupplier(@Param('id') id: string) {
     return this.operations.deleteSupplier(id);
   }
   @Get('purchases')
-  @UseGuards(DeferredFeatureGuard) purchases() {
+  @UseGuards(DeferredFeatureGuard)
+  purchases() {
     return this.operations.purchases();
   }
   @Get('purchases/:id')
-  @UseGuards(DeferredFeatureGuard) purchase(@Param('id') id: string) {
+  @UseGuards(DeferredFeatureGuard)
+  purchase(@Param('id') id: string) {
     return this.operations.purchase(id);
   }
   @Post('purchases')
-  @UseGuards(DeferredFeatureGuard) createPurchase(
+  @UseGuards(DeferredFeatureGuard)
+  createPurchase(
     @CurrentUser() user: AuthPrincipal,
     @Body() body: PurchaseOrderDto,
   ) {
     return this.operations.createPurchase(body, user.sub);
   }
   @Put('purchases/:id')
-  @UseGuards(DeferredFeatureGuard) updatePurchase(
+  @UseGuards(DeferredFeatureGuard)
+  updatePurchase(
     @Param('id') id: string,
     @Body() body: PurchaseOrderDto,
   ) {
     return this.operations.updatePurchase(id, body);
   }
   @Post('purchases/:id/receipts')
-  @UseGuards(DeferredFeatureGuard) receive(
+  @UseGuards(DeferredFeatureGuard)
+  receive(
     @CurrentUser() user: AuthPrincipal,
     @Param('id') id: string,
     @Body() body: PurchaseReceiptDto,
@@ -170,36 +182,42 @@ export class AdminOperationsController {
     return this.operations.setPurchaseStatus(id, body.status);
   }
   @Get('inventories')
-  @UseGuards(DeferredFeatureGuard) inventories() {
+  @UseGuards(DeferredFeatureGuard)
+  inventories() {
     return this.operations.inventories();
   }
   @Get('inventories/:id')
-  @UseGuards(DeferredFeatureGuard) inventoryDetail(@Param('id') id: string) {
+  @UseGuards(DeferredFeatureGuard)
+  inventoryDetail(@Param('id') id: string) {
     return this.operations.inventory(id);
   }
   @Post('inventories')
-  @UseGuards(DeferredFeatureGuard) inventory(
+  @UseGuards(DeferredFeatureGuard)
+  inventory(
     @CurrentUser() user: AuthPrincipal,
     @Body() body: InventoryDto,
   ) {
     return this.operations.createInventory(body, user.sub);
   }
   @Patch('inventories/:id')
-  @UseGuards(DeferredFeatureGuard) updateInventory(
+  @UseGuards(DeferredFeatureGuard)
+  updateInventory(
     @Param('id') id: string,
     @Body() body: InventoryUpdateDto,
   ) {
     return this.operations.updateInventory(id, body);
   }
   @Post('inventories/:id/complete')
-  @UseGuards(DeferredFeatureGuard) completeInventory(
+  @UseGuards(DeferredFeatureGuard)
+  completeInventory(
     @CurrentUser() user: AuthPrincipal,
     @Param('id') id: string,
   ) {
     return this.operations.completeInventory(id, user.sub);
   }
   @Post('inventories/:id/cancel')
-  @UseGuards(DeferredFeatureGuard) cancelInventory(@Param('id') id: string) {
+  @UseGuards(DeferredFeatureGuard)
+  cancelInventory(@Param('id') id: string) {
     return this.operations.cancelInventory(id);
   }
   @Get('reseller-applications') applications() {
@@ -265,11 +283,13 @@ export class AdminOperationsController {
     return this.operations.removeBusinessAccountUser(id, membershipId);
   }
   @Get('price-lists')
-  @UseGuards(DeferredFeatureGuard) priceLists() {
+  @UseGuards(DeferredFeatureGuard)
+  priceLists() {
     return this.operations.priceLists();
   }
   @Get('price-lists/:id')
-  @UseGuards(DeferredFeatureGuard) priceListDetail(@Param('id') id: string) {
+  @UseGuards(DeferredFeatureGuard)
+  priceListDetail(@Param('id') id: string) {
     return this.operations.priceList(id);
   }
   @Post('price-lists')
