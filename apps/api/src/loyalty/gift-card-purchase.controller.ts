@@ -1,12 +1,14 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
+import { DeferredFeatureGuard } from '../launch-scope/deferred-feature.guard';
 import {
   ConfirmGiftCardPurchaseDto,
   CreateGiftCardPurchaseDto,
 } from './gift-card-purchase.dto';
 import { GiftCardPurchaseService } from './gift-card-purchase.service';
 
+@UseGuards(DeferredFeatureGuard)
 @Controller('v1/gift-card-purchases')
 export class GiftCardPurchaseController {
   constructor(private readonly purchases: GiftCardPurchaseService) {}
@@ -30,7 +32,7 @@ export class GiftCardPurchaseController {
   }
 }
 
-@UseGuards(AuthGuard, RolesGuard)
+@UseGuards(AuthGuard, RolesGuard, DeferredFeatureGuard)
 @Roles('STAFF', 'ADMIN')
 @Controller('v1/admin/gift-card-purchases')
 export class AdminGiftCardPurchaseController {
