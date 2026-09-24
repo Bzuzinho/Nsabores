@@ -79,7 +79,9 @@ export function ManagementDashboard() {
         <div>
           <p className="eyebrow">Resumo operacional</p>
           <h1>Bom trabalho começa com prioridades claras.</h1>
-          <p>Vendas, recebimentos e tarefas pendentes num único ponto de entrada.</p>
+          <p>
+            Vendas, recebimentos e tarefas pendentes num único ponto de entrada.
+          </p>
         </div>
         <div className="dashboard-actions">
           <Link className="admin-secondary" href="/catalogo/produtos/novo">
