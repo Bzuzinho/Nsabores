@@ -66,24 +66,6 @@ export function ManagementDashboard() {
     data?.sales.reduce((sum, item) => sum + Number(item._count), 0) ?? 0;
   const attention = [
     {
-      label: 'Produtos sem stock',
-      value: data?.outOfStock ?? 0,
-      href: '/stock',
-      tone: data?.outOfStock ? 'warning' : 'ok',
-    },
-    {
-      label: 'Abaixo do ponto de reposição',
-      value: data?.belowReorderPoint ?? 0,
-      href: '/stock',
-      tone: data?.belowReorderPoint ? 'warning' : 'ok',
-    },
-    {
-      label: 'Compras pendentes',
-      value: data?.pendingPurchases ?? 0,
-      href: '/compras',
-      tone: 'neutral',
-    },
-    {
       label: 'Candidaturas B2B',
       value: data?.pendingApplications ?? 0,
       href: '/revendedores/candidaturas',
@@ -97,14 +79,14 @@ export function ManagementDashboard() {
         <div>
           <p className="eyebrow">Resumo operacional</p>
           <h1>Bom trabalho começa com prioridades claras.</h1>
-          <p>Vendas, stock e tarefas pendentes num único ponto de entrada.</p>
+          <p>Vendas, recebimentos e tarefas pendentes num único ponto de entrada.</p>
         </div>
         <div className="dashboard-actions">
           <Link className="admin-secondary" href="/catalogo/produtos/novo">
             Novo produto
           </Link>
-          <Link className="admin-primary" href="/compras/nova">
-            Nova compra
+          <Link className="admin-primary" href="/encomendas/nova">
+            Nova encomenda
           </Link>
         </div>
       </header>
@@ -123,13 +105,6 @@ export function ManagementDashboard() {
           <span>Vendas registadas</span>
           <strong>{loading ? '—' : formatMoney(salesTotal)}</strong>
           <small>{orderTotal} encomendas no total</small>
-        </article>
-        <article className="dashboard-metric">
-          <span>Valor estimado de stock</span>
-          <strong>
-            {loading ? '—' : formatMoney(data?.estimatedStockValueCents ?? 0)}
-          </strong>
-          <small>{data?.reservedQuantity ?? 0} unidades reservadas</small>
         </article>
         <article className="dashboard-metric">
           <span>Revendedores ativos</span>
@@ -174,19 +149,15 @@ export function ManagementDashboard() {
           </header>
           <Link href="/encomendas">
             <strong>Gerir encomendas</strong>
-            <small>Confirmar, preparar e acompanhar</small>
+            <small>Consultar, criar e acompanhar</small>
           </Link>
           <Link href="/recebimentos">
             <strong>Registar recebimento</strong>
             <small>Associar pagamentos manuais</small>
           </Link>
-          <Link href="/documentos/reconciliacao">
-            <strong>Reconciliar documentos</strong>
-            <small>Validar o estado fiscal</small>
-          </Link>
-          <Link href="/stock/inventarios">
-            <strong>Consultar inventários</strong>
-            <small>Contagens e correções de stock</small>
+          <Link href="/recebimentos/reconciliacao">
+            <strong>Reconciliar pagamentos</strong>
+            <small>Associar recebimentos às encomendas</small>
           </Link>
         </section>
       </div>
