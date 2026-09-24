@@ -291,7 +291,7 @@ function buildView(section: Section, data?: DashboardData) {
         ['Particulares', String(userCount('CUSTOMER')), 'Contas de cliente'],
         ['Revendedores', String(data.activeResellers), 'Contas aprovadas'],
         ['Candidaturas', String(data.pendingApplications), 'Aguardam decisão'],
-        ['Documentos', 'CRM', 'Relação e histórico'],
+        ['Apoio', 'CRM', 'Relação e histórico'],
       ],
       chartTitle: 'Utilizadores por perfil',
       source: data.usersByRole,
