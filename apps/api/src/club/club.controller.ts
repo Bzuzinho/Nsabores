@@ -11,11 +11,13 @@ import { UserRole } from '@prisma/client';
 import { CurrentUser, Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
 import type { AuthPrincipal } from '../auth/auth.types';
+import { DeferredFeatureGuard } from '../launch-scope/deferred-feature.guard';
 import { PrismaService } from '../prisma.service';
 import { ClubService } from './club.service';
 import { ClubCancelDto, ClubPlanDto, JoinClubDto } from './dto';
 import { ManualClubPaymentsService } from './manual-club-payments.service';
 
+@UseGuards(DeferredFeatureGuard)
 @Controller('v1/club')
 export class PublicClubController {
   constructor(private readonly club: ClubService) {}
@@ -26,7 +28,7 @@ export class PublicClubController {
   }
 }
 
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, DeferredFeatureGuard)
 @Controller('v1/account/club')
 export class AccountClubController {
   constructor(
@@ -55,7 +57,7 @@ export class AccountClubController {
   }
 }
 
-@UseGuards(AuthGuard, RolesGuard)
+@UseGuards(AuthGuard, RolesGuard, DeferredFeatureGuard)
 @Roles(UserRole.STAFF, UserRole.ADMIN)
 @Controller('v1/admin/club')
 export class AdminClubController {

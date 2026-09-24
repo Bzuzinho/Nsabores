@@ -216,9 +216,11 @@ export function OrderAdmin({ id }: { id: string }) {
   const reload = useCallback(async () => {
     const [currentOrder, currentShipments] = await Promise.all([
       managementApi.get<CommerceOrder>(`/v1/admin/orders/${id}`),
-      managementApi.get<OrderShipment[]>(
-        `/v1/admin/shipments?orderId=${encodeURIComponent(id)}`,
-      ),
+      phase2OperationsEnabled
+        ? managementApi.get<OrderShipment[]>(
+            `/v1/admin/shipments?orderId=${encodeURIComponent(id)}`,
+          )
+        : Promise.resolve<OrderShipment[]>([]),
     ]);
     setOrder(currentOrder);
     setShipments(currentShipments);

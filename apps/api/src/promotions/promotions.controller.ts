@@ -15,6 +15,7 @@ import { UserRole } from '@prisma/client';
 import type { Request, Response } from 'express';
 import { Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
+import { DeferredFeatureGuard } from '../launch-scope/deferred-feature.guard';
 import { CommerceIdentityService } from '../commerce/commerce-identity.service';
 import { ApplyCouponDto, CouponDto, PromotionDto } from './dto';
 import { PromotionalCommerceService } from './promotional-commerce.service';
@@ -30,6 +31,7 @@ export class PublicPromotionsController {
   }
 }
 
+@UseGuards(DeferredFeatureGuard)
 @Controller('v1/cart/coupon')
 export class CartCouponController {
   constructor(
@@ -87,21 +89,25 @@ export class AdminPromotionsController {
   }
 
   @Get('coupons')
+  @UseGuards(DeferredFeatureGuard)
   coupons() {
     return this.promotions.coupons();
   }
 
   @Get('coupons/:id')
+  @UseGuards(DeferredFeatureGuard)
   coupon(@Param('id') id: string) {
     return this.promotions.coupon(id);
   }
 
   @Post('coupons')
+  @UseGuards(DeferredFeatureGuard)
   createCoupon(@Body() body: CouponDto) {
     return this.promotions.createCoupon(body);
   }
 
   @Patch('coupons/:id')
+  @UseGuards(DeferredFeatureGuard)
   updateCoupon(@Param('id') id: string, @Body() body: CouponDto) {
     return this.promotions.updateCoupon(id, body);
   }

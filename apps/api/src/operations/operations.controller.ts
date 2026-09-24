@@ -13,6 +13,7 @@ import { UserRole } from '@prisma/client';
 import { CurrentUser, Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
 import type { AuthPrincipal } from '../auth/auth.types';
+import { DeferredFeatureGuard } from '../launch-scope/deferred-feature.guard';
 import {
   ApplicationDecisionDto,
   BusinessAccountDto,
@@ -51,7 +52,10 @@ export class PublicOperationsController {
 @UseGuards(AuthGuard)
 @Controller('v1/business')
 export class BusinessOperationsController {
-  constructor(private readonly operations: OperationsService) {}
+  constructor(
+    private readonly operations: OperationsService,
+    private readonly deferred: DeferredFeatureGuard,
+  ) {}
 
   @Get('account')
   account(@CurrentUser() user: AuthPrincipal) {
@@ -60,11 +64,13 @@ export class BusinessOperationsController {
 
   @Get('catalog')
   catalog(@CurrentUser() user: AuthPrincipal) {
+    this.deferred.assertEnabled();
     return this.operations.resolvedCatalog(user.sub);
   }
 
   @Post('orders')
   order(@CurrentUser() user: AuthPrincipal, @Body() body: BusinessOrderDto) {
+    this.deferred.assertEnabled();
     return this.operations.createB2BOrder(
       user.sub,
       body.items,
@@ -79,15 +85,20 @@ export class BusinessOperationsController {
 @Roles(UserRole.STAFF, UserRole.ADMIN)
 @Controller('v1/admin')
 export class AdminOperationsController {
-  constructor(private readonly operations: OperationsService) {}
+  constructor(
+    private readonly operations: OperationsService,
+    private readonly deferred: DeferredFeatureGuard,
+  ) {}
 
   @Get('operations/dashboard') dashboard() {
     return this.operations.dashboard();
   }
   @Get('stock') stock() {
+    this.deferred.assertEnabled();
     return this.operations.stock();
   }
   @Get('stock/movements') movements() {
+    this.deferred.assertEnabled();
     return this.operations.movements();
   }
   @Patch('stock/:productId')
@@ -95,6 +106,7 @@ export class AdminOperationsController {
     @Param('productId') productId: string,
     @Body() body: StockConfigurationDto,
   ) {
+    this.deferred.assertEnabled();
     return this.operations.configureStock(productId, body);
   }
   @Post('stock/adjustments')
@@ -102,42 +114,52 @@ export class AdminOperationsController {
     @CurrentUser() user: AuthPrincipal,
     @Body() body: StockAdjustmentDto,
   ) {
+    this.deferred.assertEnabled();
     return this.operations.adjustStock(body, user.sub);
   }
   @Get('suppliers') suppliers() {
+    this.deferred.assertEnabled();
     return this.operations.suppliers();
   }
   @Get('suppliers/:id') supplier(@Param('id') id: string) {
+    this.deferred.assertEnabled();
     return this.operations.supplier(id);
   }
   @Post('suppliers') createSupplier(@Body() body: SupplierDto) {
+    this.deferred.assertEnabled();
     return this.operations.createSupplier(body);
   }
   @Put('suppliers/:id') updateSupplier(
     @Param('id') id: string,
     @Body() body: SupplierDto,
   ) {
+    this.deferred.assertEnabled();
     return this.operations.updateSupplier(id, body);
   }
   @Delete('suppliers/:id') deleteSupplier(@Param('id') id: string) {
+    this.deferred.assertEnabled();
     return this.operations.deleteSupplier(id);
   }
   @Get('purchases') purchases() {
+    this.deferred.assertEnabled();
     return this.operations.purchases();
   }
   @Get('purchases/:id') purchase(@Param('id') id: string) {
+    this.deferred.assertEnabled();
     return this.operations.purchase(id);
   }
   @Post('purchases') createPurchase(
     @CurrentUser() user: AuthPrincipal,
     @Body() body: PurchaseOrderDto,
   ) {
+    this.deferred.assertEnabled();
     return this.operations.createPurchase(body, user.sub);
   }
   @Put('purchases/:id') updatePurchase(
     @Param('id') id: string,
     @Body() body: PurchaseOrderDto,
   ) {
+    this.deferred.assertEnabled();
     return this.operations.updatePurchase(id, body);
   }
   @Post('purchases/:id/receipts') receive(
@@ -145,37 +167,45 @@ export class AdminOperationsController {
     @Param('id') id: string,
     @Body() body: PurchaseReceiptDto,
   ) {
+    this.deferred.assertEnabled();
     return this.operations.receivePurchase(id, body, user.sub);
   }
   @Patch('purchases/:id/status')
   purchaseStatus(@Param('id') id: string, @Body() body: PurchaseStatusDto) {
+    this.deferred.assertEnabled();
     return this.operations.setPurchaseStatus(id, body.status);
   }
   @Get('inventories') inventories() {
+    this.deferred.assertEnabled();
     return this.operations.inventories();
   }
   @Get('inventories/:id') inventoryDetail(@Param('id') id: string) {
+    this.deferred.assertEnabled();
     return this.operations.inventory(id);
   }
   @Post('inventories') inventory(
     @CurrentUser() user: AuthPrincipal,
     @Body() body: InventoryDto,
   ) {
+    this.deferred.assertEnabled();
     return this.operations.createInventory(body, user.sub);
   }
   @Patch('inventories/:id') updateInventory(
     @Param('id') id: string,
     @Body() body: InventoryUpdateDto,
   ) {
+    this.deferred.assertEnabled();
     return this.operations.updateInventory(id, body);
   }
   @Post('inventories/:id/complete') completeInventory(
     @CurrentUser() user: AuthPrincipal,
     @Param('id') id: string,
   ) {
+    this.deferred.assertEnabled();
     return this.operations.completeInventory(id, user.sub);
   }
   @Post('inventories/:id/cancel') cancelInventory(@Param('id') id: string) {
+    this.deferred.assertEnabled();
     return this.operations.cancelInventory(id);
   }
   @Get('reseller-applications') applications() {
@@ -241,24 +271,29 @@ export class AdminOperationsController {
     return this.operations.removeBusinessAccountUser(id, membershipId);
   }
   @Get('price-lists') priceLists() {
+    this.deferred.assertEnabled();
     return this.operations.priceLists();
   }
   @Get('price-lists/:id') priceListDetail(@Param('id') id: string) {
+    this.deferred.assertEnabled();
     return this.operations.priceList(id);
   }
   @Post('price-lists')
   @Roles(UserRole.ADMIN)
   priceList(@Body() body: PriceListDto) {
+    this.deferred.assertEnabled();
     return this.operations.createPriceList(body);
   }
   @Patch('price-lists/:id')
   @Roles(UserRole.ADMIN)
   updatePriceList(@Param('id') id: string, @Body() body: PriceListDto) {
+    this.deferred.assertEnabled();
     return this.operations.updatePriceList(id, body);
   }
   @Delete('price-lists/:id')
   @Roles(UserRole.ADMIN)
   deletePriceList(@Param('id') id: string) {
+    this.deferred.assertEnabled();
     return this.operations.deletePriceList(id);
   }
 }

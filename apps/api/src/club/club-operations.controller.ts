@@ -10,6 +10,7 @@ import { UserRole } from '@prisma/client';
 import { CurrentUser, Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
 import type { AuthPrincipal } from '../auth/auth.types';
+import { DeferredFeatureGuard } from '../launch-scope/deferred-feature.guard';
 import { ClubOperationsService } from './club-operations.service';
 import {
   ChangeClubPlanDto,
@@ -17,7 +18,7 @@ import {
   ClubWebhookDto,
 } from './operations.dto';
 
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, DeferredFeatureGuard)
 @Controller('v1/account/club')
 export class AccountClubOperationsController {
   constructor(private readonly operations: ClubOperationsService) {}
@@ -31,7 +32,7 @@ export class AccountClubOperationsController {
   }
 }
 
-@UseGuards(AuthGuard, RolesGuard)
+@UseGuards(AuthGuard, RolesGuard, DeferredFeatureGuard)
 @Roles(UserRole.STAFF, UserRole.ADMIN)
 @Controller('v1/admin/club/subscriptions')
 export class AdminClubOperationsController {
@@ -56,6 +57,7 @@ export class AdminClubOperationsController {
   }
 }
 
+@UseGuards(DeferredFeatureGuard)
 @Controller('v1/webhooks/club')
 export class ClubWebhookController {
   constructor(private readonly operations: ClubOperationsService) {}

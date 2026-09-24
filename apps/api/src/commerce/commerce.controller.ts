@@ -17,6 +17,8 @@ import type { Request, Response } from 'express';
 import { CurrentUser, Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
 import type { AuthPrincipal } from '../auth/auth.types';
+import { AutomaticPaymentGuard } from '../launch-scope/automatic-payment.guard';
+import { DeferredFeatureGuard } from '../launch-scope/deferred-feature.guard';
 import { CommerceIdentityService } from './commerce-identity.service';
 import { CommerceService } from './commerce.service';
 import {
@@ -136,6 +138,7 @@ export class CheckoutController {
   }
 
   @Post('orders/:id/payment')
+  @UseGuards(AutomaticPaymentGuard)
   async payment(
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
@@ -147,6 +150,7 @@ export class CheckoutController {
   }
 
   @Post('payments/webhook')
+  @UseGuards(AutomaticPaymentGuard)
   webhook(
     @Headers('x-payment-signature') signature: string | undefined,
     @Body() body: MockWebhookDto,
@@ -155,6 +159,7 @@ export class CheckoutController {
   }
 
   @Post('payments/mock/:providerPaymentId/confirm')
+  @UseGuards(AutomaticPaymentGuard)
   confirm(@Param('providerPaymentId') providerPaymentId: string) {
     return this.commerce.confirmMock(providerPaymentId);
   }
@@ -274,6 +279,7 @@ export class AdminOrdersController {
   }
 
   @Post('orders/:id/refund')
+  @UseGuards(DeferredFeatureGuard)
   refund(@CurrentUser() user: AuthPrincipal, @Param('id') id: string) {
     return this.commerce.refund(id, user.sub);
   }

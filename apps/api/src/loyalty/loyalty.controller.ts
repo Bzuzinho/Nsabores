@@ -10,6 +10,7 @@ import {
 import { CurrentUser, Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
 import type { AuthPrincipal } from '../auth/auth.types';
+import { DeferredFeatureGuard } from '../launch-scope/deferred-feature.guard';
 import {
   GiftCardBlockDto,
   GiftCardLookupDto,
@@ -20,7 +21,7 @@ import {
 import { LoyaltyReleaseService } from './loyalty-release.service';
 import { LoyaltyService } from './loyalty.service';
 
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, DeferredFeatureGuard)
 @Controller('v1/account/loyalty')
 export class AccountLoyaltyController {
   constructor(
@@ -35,6 +36,7 @@ export class AccountLoyaltyController {
   }
 }
 
+@UseGuards(DeferredFeatureGuard)
 @Controller('v1/gift-cards')
 export class PublicGiftCardController {
   constructor(private readonly loyalty: LoyaltyService) {}
@@ -45,7 +47,7 @@ export class PublicGiftCardController {
   }
 }
 
-@UseGuards(AuthGuard, RolesGuard)
+@UseGuards(AuthGuard, RolesGuard, DeferredFeatureGuard)
 @Roles('STAFF', 'ADMIN')
 @Controller('v1/admin/loyalty')
 export class AdminLoyaltyController {
