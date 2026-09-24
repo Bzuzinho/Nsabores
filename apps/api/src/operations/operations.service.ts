@@ -895,7 +895,9 @@ export class OperationsService {
           where: { id: body.priceListId, isActive: true },
         });
         if (!priceList)
-          throw new BadRequestException('Tabela de preços inválida ou inativa.');
+          throw new BadRequestException(
+            'Tabela de preços inválida ou inativa.',
+          );
       }
       const duplicateAccount = await tx.businessAccount.findUnique({
         where: { taxNumber: application.taxNumber },
