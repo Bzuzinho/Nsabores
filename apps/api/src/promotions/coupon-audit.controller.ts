@@ -2,9 +2,10 @@ import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
+import { DeferredFeatureGuard } from '../launch-scope/deferred-feature.guard';
 import { CouponAuditService } from './coupon-audit.service';
 
-@UseGuards(AuthGuard, RolesGuard)
+@UseGuards(AuthGuard, RolesGuard, DeferredFeatureGuard)
 @Roles(UserRole.STAFF, UserRole.ADMIN)
 @Controller('v1/admin/coupons')
 export class CouponAuditController {
