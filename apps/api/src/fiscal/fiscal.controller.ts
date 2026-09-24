@@ -11,6 +11,7 @@ import { FiscalDocumentType, UserRole } from '@prisma/client';
 import { CurrentUser, Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
 import type { AuthPrincipal } from '../auth/auth.types';
+import { DeferredFeatureGuard } from '../launch-scope/deferred-feature.guard';
 import {
   CreditNoteService,
   type CreditNoteLineInput,
@@ -20,7 +21,7 @@ import { FiscalReconciliationService } from './fiscal-reconciliation.service';
 import { FiscalService } from './fiscal.service';
 import { SourceFiscalService } from './source-fiscal.service';
 
-@UseGuards(AuthGuard, RolesGuard)
+@UseGuards(AuthGuard, RolesGuard, DeferredFeatureGuard)
 @Roles(UserRole.STAFF, UserRole.ADMIN)
 @Controller('v1/admin/fiscal')
 export class FiscalController {
