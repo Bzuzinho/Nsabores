@@ -55,7 +55,7 @@ export default function OrderPage() {
             <>
               <p>
                 O pagamento desta encomenda é combinado diretamente com a
-                Nsabores e não bloqueia a produção.
+                Nsabores e confirmado manualmente pela equipa.
               </p>
               {agreement.method && <p>Método: {agreement.method}</p>}
               {agreement.dueAt && (
@@ -94,20 +94,13 @@ export default function OrderPage() {
       <p>
         <strong>Total: {formatPrice(order.totalCents)}</strong>
       </p>
-      <p>
-        <Link href={`/conta/encomendas/${id}/tracking`}>
-          Acompanhar expedição
-        </Link>
-        {canReturn && (
-          <>
-            {' '}
-            ·{' '}
-            <Link href={`/conta/encomendas/${id}/devolver`}>
-              Pedir devolução
-            </Link>
-          </>
-        )}
-      </p>
+      {canReturn && (
+        <p>
+          <Link href={`/conta/encomendas/${id}/devolver`}>
+            Pedir devolução
+          </Link>
+        </p>
+      )}
       <h2>Histórico</h2>
       {order.statusHistory.map((item) => (
         <p key={item.id}>
