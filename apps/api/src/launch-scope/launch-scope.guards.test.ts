@@ -13,27 +13,27 @@ function config(values: Record<string, unknown>) {
 describe('launch scope guards', () => {
   it('permite funcionalidades adiadas por defeito em desenvolvimento e testes', () => {
     const guard = new DeferredFeatureGuard(config({}));
-    expect(guard.canActivate({} as never)).toBe(true);
+    expect(guard.canActivate()).toBe(true);
   });
 
   it('bloqueia funcionalidades adiadas quando o arranque está restrito', () => {
     const guard = new DeferredFeatureGuard(
       config({ DEFERRED_FEATURES_ENABLED: false }),
     );
-    expect(() => guard.canActivate({} as never)).toThrow(NotFoundException);
+    expect(() => guard.canActivate()).toThrow(NotFoundException);
   });
 
   it('bloqueia pagamentos online em modo manual', () => {
     const guard = new AutomaticPaymentGuard(
       config({ PAYMENT_FLOW_MODE: 'manual' }),
     );
-    expect(() => guard.canActivate({} as never)).toThrow(ConflictException);
+    expect(() => guard.canActivate()).toThrow(ConflictException);
   });
 
   it('permite pagamentos online apenas em modo automatic', () => {
     const guard = new AutomaticPaymentGuard(
       config({ PAYMENT_FLOW_MODE: 'automatic' }),
     );
-    expect(guard.canActivate({} as never)).toBe(true);
+    expect(guard.canActivate()).toBe(true);
   });
 });
