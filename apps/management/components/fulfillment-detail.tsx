@@ -458,8 +458,6 @@ export function ReturnAdminDetail({ id }: { id: string }) {
                 'IN_TRANSIT',
                 'RECEIVED',
                 'INSPECTED',
-                'REFUND_PENDING',
-                'REFUNDED',
                 'CLOSED',
                 'CANCELLED',
               ].map((value) => (

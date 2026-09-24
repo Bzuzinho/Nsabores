@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { managementApi } from './management-auth';
+import { isManagementRouteLive } from './management-routes';
 
 type Section =
   'sales' | 'operations' | 'purchasing' | 'customers' | 'administration';
@@ -53,7 +54,7 @@ const sectionCopy = {
     eyebrow: 'Operações',
     title: 'Fluxo operacional',
     description: 'Trabalho em curso, reservas e incidências abertas.',
-    action: ['/operacoes/preparacao', 'Abrir preparação'],
+    action: ['/apoio', 'Abrir apoio'],
   },
   purchasing: {
     eyebrow: 'Compras e stock',
@@ -214,17 +215,39 @@ function buildView(section: Section, data?: DashboardData) {
       links: [
         ['/encomendas', 'Encomendas', 'Estados, detalhe e operação'],
         ['/recebimentos', 'Recebimentos', 'Valores por liquidar'],
+        [
+          '/recebimentos/reconciliacao',
+          'Reconciliação',
+          'Associar pagamentos recebidos',
+        ],
         ['/documentos', 'Documentos', 'Faturas, recibos e notas'],
       ],
     },
     operations: {
       metrics: [
-        ['Reservas', String(data.reservedQuantity), 'Unidades comprometidas'],
-        ['Sem stock', String(data.outOfStock), 'Produtos indisponíveis'],
         [
-          'Reposição',
-          String(data.belowReorderPoint),
-          'Abaixo do ponto definido',
+          'Encomendas',
+          String(
+            data.ordersByStatus.reduce((sum, item) => sum + item._count, 0),
+          ),
+          'Todos os estados',
+        ],
+        [
+          'A aguardar pagamento',
+          String(
+            data.ordersByStatus.find(
+              (item) => item.status === 'PENDING_PAYMENT',
+            )?._count ?? 0,
+          ),
+          'Confirmação pendente',
+        ],
+        [
+          'Prontas',
+          String(
+            data.ordersByStatus.find((item) => item.status === 'READY')
+              ?._count ?? 0,
+          ),
+          'Aguardam seguimento',
         ],
         [
           'Incidências',
@@ -297,7 +320,7 @@ function buildView(section: Section, data?: DashboardData) {
       chartTitle: 'Artigos por estado',
       source: data.blogByStatus,
       links: [
-        ['/utilizadores', 'Utilizadores', 'Perfis e acessos'],
+        ['/utilizadores', 'Utilizadores', 'Contas e estado'],
         ['/blog', 'Blog', 'Conteúdo editorial'],
         ['/catalogo/categorias', 'Categorias', 'Estrutura do catálogo'],
       ],
@@ -311,7 +334,7 @@ function buildView(section: Section, data?: DashboardData) {
   return {
     metrics: selected.metrics,
     chartTitle: selected.chartTitle,
-    links: selected.links,
+    links: selected.links.filter(([href]) => isManagementRouteLive(href)),
     bars: selected.source.map((item, index) => ({
       label: humanize(item.salesChannel ?? item.status ?? item.role ?? 'Outro'),
       formatted: selected.moneyBars

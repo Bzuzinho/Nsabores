@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { managementApi, useManagementAuth } from './management-auth';
 
+const phase2B2BCommerceEnabled = false;
+
 type PriceList = { id: string; name: string; code: string; isActive: boolean };
 type Application = {
   id: string;
@@ -80,7 +82,6 @@ export function BusinessAdmin({
 
 function ApplicationsAdmin() {
   const [applications, setApplications] = useState<Application[]>([]);
-  const [priceLists, setPriceLists] = useState<PriceList[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [filter, setFilter] = useState('PENDING');
   const [error, setError] = useState('');
@@ -90,12 +91,10 @@ function ApplicationsAdmin() {
   const load = useCallback(async () => {
     setError('');
     try {
-      const [rows, prices] = await Promise.all([
-        managementApi.get<Application[]>('/v1/admin/reseller-applications'),
-        managementApi.get<PriceList[]>('/v1/admin/price-lists'),
-      ]);
+      const rows = await managementApi.get<Application[]>(
+        '/v1/admin/reseller-applications',
+      );
       setApplications(rows);
-      setPriceLists(prices.filter((price) => price.isActive));
       setSelectedId((current) => current || rows[0]?.id || '');
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Erro inesperado.');
@@ -121,8 +120,6 @@ function ApplicationsAdmin() {
         `/v1/admin/reseller-applications/${selected.id}/decision`,
         {
           approved,
-          priceListId: approved ? form.get('priceListId') : undefined,
-          paymentTerms: approved ? form.get('paymentTerms') : undefined,
           internalReason: form.get('internalReason') || undefined,
         },
       );
@@ -147,7 +144,7 @@ function ApplicationsAdmin() {
         <div>
           <p className="eyebrow">Clientes profissionais</p>
           <h1>Candidaturas B2B</h1>
-          <p>Analise os dados, atribua condições e registe a decisão.</p>
+          <p>Analise os dados e registe a decisão.</p>
         </div>
       </header>
       <div className="admin-filters">
@@ -243,27 +240,6 @@ function ApplicationsAdmin() {
             )}
             {selected.status === 'PENDING' ? (
               <>
-                <label>
-                  Tabela de preços
-                  <select name="priceListId" required>
-                    <option value="">Selecionar</option>
-                    {priceLists.map((price) => (
-                      <option key={price.id} value={price.id}>
-                        {price.name} · {price.code}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Condições de pagamento
-                  <select name="paymentTerms" defaultValue="BANK_TRANSFER">
-                    <option value="IMMEDIATE">Pagamento imediato</option>
-                    <option value="BANK_TRANSFER">Transferência</option>
-                    <option value="NET_15">15 dias</option>
-                    <option value="NET_30">30 dias</option>
-                    <option value="NET_60">60 dias</option>
-                  </select>
-                </label>
                 <label>
                   Fundamentação interna
                   <textarea name="internalReason" />
@@ -365,7 +341,7 @@ function BusinessAccounts() {
         <div>
           <p className="eyebrow">Clientes profissionais</p>
           <h1>Contas B2B e revendedores</h1>
-          <p>Empresas, utilizadores, preços e condições comerciais.</p>
+          <p>Empresas, utilizadores e estado das contas.</p>
         </div>
         <Link className="admin-secondary" href="/revendedores/candidaturas">
           Ver candidaturas
@@ -390,7 +366,7 @@ function BusinessAccounts() {
               <tr>
                 <th>Empresa</th>
                 <th>Tipo</th>
-                <th>Tabela</th>
+                {phase2B2BCommerceEnabled && <th>Tabela</th>}
                 <th>Utilizadores</th>
                 <th>Estado</th>
                 <th />
@@ -404,7 +380,9 @@ function BusinessAccounts() {
                     <small>{account.taxNumber}</small>
                   </td>
                   <td>{account.type}</td>
-                  <td>{account.priceList?.name ?? '—'}</td>
+                  {phase2B2BCommerceEnabled && (
+                    <td>{account.priceList?.name ?? '—'}</td>
+                  )}
                   <td>
                     {account.users.filter((user) => user.isActive).length}
                   </td>
@@ -463,7 +441,7 @@ function BusinessAccountDetail({ id }: { id: string }) {
     try {
       await managementApi.patch(
         `/v1/admin/business-accounts/${id}`,
-        businessPayload(new FormData(event.currentTarget)),
+        businessPayload(new FormData(event.currentTarget), account),
       );
       setMessage('Conta empresarial atualizada.');
       await load();
@@ -590,7 +568,7 @@ function BusinessAccountDetail({ id }: { id: string }) {
       </header>
 
       <BusinessForm
-        title="Dados e condições comerciais"
+        title="Dados da conta empresarial"
         account={account}
         priceLists={priceLists}
         busy={busy}
@@ -669,39 +647,41 @@ function BusinessAccountDetail({ id }: { id: string }) {
         )}
       </section>
 
-      {account.orders && account.orders.length > 0 && (
-        <section className="admin-card">
-          <h2>Encomendas profissionais</h2>
-          <div className="admin-table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Número</th>
-                  <th>Estado</th>
-                  <th>Total</th>
-                  <th>Data</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {account.orders.map((order) => (
-                  <tr key={order.id}>
-                    <td>{order.number}</td>
-                    <td>{order.status}</td>
-                    <td>{euros(order.totalCents)}</td>
-                    <td>
-                      {new Date(order.createdAt).toLocaleDateString('pt-PT')}
-                    </td>
-                    <td className="admin-table-action">
-                      <Link href={`/encomendas/${order.id}`}>Abrir</Link>
-                    </td>
+      {phase2B2BCommerceEnabled &&
+        account.orders &&
+        account.orders.length > 0 && (
+          <section className="admin-card">
+            <h2>Encomendas profissionais</h2>
+            <div className="admin-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Número</th>
+                    <th>Estado</th>
+                    <th>Total</th>
+                    <th>Data</th>
+                    <th />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
+                </thead>
+                <tbody>
+                  {account.orders.map((order) => (
+                    <tr key={order.id}>
+                      <td>{order.number}</td>
+                      <td>{order.status}</td>
+                      <td>{euros(order.totalCents)}</td>
+                      <td>
+                        {new Date(order.createdAt).toLocaleDateString('pt-PT')}
+                      </td>
+                      <td className="admin-table-action">
+                        <Link href={`/encomendas/${order.id}`}>Abrir</Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
     </section>
   );
 }
@@ -819,101 +799,105 @@ function BusinessForm({
           disabled={disabled}
         />
       </label>
-      <label>
-        Tabela de preços
-        <select
-          name="priceListId"
-          defaultValue={account?.priceListId ?? ''}
-          disabled={disabled}
-        >
-          <option value="">Sem tabela</option>
-          {priceLists.map((price) => (
-            <option key={price.id} value={price.id}>
-              {price.name} · {price.code}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        Condições de pagamento
-        <select
-          name="paymentTerms"
-          defaultValue={account?.paymentTerms ?? 'BANK_TRANSFER'}
-          disabled={disabled}
-        >
-          <option value="IMMEDIATE">Imediato</option>
-          <option value="BANK_TRANSFER">Transferência</option>
-          <option value="NET_15">15 dias</option>
-          <option value="NET_30">30 dias</option>
-          <option value="NET_60">60 dias</option>
-        </select>
-      </label>
-      <label>
-        Limite de crédito (€)
-        <input
-          min="0"
-          name="creditLimit"
-          step="0.01"
-          type="number"
-          defaultValue={centsToInput(account?.creditLimitCents)}
-          disabled={disabled}
-        />
-      </label>
-      <label>
-        Encomenda mínima (€)
-        <input
-          min="0"
-          name="minimumOrder"
-          step="0.01"
-          type="number"
-          defaultValue={centsToInput(account?.minimumOrderCents)}
-          disabled={disabled}
-        />
-      </label>
-      <label>
-        Portes fixos (€)
-        <input
-          min="0"
-          name="shipping"
-          step="0.01"
-          type="number"
-          defaultValue={centsToInput(account?.shippingCents)}
-          disabled={disabled}
-        />
-      </label>
-      <fieldset className="wide operational-fieldset" disabled={disabled}>
-        <legend>Métodos permitidos</legend>
-        {(
-          [
-            ['CARD', 'Cartão'],
-            ['BANK_TRANSFER', 'Transferência'],
-            ['PAY_ON_DELIVERY', 'Pagamento na entrega'],
-          ] as const
-        ).map(([value, label]) => (
-          <label className="operational-check" key={value}>
-            <input
-              name="allowedPaymentMethods"
-              type="checkbox"
-              value={value}
-              defaultChecked={
-                account
-                  ? account.allowedPaymentMethods.includes(value)
-                  : value === 'BANK_TRANSFER'
-              }
-            />
-            {label}
+      {phase2B2BCommerceEnabled && (
+        <>
+          <label>
+            Tabela de preços
+            <select
+              name="priceListId"
+              defaultValue={account?.priceListId ?? ''}
+              disabled={disabled}
+            >
+              <option value="">Sem tabela</option>
+              {priceLists.map((price) => (
+                <option key={price.id} value={price.id}>
+                  {price.name} · {price.code}
+                </option>
+              ))}
+            </select>
           </label>
-        ))}
-      </fieldset>
-      <label className="check">
-        <input
-          name="requiresApproval"
-          type="checkbox"
-          defaultChecked={account?.requiresApproval}
-          disabled={disabled}
-        />
-        Exige aprovação interna
-      </label>
+          <label>
+            Condições de pagamento
+            <select
+              name="paymentTerms"
+              defaultValue={account?.paymentTerms ?? 'BANK_TRANSFER'}
+              disabled={disabled}
+            >
+              <option value="IMMEDIATE">Imediato</option>
+              <option value="BANK_TRANSFER">Transferência</option>
+              <option value="NET_15">15 dias</option>
+              <option value="NET_30">30 dias</option>
+              <option value="NET_60">60 dias</option>
+            </select>
+          </label>
+          <label>
+            Limite de crédito (€)
+            <input
+              min="0"
+              name="creditLimit"
+              step="0.01"
+              type="number"
+              defaultValue={centsToInput(account?.creditLimitCents)}
+              disabled={disabled}
+            />
+          </label>
+          <label>
+            Encomenda mínima (€)
+            <input
+              min="0"
+              name="minimumOrder"
+              step="0.01"
+              type="number"
+              defaultValue={centsToInput(account?.minimumOrderCents)}
+              disabled={disabled}
+            />
+          </label>
+          <label>
+            Portes fixos (€)
+            <input
+              min="0"
+              name="shipping"
+              step="0.01"
+              type="number"
+              defaultValue={centsToInput(account?.shippingCents)}
+              disabled={disabled}
+            />
+          </label>
+          <fieldset className="wide operational-fieldset" disabled={disabled}>
+            <legend>Métodos permitidos</legend>
+            {(
+              [
+                ['CARD', 'Cartão'],
+                ['BANK_TRANSFER', 'Transferência'],
+                ['PAY_ON_DELIVERY', 'Pagamento na entrega'],
+              ] as const
+            ).map(([value, label]) => (
+              <label className="operational-check" key={value}>
+                <input
+                  name="allowedPaymentMethods"
+                  type="checkbox"
+                  value={value}
+                  defaultChecked={
+                    account
+                      ? account.allowedPaymentMethods.includes(value)
+                      : value === 'BANK_TRANSFER'
+                  }
+                />
+                {label}
+              </label>
+            ))}
+          </fieldset>
+          <label className="check">
+            <input
+              name="requiresApproval"
+              type="checkbox"
+              defaultChecked={account?.requiresApproval}
+              disabled={disabled}
+            />
+            Exige aprovação interna
+          </label>
+        </>
+      )}
       <label className="wide">
         Notas internas
         <textarea
@@ -931,11 +915,7 @@ function BusinessForm({
   );
 }
 
-function businessPayload(form: FormData) {
-  const cents = (name: string) => {
-    const value = form.get(name);
-    return value ? Math.round(Number(value) * 100) : null;
-  };
+function businessPayload(form: FormData, account?: BusinessAccount) {
   return {
     type: form.get('type'),
     tradeName: form.get('tradeName'),
@@ -949,13 +929,13 @@ function businessPayload(form: FormData) {
       city: form.get('city'),
       countryCode: String(form.get('countryCode') || 'PT').toUpperCase(),
     },
-    priceListId: form.get('priceListId') || null,
-    paymentTerms: form.get('paymentTerms'),
-    allowedPaymentMethods: form.getAll('allowedPaymentMethods'),
-    creditLimitCents: cents('creditLimit'),
-    minimumOrderCents: cents('minimumOrder'),
-    shippingCents: cents('shipping'),
-    requiresApproval: form.get('requiresApproval') === 'on',
+    priceListId: account?.priceListId ?? null,
+    paymentTerms: account?.paymentTerms ?? 'IMMEDIATE',
+    allowedPaymentMethods: account?.allowedPaymentMethods ?? ['CARD'],
+    creditLimitCents: account?.creditLimitCents ?? null,
+    minimumOrderCents: account?.minimumOrderCents ?? null,
+    shippingCents: account?.shippingCents ?? null,
+    requiresApproval: account?.requiresApproval ?? false,
     internalNotes: form.get('internalNotes') || null,
   };
 }

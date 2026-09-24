@@ -209,6 +209,151 @@ export function ReceivablesAdmin() {
   );
 }
 
+export function PaymentReconciliationAdmin() {
+  const [result, setResult] = useState<Result | null>(null);
+  const [error, setError] = useState('');
+  const [busyId, setBusyId] = useState('');
+
+  const reload = useCallback(async () => {
+    setError('');
+    try {
+      setResult(await managementApi.get<Result>('/v1/admin/receivables'));
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível carregar a reconciliação.',
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(reload);
+  }, [reload]);
+
+  const pending = (result?.data ?? []).filter(
+    (item) => item.paymentStatus !== 'PAID' && item.status !== 'CANCELLED',
+  );
+  const pendingTotal = pending.reduce(
+    (sum, item) => sum + item.expectedAmountCents,
+    0,
+  );
+
+  async function reconcile(item: Agreement) {
+    const method = window.prompt(
+      'Método de pagamento (ex.: transferência, numerário, contra entrega):',
+      item.method ?? 'transferência',
+    );
+    if (method === null || !method.trim()) return;
+    const reference =
+      window.prompt('Referência/comprovativo (opcional):', '') ?? '';
+    const note = window.prompt('Nota interna (opcional):', '') ?? '';
+    if (
+      !window.confirm(
+        `Confirmar o recebimento de ${money(item.expectedAmountCents)} para a encomenda ${item.number}?`,
+      )
+    )
+      return;
+
+    setBusyId(item.orderId);
+    setError('');
+    try {
+      await managementApi.post(`/v1/admin/orders/${item.orderId}/mark-paid`, {
+        method: method.trim(),
+        reference: reference.trim() || undefined,
+        note: note.trim() || undefined,
+      });
+      await reload();
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível reconciliar o pagamento.',
+      );
+    } finally {
+      setBusyId('');
+    }
+  }
+
+  return (
+    <>
+      <header className="admin-header">
+        <div>
+          <p className="eyebrow">Recebimentos</p>
+          <h1>Reconciliação de pagamentos</h1>
+          <p>
+            Associe pagamentos recebidos às encomendas e confirme o respetivo
+            estado financeiro.
+          </p>
+        </div>
+        <Link href="/recebimentos">Voltar a recebimentos</Link>
+      </header>
+
+      {error && <p className="admin-error">{error}</p>}
+
+      <div className="admin-metrics">
+        <article>
+          <strong>{pending.length}</strong>
+          <span>Por reconciliar</span>
+        </article>
+        <article>
+          <strong>{money(pendingTotal)}</strong>
+          <span>Valor pendente</span>
+        </article>
+      </div>
+
+      <div className="admin-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Encomenda</th>
+              <th>Cliente</th>
+              <th>Estado</th>
+              <th>Valor</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {pending.map((item) => (
+              <tr key={item.orderId}>
+                <td>
+                  <strong>{item.number}</strong>
+                  <small>{item.publicReference ?? 'Sem referência'}</small>
+                </td>
+                <td>
+                  {item.customerName}
+                  <small>{item.email}</small>
+                </td>
+                <td>
+                  {item.status}
+                  <small>{item.paymentStatus}</small>
+                </td>
+                <td>{money(item.expectedAmountCents)}</td>
+                <td className="admin-table-action">
+                  <button
+                    className="admin-primary"
+                    disabled={busyId === item.orderId}
+                    onClick={() => void reconcile(item)}
+                  >
+                    {busyId === item.orderId
+                      ? 'A confirmar…'
+                      : 'Confirmar recebimento'}
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {!pending.length && (
+              <tr>
+                <td colSpan={5}>Não existem pagamentos por reconciliar.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
 export function ReceivableDetail({ orderId }: { orderId: string }) {
   const [item, setItem] = useState<Agreement | null>(null);
   const [error, setError] = useState('');

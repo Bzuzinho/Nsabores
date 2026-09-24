@@ -3,6 +3,8 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   findManagementRoute,
+  isManagementRouteLive,
+  liveManagementRoutes,
   managementRoutes,
   normalizeManagementPath,
   routeIsActive,
@@ -26,7 +28,7 @@ const requiredOperationalRoutes = [
   '/tabelas-precos',
   '/clube/subscricoes',
   '/clube/cobrancas',
-  '/documentos/reconciliacao',
+  '/recebimentos/reconciliacao',
   '/catalogo',
   '/blog',
   '/compras-stock',
@@ -44,8 +46,32 @@ describe('management principal routes', () => {
     expect(existsSync(resolve(process.cwd(), route.pageFile))).toBe(true);
   });
 
-  it.each(requiredOperationalRoutes)('exposes %s in navigation', (href) => {
+  it.each(requiredOperationalRoutes)('keeps %s registered', (href) => {
     expect(managementRoutes.some((route) => route.href === href)).toBe(true);
+  });
+
+  it('expõe no arranque apenas os módulos aprovados pelo cliente', () => {
+    const liveHrefs = new Set(liveManagementRoutes.map((route) => route.href));
+    expect(liveHrefs.has('/recebimentos/reconciliacao')).toBe(true);
+    expect(liveHrefs.has('/devolucoes')).toBe(true);
+    expect(liveHrefs.has('/revendedores')).toBe(true);
+
+    for (const deferred of [
+      '/documentos',
+      '/operacoes/preparacao',
+      '/operacoes/producao',
+      '/expedicoes',
+      '/cupoes',
+      '/stock',
+      '/compras',
+      '/clube',
+      '/fidelizacao',
+      '/vales-oferta',
+      '/tabelas-precos',
+    ]) {
+      expect(liveHrefs.has(deferred)).toBe(false);
+      expect(isManagementRouteLive(deferred)).toBe(false);
+    }
   });
 
   it('normalizes the public base path and resolves the most specific module', () => {

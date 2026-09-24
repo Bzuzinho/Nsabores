@@ -111,15 +111,10 @@ export function BusinessAccountScreen({ mode }: { mode: Mode }) {
             {account.type === 'RESELLER' ? 'Revendedor' : 'Cliente B2B'}
           </p>
           <h1>{account.tradeName}</h1>
-          <p>
-            {account.status} ·{' '}
-            {account.priceList?.name ?? 'Tabela por atribuir'}
-          </p>
+          <p>{account.status}</p>
         </div>
         <nav aria-label="Conta profissional">
           <Link href="/conta/empresa">Empresa</Link>
-          <Link href="/conta/precos">Preços</Link>
-          <Link href="/conta/condicoes-comerciais">Condições</Link>
         </nav>
       </header>
 

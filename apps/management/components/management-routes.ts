@@ -14,6 +14,7 @@ export type ManagementRoute = {
   group: ManagementGroup;
   keywords?: string[];
   adminOnly?: boolean;
+  phase?: 'launch' | 'phase2';
   pageFile: string;
 };
 
@@ -51,6 +52,7 @@ export const managementRoutes: ManagementRoute[] = [
   },
   {
     href: '/documentos',
+    phase: 'phase2',
     label: 'Documentos fiscais',
     description: 'Faturas, recibos e notas de crédito.',
     group: 'Vendas',
@@ -58,12 +60,12 @@ export const managementRoutes: ManagementRoute[] = [
     pageFile: 'app/documentos/page.tsx',
   },
   {
-    href: '/documentos/reconciliacao',
-    label: 'Reconciliação fiscal',
-    description: 'Comparar documentos internos e fiscais.',
+    href: '/recebimentos/reconciliacao',
+    label: 'Reconciliação de pagamentos',
+    description: 'Associar e validar pagamentos recebidos com encomendas.',
     group: 'Vendas',
-    keywords: ['reconciliação'],
-    pageFile: 'app/documentos/reconciliacao/page.tsx',
+    keywords: ['reconciliação', 'pagamentos', 'recebimentos'],
+    pageFile: 'app/recebimentos/reconciliacao/page.tsx',
   },
   {
     href: '/operacoes',
@@ -74,6 +76,7 @@ export const managementRoutes: ManagementRoute[] = [
   },
   {
     href: '/operacoes/preparacao',
+    phase: 'phase2',
     label: 'Preparação',
     description: 'Separação e preparação de encomendas.',
     group: 'Operações',
@@ -81,6 +84,7 @@ export const managementRoutes: ManagementRoute[] = [
   },
   {
     href: '/operacoes/producao',
+    phase: 'phase2',
     label: 'Produção',
     description: 'Ordens de produção e componentes.',
     group: 'Operações',
@@ -88,6 +92,7 @@ export const managementRoutes: ManagementRoute[] = [
   },
   {
     href: '/expedicoes',
+    phase: 'phase2',
     label: 'Expedições',
     description: 'Envios, transportadoras e tracking.',
     group: 'Operações',
@@ -144,6 +149,7 @@ export const managementRoutes: ManagementRoute[] = [
   },
   {
     href: '/cupoes',
+    phase: 'phase2',
     label: 'Cupões',
     description: 'Códigos, utilização e validade.',
     group: 'Catálogo',
@@ -159,6 +165,7 @@ export const managementRoutes: ManagementRoute[] = [
   },
   {
     href: '/compras-stock',
+    phase: 'phase2',
     label: 'Painel de compras e stock',
     description: 'Indicadores de abastecimento e disponibilidade.',
     group: 'Compras e stock',
@@ -167,6 +174,7 @@ export const managementRoutes: ManagementRoute[] = [
   },
   {
     href: '/stock',
+    phase: 'phase2',
     label: 'Stock',
     description: 'Disponível, reservado e reposição.',
     group: 'Compras e stock',
@@ -174,6 +182,7 @@ export const managementRoutes: ManagementRoute[] = [
   },
   {
     href: '/stock/movimentos',
+    phase: 'phase2',
     label: 'Movimentos de stock',
     description: 'Histórico de entradas, saídas e reservas.',
     group: 'Compras e stock',
@@ -181,6 +190,7 @@ export const managementRoutes: ManagementRoute[] = [
   },
   {
     href: '/stock/inventarios',
+    phase: 'phase2',
     label: 'Inventários',
     description: 'Contagens e correções auditáveis.',
     group: 'Compras e stock',
@@ -188,6 +198,7 @@ export const managementRoutes: ManagementRoute[] = [
   },
   {
     href: '/fornecedores',
+    phase: 'phase2',
     label: 'Fornecedores',
     description: 'Parceiros, contactos e condições.',
     group: 'Compras e stock',
@@ -195,6 +206,7 @@ export const managementRoutes: ManagementRoute[] = [
   },
   {
     href: '/compras',
+    phase: 'phase2',
     label: 'Compras',
     description: 'Ordens, custos e receções.',
     group: 'Compras e stock',
@@ -217,6 +229,7 @@ export const managementRoutes: ManagementRoute[] = [
   },
   {
     href: '/clube',
+    phase: 'phase2',
     label: 'Clube Nsabores',
     description: 'Planos, membros e desempenho.',
     group: 'Clientes',
@@ -224,6 +237,7 @@ export const managementRoutes: ManagementRoute[] = [
   },
   {
     href: '/clube/planos',
+    phase: 'phase2',
     label: 'Planos do clube',
     description: 'Configuração de planos e vantagens.',
     group: 'Clientes',
@@ -231,6 +245,7 @@ export const managementRoutes: ManagementRoute[] = [
   },
   {
     href: '/clube/subscricoes',
+    phase: 'phase2',
     label: 'Subscrições',
     description: 'Membros, renovações e estados.',
     group: 'Clientes',
@@ -238,6 +253,7 @@ export const managementRoutes: ManagementRoute[] = [
   },
   {
     href: '/clube/cobrancas',
+    phase: 'phase2',
     label: 'Cobranças do clube',
     description: 'Mensalidades e cobranças pendentes.',
     group: 'Clientes',
@@ -245,6 +261,7 @@ export const managementRoutes: ManagementRoute[] = [
   },
   {
     href: '/fidelizacao',
+    phase: 'phase2',
     label: 'Fidelização',
     description: 'Saldos, movimentos e clientes.',
     group: 'Clientes',
@@ -252,6 +269,7 @@ export const managementRoutes: ManagementRoute[] = [
   },
   {
     href: '/fidelizacao/regras',
+    phase: 'phase2',
     label: 'Regras de fidelização',
     description: 'Acumulação, libertação e validade.',
     group: 'Clientes',
@@ -259,6 +277,7 @@ export const managementRoutes: ManagementRoute[] = [
   },
   {
     href: '/vales-oferta',
+    phase: 'phase2',
     label: 'Vales-oferta',
     description: 'Emissão, utilização e saldo.',
     group: 'Clientes',
@@ -266,6 +285,7 @@ export const managementRoutes: ManagementRoute[] = [
   },
   {
     href: '/vales-oferta/pedidos',
+    phase: 'phase2',
     label: 'Pedidos de vales',
     description: 'Pagamentos e emissão de vales.',
     group: 'Clientes',
@@ -287,6 +307,7 @@ export const managementRoutes: ManagementRoute[] = [
   },
   {
     href: '/tabelas-precos',
+    phase: 'phase2',
     label: 'Tabelas de preços',
     description: 'Preços retail, B2B e personalizados.',
     group: 'Clientes',
@@ -320,6 +341,10 @@ export const managementRoutes: ManagementRoute[] = [
     pageFile: 'app/administracao/entregas/page.tsx',
   },
 ];
+
+export const liveManagementRoutes = managementRoutes.filter(
+  (route) => route.phase !== 'phase2',
+);
 
 export const managementGroups: ManagementGroup[] = [
   'Visão geral',
@@ -357,4 +382,8 @@ export function findManagementRoute(pathname: string) {
   return [...managementRoutes]
     .sort((a, b) => b.href.length - a.href.length)
     .find((route) => routeIsActive(current, route.href));
+}
+
+export function isManagementRouteLive(pathname: string) {
+  return findManagementRoute(pathname)?.phase !== 'phase2';
 }

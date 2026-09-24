@@ -890,13 +890,15 @@ export class OperationsService {
           },
         });
       }
-      if (!body.priceListId)
-        throw new BadRequestException('Tabela de preços obrigatória.');
-      const priceList = await tx.priceList.findFirst({
-        where: { id: body.priceListId, isActive: true },
-      });
-      if (!priceList)
-        throw new BadRequestException('Tabela de preços inválida ou inativa.');
+      if (body.priceListId) {
+        const priceList = await tx.priceList.findFirst({
+          where: { id: body.priceListId, isActive: true },
+        });
+        if (!priceList)
+          throw new BadRequestException(
+            'Tabela de preços inválida ou inativa.',
+          );
+      }
       const duplicateAccount = await tx.businessAccount.findUnique({
         where: { taxNumber: application.taxNumber },
       });
@@ -913,8 +915,8 @@ export class OperationsService {
           phone: application.phone,
           billingAddress: application.address as Prisma.InputJsonValue,
           status: BusinessAccountStatus.APPROVED,
-          priceListId: body.priceListId,
-          paymentTerms: body.paymentTerms,
+          priceListId: body.priceListId ?? null,
+          paymentTerms: body.paymentTerms ?? 'IMMEDIATE',
           managerId: authorId,
         },
       });
@@ -952,7 +954,7 @@ export class OperationsService {
           ? 'Nsabores — candidatura profissional aprovada'
           : 'Nsabores — decisão sobre a candidatura profissional',
         text: body.approved
-          ? `A sua candidatura profissional foi aprovada. Entre na sua conta ou registe-se com o mesmo email para aceder às condições atribuídas: ${website}/conta/entrar`
+          ? `A sua candidatura profissional foi aprovada. Entre na sua conta ou registe-se com o mesmo email para aceder à sua conta profissional: ${website}/conta/entrar`
           : `A candidatura profissional não foi aprovada nesta fase. Para qualquer esclarecimento, contacte nsabores@outlook.pt.`,
       });
     }

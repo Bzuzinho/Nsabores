@@ -6,6 +6,8 @@ import { useState, type FormEvent } from 'react';
 import { formatPrice } from '@/data/site';
 import { useShop } from '@/components/shop-context';
 
+const phase2CouponsEnabled = false;
+
 export default function CartPage() {
   const {
     cart,
@@ -133,40 +135,43 @@ export default function CartPage() {
               </p>
             </div>
 
-            {cart?.coupon ? (
-              <div className="coupon-box">
-                <p>
-                  Cupão aplicado: <strong>{cart.coupon.code}</strong>
-                </p>
-                <button
-                  type="button"
-                  disabled={couponBusy}
-                  onClick={() => void clearCoupon()}
-                >
-                  Remover cupão
-                </button>
-              </div>
-            ) : (
-              <form className="coupon-box" onSubmit={submitCoupon}>
-                <label>
-                  Código promocional
-                  <input
-                    value={couponCode}
-                    onChange={(event) => setCouponCode(event.target.value)}
-                    maxLength={80}
-                    autoComplete="off"
-                    placeholder="Ex.: BEMVINDO10"
-                  />
-                </label>
-                <button
-                  type="submit"
-                  disabled={couponBusy || !couponCode.trim()}
-                >
-                  {couponBusy ? 'A validar…' : 'Aplicar cupão'}
-                </button>
-              </form>
+            {phase2CouponsEnabled &&
+              (cart?.coupon ? (
+                <div className="coupon-box">
+                  <p>
+                    Cupão aplicado: <strong>{cart.coupon.code}</strong>
+                  </p>
+                  <button
+                    type="button"
+                    disabled={couponBusy}
+                    onClick={() => void clearCoupon()}
+                  >
+                    Remover cupão
+                  </button>
+                </div>
+              ) : (
+                <form className="coupon-box" onSubmit={submitCoupon}>
+                  <label>
+                    Código promocional
+                    <input
+                      value={couponCode}
+                      onChange={(event) => setCouponCode(event.target.value)}
+                      maxLength={80}
+                      autoComplete="off"
+                      placeholder="Ex.: BEMVINDO10"
+                    />
+                  </label>
+                  <button
+                    type="submit"
+                    disabled={couponBusy || !couponCode.trim()}
+                  >
+                    {couponBusy ? 'A validar…' : 'Aplicar cupão'}
+                  </button>
+                </form>
+              ))}
+            {phase2CouponsEnabled && couponError && (
+              <p role="alert">{couponError}</p>
             )}
-            {couponError && <p role="alert">{couponError}</p>}
 
             <Link className="button button-primary" href="/checkout">
               Continuar para checkout

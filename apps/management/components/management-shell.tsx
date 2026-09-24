@@ -8,6 +8,7 @@ import { useManagementAuth } from './management-auth';
 import {
   findManagementRoute,
   managementGroupDashboards,
+  liveManagementRoutes,
   managementGroups,
   managementRoutes,
 } from './management-routes';
@@ -83,7 +84,7 @@ export function ManagementShell({ children }: { children: ReactNode }) {
   const [query, setQuery] = useState('');
   const routes = useMemo(
     () =>
-      managementRoutes.filter(
+      liveManagementRoutes.filter(
         (route) => !route.adminOnly || auth.user?.role === 'ADMIN',
       ),
     [auth.user?.role],
@@ -278,7 +279,7 @@ export function ManagementShell({ children }: { children: ReactNode }) {
             <input
               autoFocus={searchOpen}
               type="search"
-              placeholder="Produtos, encomendas, stock…"
+              placeholder="Produtos, encomendas, recebimentos…"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               onKeyDown={(event) => {
