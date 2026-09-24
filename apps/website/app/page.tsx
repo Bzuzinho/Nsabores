@@ -73,16 +73,17 @@ export default async function Home() {
         fallback={catalogResult.fallback}
       />
 
-      <section className="split-banner" aria-label="Clube, empresas e eventos">
+      <section className="split-banner" aria-label="Empresas e eventos">
         <article className="feature-panel feature-panel-club">
           <div>
-            <p className="eyebrow">Clube Nsabores</p>
-            <h2>Uma seleção exclusiva à sua porta.</h2>
+            <p className="eyebrow">Empresas e eventos</p>
+            <h2>Soluções portuguesas pensadas para cada ocasião.</h2>
             <p>
-              Receba todos os meses produtos portugueses escolhidos para si.
+              Cabazes, presentes e propostas personalizadas para empresas,
+              equipas e eventos.
             </p>
-            <Link className="button button-primary" href="/clube">
-              Saber mais
+            <Link className="button button-primary" href="/contactos">
+              Pedir proposta
             </Link>
           </div>
         </article>
