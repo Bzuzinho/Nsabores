@@ -26,11 +26,13 @@ Este documento traduz para configuração operacional a Matriz de Aprovação Fu
 
 A área de cliente deixa igualmente de expor documentos enquanto o módulo de documentos comerciais estiver em Fase 2, por dependência funcional.
 
-## Pagamentos online
+## Pagamentos
 
-A matriz aprova pagamentos online para o arranque. A versão atualmente em produção continua, no entanto, em fluxo manual até existir um provider real configurado e credenciais de produção.
+Por decisão operacional posterior à matriz, os pagamentos do arranque são exclusivamente manuais. O cliente submete a encomenda, a equipa combina/recebe o pagamento e confirma o recebimento na Gestão.
 
-O adapter atual de pagamentos automáticos apenas suporta o provider de desenvolvimento/mock. Não deve ser usado para cobrança real. A ativação de pagamentos online exige a escolha do operador e a respetiva integração/credenciais antes de alterar o modo de produção.
+Os pagamentos online ficam para o último lote do projeto. O endpoint de pagamento automático, webhooks e confirmações mock ficam bloqueados enquanto `PAYMENT_FLOW_MODE=manual`.
+
+O adapter atual de pagamentos automáticos apenas suporta o provider de desenvolvimento/mock. A ativação futura exige a escolha do operador, integração real, credenciais, webhooks e testes antes de alterar o modo de produção.
 
 ## Regra de implementação
 
@@ -39,4 +41,5 @@ Os módulos de Fase 2 permanecem no código para evolução futura, mas:
 - são ocultados da navegação da Gestão;
 - acessos diretos na Gestão mostram indicação de Fase 2;
 - as áreas públicas selecionadas para Fase 2 são redirecionadas para uma área disponível;
-- ações de Fase 2 dentro de módulos parcialmente aprovados ficam indisponíveis na interface.
+- ações de Fase 2 dentro de módulos parcialmente aprovados ficam indisponíveis na interface;
+- em produção, `DEFERRED_FEATURES_ENABLED=false` bloqueia também os endpoints de API correspondentes, evitando acesso direto fora da interface.
