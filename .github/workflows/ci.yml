@@ -78,16 +78,7 @@ jobs:
         run: pnpm --filter @nsabores/api prisma:generate
 
       - name: Verify formatting
-        shell: bash
-        run: |
-          pnpm exec prettier --write apps/api/src/operations/operations.service.ts apps/management/components/business-admin.tsx apps/management/components/management-dashboard.tsx apps/management/components/management-routes.test.ts apps/management/components/section-dashboard.tsx apps/website/app/carrinho/page.tsx
-          for file in apps/api/src/operations/operations.service.ts apps/management/components/business-admin.tsx apps/management/components/management-dashboard.tsx apps/management/components/management-routes.test.ts apps/management/components/section-dashboard.tsx apps/website/app/carrinho/page.tsx; do
-            echo "FORMAT_BEGIN:$file"
-            base64 -w 0 "$file"
-            echo
-            echo "FORMAT_END:$file"
-          done
-          exit 1
+        run: pnpm format:check
 
       - name: Lint
         run: pnpm lint
