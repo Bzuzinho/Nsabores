@@ -10,7 +10,7 @@ import { ConfigService } from '@nestjs/config';
 export class DeferredFeatureGuard implements CanActivate {
   constructor(private readonly config: ConfigService) {}
 
-  canActivate(_context: ExecutionContext) {
+  assertEnabled() {
     const enabled =
       this.config.get<boolean>('DEFERRED_FEATURES_ENABLED') ?? true;
     if (!enabled) {
@@ -18,6 +18,10 @@ export class DeferredFeatureGuard implements CanActivate {
         'Funcionalidade prevista para uma fase posterior.',
       );
     }
+  }
+
+  canActivate(_context: ExecutionContext) {
+    this.assertEnabled();
     return true;
   }
 }
