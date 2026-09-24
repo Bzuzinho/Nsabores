@@ -801,102 +801,104 @@ function BusinessForm({
       </label>
       {phase2B2BCommerceEnabled && (
         <>
-                <label>
-                  Tabela de preços
-                  <select
-                    name="priceListId"
-                    defaultValue={account?.priceListId ?? ''}
-                    disabled={disabled}
-                  >
-                    <option value="">Sem tabela</option>
-                    {priceLists.map((price) => (
-                      <option key={price.id} value={price.id}>
-                        {price.name} · {price.code}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Condições de pagamento
-                  <select
-                    name="paymentTerms"
-                    defaultValue={account?.paymentTerms ?? 'BANK_TRANSFER'}
-                    disabled={disabled}
-                  >
-                    <option value="IMMEDIATE">Imediato</option>
-                    <option value="BANK_TRANSFER">Transferência</option>
-                    <option value="NET_15">15 dias</option>
-                    <option value="NET_30">30 dias</option>
-                    <option value="NET_60">60 dias</option>
-                  </select>
-                </label>
-                <label>
-                  Limite de crédito (€)
-                  <input
-                    min="0"
-                    name="creditLimit"
-                    step="0.01"
-                    type="number"
-                    defaultValue={centsToInput(account?.creditLimitCents)}
-                    disabled={disabled}
-                  />
-                </label>
-                <label>
-                  Encomenda mínima (€)
-                  <input
-                    min="0"
-                    name="minimumOrder"
-                    step="0.01"
-                    type="number"
-                    defaultValue={centsToInput(account?.minimumOrderCents)}
-                    disabled={disabled}
-                  />
-                </label>
-                <label>
-                  Portes fixos (€)
-                  <input
-                    min="0"
-                    name="shipping"
-                    step="0.01"
-                    type="number"
-                    defaultValue={centsToInput(account?.shippingCents)}
-                    disabled={disabled}
-                  />
-                </label>
-                <fieldset className="wide operational-fieldset" disabled={disabled}>
-                  <legend>Métodos permitidos</legend>
-                  {(
-                    [
-                      ['CARD', 'Cartão'],
-                      ['BANK_TRANSFER', 'Transferência'],
-                      ['PAY_ON_DELIVERY', 'Pagamento na entrega'],
-                    ] as const
-                  ).map(([value, label]) => (
-                    <label className="operational-check" key={value}>
-                      <input
-                        name="allowedPaymentMethods"
-                        type="checkbox"
-                        value={value}
-                        defaultChecked={
-                          account
-                            ? account.allowedPaymentMethods.includes(value)
-                            : value === 'BANK_TRANSFER'
-                        }
-                      />
-                      {label}
-                    </label>
-                  ))}
-                </fieldset>
-                <label className="check">
-                  <input
-                    name="requiresApproval"
-                    type="checkbox"
-                    defaultChecked={account?.requiresApproval}
-                    disabled={disabled}
-                  />
-                  Exige aprovação interna
-                </label>
-          
+          <label>
+            Tabela de preços
+            <select
+              name="priceListId"
+              defaultValue={account?.priceListId ?? ''}
+              disabled={disabled}
+            >
+              <option value="">Sem tabela</option>
+              {priceLists.map((price) => (
+                <option key={price.id} value={price.id}>
+                  {price.name} · {price.code}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Condições de pagamento
+            <select
+              name="paymentTerms"
+              defaultValue={account?.paymentTerms ?? 'BANK_TRANSFER'}
+              disabled={disabled}
+            >
+              <option value="IMMEDIATE">Imediato</option>
+              <option value="BANK_TRANSFER">Transferência</option>
+              <option value="NET_15">15 dias</option>
+              <option value="NET_30">30 dias</option>
+              <option value="NET_60">60 dias</option>
+            </select>
+          </label>
+          <label>
+            Limite de crédito (€)
+            <input
+              min="0"
+              name="creditLimit"
+              step="0.01"
+              type="number"
+              defaultValue={centsToInput(account?.creditLimitCents)}
+              disabled={disabled}
+            />
+          </label>
+          <label>
+            Encomenda mínima (€)
+            <input
+              min="0"
+              name="minimumOrder"
+              step="0.01"
+              type="number"
+              defaultValue={centsToInput(account?.minimumOrderCents)}
+              disabled={disabled}
+            />
+          </label>
+          <label>
+            Portes fixos (€)
+            <input
+              min="0"
+              name="shipping"
+              step="0.01"
+              type="number"
+              defaultValue={centsToInput(account?.shippingCents)}
+              disabled={disabled}
+            />
+          </label>
+          <fieldset
+            className="wide operational-fieldset"
+            disabled={disabled}
+          >
+            <legend>Métodos permitidos</legend>
+            {(
+              [
+                ['CARD', 'Cartão'],
+                ['BANK_TRANSFER', 'Transferência'],
+                ['PAY_ON_DELIVERY', 'Pagamento na entrega'],
+              ] as const
+            ).map(([value, label]) => (
+              <label className="operational-check" key={value}>
+                <input
+                  name="allowedPaymentMethods"
+                  type="checkbox"
+                  value={value}
+                  defaultChecked={
+                    account
+                      ? account.allowedPaymentMethods.includes(value)
+                      : value === 'BANK_TRANSFER'
+                  }
+                />
+                {label}
+              </label>
+            ))}
+          </fieldset>
+          <label className="check">
+            <input
+              name="requiresApproval"
+              type="checkbox"
+              defaultChecked={account?.requiresApproval}
+              disabled={disabled}
+            />
+            Exige aprovação interna
+          </label>
         </>
       )}
       <label className="wide">
