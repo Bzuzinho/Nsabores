@@ -650,38 +650,38 @@ function BusinessAccountDetail({ id }: { id: string }) {
       {phase2B2BCommerceEnabled &&
         account.orders &&
         account.orders.length > 0 && (
-        <section className="admin-card">
-          <h2>Encomendas profissionais</h2>
-          <div className="admin-table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Número</th>
-                  <th>Estado</th>
-                  <th>Total</th>
-                  <th>Data</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {account.orders.map((order) => (
-                  <tr key={order.id}>
-                    <td>{order.number}</td>
-                    <td>{order.status}</td>
-                    <td>{euros(order.totalCents)}</td>
-                    <td>
-                      {new Date(order.createdAt).toLocaleDateString('pt-PT')}
-                    </td>
-                    <td className="admin-table-action">
-                      <Link href={`/encomendas/${order.id}`}>Abrir</Link>
-                    </td>
+          <section className="admin-card">
+            <h2>Encomendas profissionais</h2>
+            <div className="admin-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Número</th>
+                    <th>Estado</th>
+                    <th>Total</th>
+                    <th>Data</th>
+                    <th />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
+                </thead>
+                <tbody>
+                  {account.orders.map((order) => (
+                    <tr key={order.id}>
+                      <td>{order.number}</td>
+                      <td>{order.status}</td>
+                      <td>{euros(order.totalCents)}</td>
+                      <td>
+                        {new Date(order.createdAt).toLocaleDateString('pt-PT')}
+                      </td>
+                      <td className="admin-table-action">
+                        <Link href={`/encomendas/${order.id}`}>Abrir</Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
     </section>
   );
 }
@@ -863,10 +863,7 @@ function BusinessForm({
               disabled={disabled}
             />
           </label>
-          <fieldset
-            className="wide operational-fieldset"
-            disabled={disabled}
-          >
+          <fieldset className="wide operational-fieldset" disabled={disabled}>
             <legend>Métodos permitidos</legend>
             {(
               [
