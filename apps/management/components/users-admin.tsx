@@ -1,6 +1,6 @@
 'use client';
 
-import type { AuthUser, Paginated, UserRole } from '@nsabores/types';
+import type { AuthUser, Paginated } from '@nsabores/types';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { managementApi } from './management-auth';
@@ -32,7 +32,7 @@ export function UsersAdmin({ selectedId }: { selectedId?: string }) {
     void Promise.resolve().then(load);
   }, [load]);
 
-  const update = async (data: { role?: UserRole; isActive?: boolean }) => {
+  const update = async (data: { isActive?: boolean }) => {
     if (!selected) return;
     try {
       setSelected(
@@ -51,17 +51,12 @@ export function UsersAdmin({ selectedId }: { selectedId?: string }) {
     if (!firstName) return;
     const lastName = window.prompt('Apelido:');
     if (!lastName) return;
-    const role = window.prompt('Função: STAFF ou ADMIN', 'STAFF');
-    if (role !== 'STAFF' && role !== 'ADMIN') {
-      setError('Função inválida.');
-      return;
-    }
     try {
       await managementApi.post('/v1/admin/users', {
         email,
         firstName,
         lastName,
-        role,
+        role: 'STAFF',
       });
       await load();
     } catch (reason) {
@@ -89,19 +84,9 @@ export function UsersAdmin({ selectedId }: { selectedId?: string }) {
         </header>
         {error && <p className="admin-error">{error}</p>}
         <div className="user-detail">
-          <label>
-            Role
-            <select
-              value={selected.role}
-              onChange={(event) =>
-                void update({ role: event.target.value as UserRole })
-              }
-            >
-              <option value="CUSTOMER">CUSTOMER</option>
-              <option value="STAFF">STAFF</option>
-              <option value="ADMIN">ADMIN</option>
-            </select>
-          </label>
+          <p>
+            <strong>Função:</strong> {selected.role}
+          </p>
           <label className="check">
             <input
               type="checkbox"
@@ -149,7 +134,7 @@ export function UsersAdmin({ selectedId }: { selectedId?: string }) {
           <thead>
             <tr>
               <th>Utilizador</th>
-              <th>Role</th>
+              <th>Função</th>
               <th>Estado</th>
               <th>Último acesso</th>
             </tr>
