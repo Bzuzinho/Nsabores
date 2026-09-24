@@ -78,15 +78,7 @@ jobs:
         run: pnpm --filter @nsabores/api prisma:generate
 
       - name: Verify formatting
-        shell: bash
-        run: |
-          file=docs/living/client-approved-launch-scope-2026-09-24.md
-          pnpm exec prettier --write "$file"
-          echo "FORMAT_BEGIN:$file"
-          base64 -w 0 "$file"
-          echo
-          echo "FORMAT_END:$file"
-          exit 1
+        run: pnpm format:check
 
       - name: Lint
         run: pnpm lint
