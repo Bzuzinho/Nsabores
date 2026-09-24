@@ -9,11 +9,12 @@ import {
 } from '@nestjs/common';
 import { Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
+import { DeferredFeatureGuard } from '../launch-scope/deferred-feature.guard';
 import { UserRole } from '@prisma/client';
 import { CompleteProductionDto, UpdateProductionDto } from './dto';
 import { ProductionService } from './production.service';
 
-@UseGuards(AuthGuard, RolesGuard)
+@UseGuards(AuthGuard, RolesGuard, DeferredFeatureGuard)
 @Roles(UserRole.STAFF, UserRole.ADMIN)
 @Controller('v1/admin/production')
 export class ProductionController {
