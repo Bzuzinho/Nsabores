@@ -96,9 +96,7 @@ export default function OrderPage() {
       </p>
       {canReturn && (
         <p>
-          <Link href={`/conta/encomendas/${id}/devolver`}>
-            Pedir devolução
-          </Link>
+          <Link href={`/conta/encomendas/${id}/devolver`}>Pedir devolução</Link>
         </p>
       )}
       <h2>Histórico</h2>
