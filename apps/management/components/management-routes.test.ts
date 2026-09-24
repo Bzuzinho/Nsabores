@@ -50,7 +50,6 @@ describe('management principal routes', () => {
     expect(managementRoutes.some((route) => route.href === href)).toBe(true);
   });
 
-
   it('expõe no arranque apenas os módulos aprovados pelo cliente', () => {
     const liveHrefs = new Set(liveManagementRoutes.map((route) => route.href));
     expect(liveHrefs.has('/recebimentos/reconciliacao')).toBe(true);
