@@ -235,16 +235,17 @@ function buildView(section: Section, data?: DashboardData) {
         [
           'A aguardar pagamento',
           String(
-            data.ordersByStatus.find((item) => item.status === 'PENDING_PAYMENT')
-              ?._count ?? 0,
+            data.ordersByStatus.find(
+              (item) => item.status === 'PENDING_PAYMENT',
+            )?._count ?? 0,
           ),
           'Confirmação pendente',
         ],
         [
           'Prontas',
           String(
-            data.ordersByStatus.find((item) => item.status === 'READY')?._count ??
-              0,
+            data.ordersByStatus.find((item) => item.status === 'READY')
+              ?._count ?? 0,
           ),
           'Aguardam seguimento',
         ],
