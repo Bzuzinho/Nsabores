@@ -8,9 +8,10 @@ import {
 } from '@nestjs/common';
 import { Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
+import { DeferredFeatureGuard } from '../launch-scope/deferred-feature.guard';
 import { PrismaService } from '../prisma.service';
 
-@UseGuards(AuthGuard, RolesGuard)
+@UseGuards(AuthGuard, RolesGuard, DeferredFeatureGuard)
 @Roles('STAFF', 'ADMIN')
 @Controller('v1/admin/loyalty')
 export class AdminLoyaltyAccountsController {
