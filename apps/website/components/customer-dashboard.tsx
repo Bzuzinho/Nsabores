@@ -25,7 +25,7 @@ const labels = {
 } as const;
 
 const particularLinks = [
-  ['/conta/encomendas', 'Encomendas', 'Acompanhar, repetir ou devolver.'],
+  ['/conta/encomendas', 'Encomendas', 'Consultar, repetir ou devolver.'],
   ['/conta/apoio', 'Apoio', 'Pedidos e conversa com a equipa.'],
   ['/conta/perfil', 'Perfil', 'Dados pessoais e preferências.'],
   ['/conta/moradas', 'Moradas', 'Entrega e faturação.'],
