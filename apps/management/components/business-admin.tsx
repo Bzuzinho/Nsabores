@@ -294,7 +294,9 @@ function BusinessAccounts() {
     try {
       const [rows, prices] = await Promise.all([
         managementApi.get<BusinessAccount[]>('/v1/admin/business-accounts'),
-        managementApi.get<PriceList[]>('/v1/admin/price-lists'),
+        phase2B2BCommerceEnabled
+          ? managementApi.get<PriceList[]>('/v1/admin/price-lists')
+          : Promise.resolve<PriceList[]>([]),
       ]);
       setAccounts(rows);
       setPriceLists(prices.filter((price) => price.isActive));
@@ -421,7 +423,9 @@ function BusinessAccountDetail({ id }: { id: string }) {
     try {
       const [detail, prices] = await Promise.all([
         managementApi.get<BusinessAccount>(`/v1/admin/business-accounts/${id}`),
-        managementApi.get<PriceList[]>('/v1/admin/price-lists'),
+        phase2B2BCommerceEnabled
+          ? managementApi.get<PriceList[]>('/v1/admin/price-lists')
+          : Promise.resolve<PriceList[]>([]),
       ]);
       setAccount(detail);
       setPriceLists(prices);
