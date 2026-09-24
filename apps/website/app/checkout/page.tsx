@@ -243,8 +243,8 @@ export default function CheckoutPage() {
             ))}
           </select>
           <small>
-            A preferência será confirmada pelo operador durante o tratamento
-            da encomenda.
+            A preferência será confirmada pelo operador durante o tratamento da
+            encomenda.
           </small>
         </label>
 
