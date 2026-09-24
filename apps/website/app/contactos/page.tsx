@@ -5,7 +5,7 @@ import { ContactForm } from '@/components/contact-form';
 export const metadata: Metadata = {
   title: 'Contactos',
   description:
-    'Fale com a Nsabores sobre produtos, cabazes, eventos, empresas ou o Clube Nsabores.',
+    'Fale com a Nsabores sobre produtos, cabazes, eventos ou soluções para empresas.',
 };
 
 export default function ContactsPage() {

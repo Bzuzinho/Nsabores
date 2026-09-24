@@ -72,7 +72,6 @@ export function ContactForm() {
           <option value="PRODUCTS">Produtos e cabazes</option>
           <option value="EVENTS">Eventos e catering</option>
           <option value="BUSINESS">Empresas e B2B</option>
-          <option value="CLUB">Clube Nsabores</option>
           <option value="OTHER">Outro assunto</option>
         </select>
       </label>

@@ -31,7 +31,7 @@ function Confirmation() {
       <p className="eyebrow">Encomenda recebida</p>
       <h1>
         {state === 'manual'
-          ? 'A encomenda já seguiu para preparação'
+          ? 'A encomenda foi registada'
           : state === 'paid'
             ? 'Pagamento confirmado'
             : state === 'error'

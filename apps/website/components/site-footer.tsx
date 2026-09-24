@@ -8,7 +8,7 @@ const footerGroups = [
     links: [
       ['Produtos', '/loja'],
       ['Experiências', '/servicos'],
-      ['Clube Nsabores', '/clube'],
+      ['Cabazes e presentes', '/loja'],
     ],
   },
   {
@@ -81,10 +81,8 @@ export function SiteFooter() {
       </div>
       <div className="footer-bottom">
         <p>© 2026 Nsabores. Todos os direitos reservados.</p>
-        <div className="payment-placeholders" aria-label="Meios de pagamento">
-          <span>MB WAY</span>
-          <span>MB</span>
-          <span>VISA</span>
+        <div className="payment-placeholders" aria-label="Pagamento">
+          <span>Pagamento combinado após a encomenda</span>
         </div>
         <div>
           <Link href="/privacidade">Privacidade</Link>

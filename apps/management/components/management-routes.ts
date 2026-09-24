@@ -101,7 +101,7 @@ export const managementRoutes: ManagementRoute[] = [
   {
     href: '/devolucoes',
     label: 'Devoluções',
-    description: 'Pedidos de devolução e reembolsos.',
+    description: 'Pedidos de devolução e tratamento pós-venda.',
     group: 'Operações',
     pageFile: 'app/devolucoes/page.tsx',
   },
@@ -215,7 +215,7 @@ export const managementRoutes: ManagementRoute[] = [
   {
     href: '/clientes',
     label: 'Painel de clientes',
-    description: 'Indicadores de clientes particulares, Clube e B2B.',
+    description: 'Indicadores de clientes particulares, revendedores e B2B.',
     group: 'Clientes',
     keywords: ['dashboard', 'crm', 'gráficos'],
     pageFile: 'app/clientes/page.tsx',
