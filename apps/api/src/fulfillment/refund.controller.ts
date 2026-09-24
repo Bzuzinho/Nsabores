@@ -3,6 +3,7 @@ import { UserRole } from '@prisma/client';
 import { CurrentUser, Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
 import type { AuthPrincipal } from '../auth/auth.types';
+import { DeferredFeatureGuard } from '../launch-scope/deferred-feature.guard';
 import { ReturnRefundService } from './refund.service';
 import { ReturnReplacementService } from './replacement.service';
 
@@ -16,6 +17,7 @@ export class AdminReturnRefundController {
   ) {}
 
   @Post(':id/refund')
+  @UseGuards(DeferredFeatureGuard)
   refund(@CurrentUser() user: AuthPrincipal, @Param('id') id: string) {
     return this.refunds.refundReturn(id, user.sub);
   }
