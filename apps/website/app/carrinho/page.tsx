@@ -3,6 +3,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
+
+const phase2CouponsEnabled = false;
 import { formatPrice } from '@/data/site';
 import { useShop } from '@/components/shop-context';
 
@@ -133,7 +135,7 @@ export default function CartPage() {
               </p>
             </div>
 
-            {cart?.coupon ? (
+            {phase2CouponsEnabled && (cart?.coupon ? (
               <div className="coupon-box">
                 <p>
                   Cupão aplicado: <strong>{cart.coupon.code}</strong>
@@ -165,8 +167,10 @@ export default function CartPage() {
                   {couponBusy ? 'A validar…' : 'Aplicar cupão'}
                 </button>
               </form>
+            ))}
+            {phase2CouponsEnabled && couponError && (
+              <p role="alert">{couponError}</p>
             )}
-            {couponError && <p role="alert">{couponError}</p>}
 
             <Link className="button button-primary" href="/checkout">
               Continuar para checkout
