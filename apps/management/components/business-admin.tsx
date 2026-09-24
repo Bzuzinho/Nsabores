@@ -82,7 +82,6 @@ export function BusinessAdmin({
 
 function ApplicationsAdmin() {
   const [applications, setApplications] = useState<Application[]>([]);
-  const [priceLists, setPriceLists] = useState<PriceList[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [filter, setFilter] = useState('PENDING');
   const [error, setError] = useState('');
@@ -92,12 +91,10 @@ function ApplicationsAdmin() {
   const load = useCallback(async () => {
     setError('');
     try {
-      const [rows, prices] = await Promise.all([
-        managementApi.get<Application[]>('/v1/admin/reseller-applications'),
-        managementApi.get<PriceList[]>('/v1/admin/price-lists'),
-      ]);
+      const rows = await managementApi.get<Application[]>(
+        '/v1/admin/reseller-applications',
+      );
       setApplications(rows);
-      setPriceLists(prices.filter((price) => price.isActive));
       setSelectedId((current) => current || rows[0]?.id || '');
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Erro inesperado.');
