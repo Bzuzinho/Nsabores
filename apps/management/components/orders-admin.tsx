@@ -15,6 +15,9 @@ const money = (cents: number) =>
     cents / 100,
   );
 
+const phase2OperationsEnabled = false;
+const phase2RefundsEnabled = false;
+
 const paymentPreferenceLabels: Record<ManualPaymentPreference, string> = {
   OPERATOR_CONTACT: 'Contactar para combinar',
   PAY_ON_DELIVERY: 'Contra entrega',
@@ -348,6 +351,7 @@ export function OrderAdmin({ id }: { id: string }) {
     return { ...item, remaining: Math.max(0, item.quantity - shipped) };
   });
   const canCreateShipment =
+    phase2OperationsEnabled &&
     order.status === 'READY' &&
     remainingItems.some((item) => item.remaining > 0);
 
@@ -434,7 +438,7 @@ export function OrderAdmin({ id }: { id: string }) {
           </p>
         )}
         <p>
-          Produção: <strong>{order.status}</strong> · Pagamento:{' '}
+          Estado: <strong>{order.status}</strong> · Pagamento:{' '}
           <strong>{order.paymentStatus}</strong>
         </p>
         <p>
@@ -508,7 +512,7 @@ export function OrderAdmin({ id }: { id: string }) {
             </button>
           </form>
         )}
-        {shipments.length > 0 && (
+        {phase2OperationsEnabled && shipments.length > 0 && (
           <div>
             <h2>Expedições</h2>
             {shipments.map((shipment) => (
@@ -533,23 +537,25 @@ export function OrderAdmin({ id }: { id: string }) {
             Nota de transporte: {order.paymentTermsSnapshot.shippingQuoteNote}
           </p>
         )}
-        <label>
-          Novo estado de produção
-          <select
-            defaultValue=""
-            onChange={(event) =>
-              event.target.value &&
-              void act(`/v1/admin/orders/${id}/status`, {
-                status: event.target.value,
-              })
-            }
-          >
-            <option value="">Selecionar…</option>
-            {['PROCESSING', 'READY'].map((value) => (
-              <option key={value}>{value}</option>
-            ))}
-          </select>
-        </label>
+        {phase2OperationsEnabled && (
+          <label>
+            Novo estado de produção
+            <select
+              defaultValue=""
+              onChange={(event) =>
+                event.target.value &&
+                void act(`/v1/admin/orders/${id}/status`, {
+                  status: event.target.value,
+                })
+              }
+            >
+              <option value="">Selecionar…</option>
+              {['PROCESSING', 'READY'].map((value) => (
+                <option key={value}>{value}</option>
+              ))}
+            </select>
+          </label>
+        )}
         <label>
           Nota interna
           <textarea
@@ -564,7 +570,7 @@ export function OrderAdmin({ id }: { id: string }) {
         <button onClick={() => void act(`/v1/admin/orders/${id}/cancel`)}>
           Cancelar encomenda
         </button>
-        {order.paymentStatus === 'PAID' && (
+        {phase2RefundsEnabled && order.paymentStatus === 'PAID' && (
           <button onClick={() => void act(`/v1/admin/orders/${id}/refund`)}>
             Registar reembolso
           </button>
