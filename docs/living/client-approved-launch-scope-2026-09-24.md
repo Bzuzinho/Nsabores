@@ -35,8 +35,8 @@ O adapter atual de pagamentos automáticos apenas suporta o provider de desenvol
 ## Regra de implementação
 
 Os módulos de Fase 2 permanecem no código para evolução futura, mas:
+
 - são ocultados da navegação da Gestão;
 - acessos diretos na Gestão mostram indicação de Fase 2;
 - as áreas públicas selecionadas para Fase 2 são redirecionadas para uma área disponível;
 - ações de Fase 2 dentro de módulos parcialmente aprovados ficam indisponíveis na interface.
-
