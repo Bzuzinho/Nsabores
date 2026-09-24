@@ -24,7 +24,7 @@ describe('homepage', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole('heading', {
-        name: 'Uma seleção exclusiva à sua porta.',
+        name: 'Soluções portuguesas pensadas para cada ocasião.',
       }),
     ).toBeInTheDocument();
   });
