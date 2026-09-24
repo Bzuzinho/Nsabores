@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { FiscalDocumentStatus } from '@prisma/client';
+import { DeferredFeatureGuard } from '../launch-scope/deferred-feature.guard';
 import { PrismaService } from '../prisma.service';
 import { CurrentUser } from './auth.decorators';
 import { AuthGuard } from './auth.guards';
@@ -62,6 +63,7 @@ export class AccountController {
   }
 
   @Get('documents')
+  @UseGuards(DeferredFeatureGuard)
   documents(@CurrentUser() user: AuthPrincipal) {
     return this.prisma.fiscalDocument.findMany({
       where: {
@@ -93,6 +95,7 @@ export class AccountController {
   }
 
   @Get('documents/:id')
+  @UseGuards(DeferredFeatureGuard)
   async document(@CurrentUser() user: AuthPrincipal, @Param('id') id: string) {
     const document = await this.prisma.fiscalDocument.findFirst({
       where: {
