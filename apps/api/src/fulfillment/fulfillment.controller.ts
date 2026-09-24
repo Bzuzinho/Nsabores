@@ -13,6 +13,7 @@ import { UserRole } from '@prisma/client';
 import { CurrentUser, Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
 import type { AuthPrincipal } from '../auth/auth.types';
+import { DeferredFeatureGuard } from '../launch-scope/deferred-feature.guard';
 import {
   CreateReturnDto,
   CreateShipmentDto,
@@ -28,6 +29,7 @@ import {
 import { FulfillmentService } from './fulfillment.service';
 import { ShippingProvider } from './shipping.provider';
 
+@UseGuards(DeferredFeatureGuard)
 @Controller('v1/tracking')
 export class PublicTrackingController {
   constructor(private readonly fulfillment: FulfillmentService) {}
@@ -44,6 +46,7 @@ export class CustomerFulfillmentController {
   constructor(private readonly fulfillment: FulfillmentService) {}
 
   @Get('orders/:orderId/tracking')
+  @UseGuards(DeferredFeatureGuard)
   tracking(
     @CurrentUser() user: AuthPrincipal,
     @Param('orderId') orderId: string,
@@ -104,41 +107,49 @@ export class AdminFulfillmentController {
   constructor(private readonly fulfillment: FulfillmentService) {}
 
   @Get('operations/preparation')
+  @UseGuards(DeferredFeatureGuard)
   preparationQueue() {
     return this.fulfillment.preparationQueue();
   }
 
   @Get('shipments')
+  @UseGuards(DeferredFeatureGuard)
   shipments(@Query('orderId') orderId?: string) {
     return this.fulfillment.shipments(orderId);
   }
 
   @Get('shipments/:id')
+  @UseGuards(DeferredFeatureGuard)
   shipment(@Param('id') id: string) {
     return this.fulfillment.shipment(id);
   }
 
   @Post('shipments')
+  @UseGuards(DeferredFeatureGuard)
   createShipment(@Body() body: CreateShipmentDto) {
     return this.fulfillment.createShipment(body);
   }
 
   @Post('shipments/:id/label')
+  @UseGuards(DeferredFeatureGuard)
   createLabel(@Param('id') id: string) {
     return this.fulfillment.createLabel(id);
   }
 
   @Post('shipments/:id/dispatch')
+  @UseGuards(DeferredFeatureGuard)
   dispatch(@CurrentUser() user: AuthPrincipal, @Param('id') id: string) {
     return this.fulfillment.dispatch(id, user.sub);
   }
 
   @Post('shipments/:id/events')
+  @UseGuards(DeferredFeatureGuard)
   addEvent(@Param('id') id: string, @Body() body: ShipmentEventDto) {
     return this.fulfillment.addEvent(id, body);
   }
 
   @Patch('shipments/:id/status')
+  @UseGuards(DeferredFeatureGuard)
   updateShipmentStatus(
     @Param('id') id: string,
     @Body() body: ShipmentStatusUpdateDto,
@@ -207,6 +218,7 @@ export class AdminFulfillmentController {
   }
 }
 
+@UseGuards(DeferredFeatureGuard)
 @Controller('v1/shipping/webhooks')
 export class ShippingWebhookController {
   constructor(
