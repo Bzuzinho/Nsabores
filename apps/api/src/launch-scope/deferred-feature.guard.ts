@@ -1,9 +1,4 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { CanActivate, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -20,7 +15,7 @@ export class DeferredFeatureGuard implements CanActivate {
     }
   }
 
-  canActivate(_context: ExecutionContext) {
+  canActivate() {
     this.assertEnabled();
     return true;
   }
