@@ -101,6 +101,11 @@ import {
   PublicOperationsController,
 } from './operations/operations.controller';
 import { OperationsService } from './operations/operations.service';
+import {
+  AccountOrderDocumentsController,
+  AdminOrderDocumentsController,
+} from './order-documents/order-documents.controller';
+import { OrderDocumentsService } from './order-documents/order-documents.service';
 import { PrismaService } from './prisma.service';
 import { ProductionController } from './production/production.controller';
 import { ProductionService } from './production/production.service';
@@ -217,6 +222,8 @@ import { ReceivablesService } from './receivables/receivables.service';
     PublicOperationsController,
     BusinessOperationsController,
     AdminOperationsController,
+    AccountOrderDocumentsController,
+    AdminOrderDocumentsController,
     PublicTrackingController,
     CustomerFulfillmentController,
     AdminFulfillmentController,
@@ -281,6 +288,7 @@ import { ReceivablesService } from './receivables/receivables.service';
     CommerceMailProvider,
     ContentService,
     OperationsService,
+    OrderDocumentsService,
     FulfillmentService,
     ShippingProvider,
     ReturnRefundService,
