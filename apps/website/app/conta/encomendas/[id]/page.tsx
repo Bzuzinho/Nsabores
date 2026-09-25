@@ -99,6 +99,11 @@ export default function OrderPage() {
           <Link href={`/conta/encomendas/${id}/devolver`}>Pedir devolução</Link>
         </p>
       )}
+      <p>
+        <Link href="/conta/documentos">
+          Consultar documentos disponibilizados
+        </Link>
+      </p>
       <h2>Histórico</h2>
       {order.statusHistory.map((item) => (
         <p key={item.id}>
