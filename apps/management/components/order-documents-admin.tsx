@@ -179,11 +179,15 @@ export function OrderDocumentsAdmin({ orderId }: { orderId: string }) {
                       ? new Date(document.documentDate).toLocaleDateString(
                           'pt-PT',
                         )
-                      : new Date(document.createdAt).toLocaleDateString('pt-PT')}
+                      : new Date(document.createdAt).toLocaleDateString(
+                          'pt-PT',
+                        )}
                   </td>
                   <td>
                     <a
-                      href={`/v1/admin/orders/${orderId}/documents/${document.id}/download`}
+                      href={
+                        `/v1/admin/orders/${orderId}/documents/${document.id}/download`
+                      }
                     >
                       {document.fileName}
                     </a>
