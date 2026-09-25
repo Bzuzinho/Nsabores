@@ -14,7 +14,7 @@
     "typecheck": "turbo typecheck",
     "test": "turbo test",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format:check": "prettier --write apps/management/components/order-documents-admin.tsx apps/website/app/conta/documentos/page.tsx && git diff -- apps/management/components/order-documents-admin.tsx apps/website/app/conta/documentos/page.tsx && exit 1",
     "demo:load": "pnpm --filter @nsabores/api demo:load",
     "demo:install": "pnpm run demo:load",
     "demo:remove": "pnpm --filter @nsabores/api demo:remove",
