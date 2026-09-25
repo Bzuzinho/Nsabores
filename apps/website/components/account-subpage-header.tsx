@@ -12,7 +12,7 @@ const routeCopy: Record<string, RouteCopy> = {
   '/conta/encomendas': {
     eyebrow: 'Conta',
     title: 'Encomendas',
-    description: 'Consulte, acompanhe e volte a abrir as suas encomendas.',
+    description: 'Consulte e volte a abrir as suas encomendas.',
   },
   '/conta/clube': {
     eyebrow: 'Clube Nsabores',
@@ -26,8 +26,9 @@ const routeCopy: Record<string, RouteCopy> = {
   },
   '/conta/documentos': {
     eyebrow: 'Documentos',
-    title: 'Documentos comerciais',
-    description: 'Faturas, recibos, notas de crédito e outros documentos.',
+    title: 'Documentos dos seus pedidos',
+    description:
+      'Consulte e descarregue os documentos reais disponibilizados pela Nsabores.',
   },
   '/conta/apoio': {
     eyebrow: 'Apoio ao cliente',
