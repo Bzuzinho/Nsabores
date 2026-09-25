@@ -1,7 +1,9 @@
 import { OrderStatus } from '@prisma/client';
 import { describe, expect, it, vi } from 'vitest';
 import type { AuthPrincipal } from '../auth/auth.types';
-import type { DeferredFeatureGuard } from '../launch-scope/deferred-feature.guard';
+import type {
+  DeferredFeatureGuard,
+} from '../launch-scope/deferred-feature.guard';
 import { AdminOrdersController } from './commerce.controller';
 import type { CommerceService } from './commerce.service';
 import type { OrderStatusDto } from './dto';
@@ -29,30 +31,29 @@ describe('AdminOrdersController launch scope', () => {
   ])('protege %s como estado de Fase 2', async (status) => {
     const { controller, assertEnabled } = setup();
 
-    await controller.status(
-      user,
-      'order-1',
-      { status } as OrderStatusDto,
-    );
+    await controller.status(user, 'order-1', { status } as OrderStatusDto);
 
     expect(assertEnabled).toHaveBeenCalledOnce();
   });
 
-  it('mantém o ciclo simples de tratamento disponível no arranque', async () => {
-    const { controller, changeStatus, assertEnabled } = setup();
+  it(
+    'mantém o ciclo simples de tratamento disponível no arranque',
+    async () => {
+      const { controller, changeStatus, assertEnabled } = setup();
 
-    await controller.status(
-      user,
-      'order-1',
-      { status: OrderStatus.PROCESSING } as OrderStatusDto,
-    );
+      await controller.status(
+        user,
+        'order-1',
+        { status: OrderStatus.PROCESSING } as OrderStatusDto,
+      );
 
-    expect(assertEnabled).not.toHaveBeenCalled();
-    expect(changeStatus).toHaveBeenCalledWith(
-      'order-1',
-      OrderStatus.PROCESSING,
-      user.sub,
-      undefined,
-    );
-  });
+      expect(assertEnabled).not.toHaveBeenCalled();
+      expect(changeStatus).toHaveBeenCalledWith(
+        'order-1',
+        OrderStatus.PROCESSING,
+        user.sub,
+        undefined,
+      );
+    },
+  );
 });
