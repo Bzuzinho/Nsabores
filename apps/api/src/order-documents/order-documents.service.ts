@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import type { UploadOrderDocumentDto } from './order-documents.dto';
 
@@ -13,11 +9,7 @@ export type UploadedOrderDocumentFile = {
   buffer: Buffer;
 };
 
-const allowedMimeTypes = new Set([
-  'application/pdf',
-  'image/jpeg',
-  'image/png',
-]);
+const allowedMimeTypes = new Set(['application/pdf', 'image/jpeg', 'image/png']);
 
 const publicDocumentSelect = {
   id: true,
