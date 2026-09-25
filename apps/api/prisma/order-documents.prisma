@@ -12,6 +12,8 @@ model OrderDocument {
   uploadedById String?  @db.Uuid
   createdAt    DateTime @default(now())
   updatedAt    DateTime @default(now()) @updatedAt
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  uploadedBy   User?    @relation("OrderDocumentUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
 
   @@index([orderId, createdAt])
 }
