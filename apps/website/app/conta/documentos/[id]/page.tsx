@@ -5,43 +5,36 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { accountApi } from '@/components/auth-provider';
 
-type DocumentLine = {
-  id: string;
-  position: number;
-  description: string;
-  sku?: string | null;
-  quantity: number;
-  unitPriceCents: number;
-  discountCents: number;
-  taxCents: number;
-  totalCents: number;
-};
-
 type AccountDocument = {
   id: string;
   type: string;
-  status: string;
-  number?: string | null;
-  currency: string;
-  subtotalCents: number;
-  discountCents: number;
-  taxCents: number;
-  totalCents: number;
-  customerSnapshot: Record<string, unknown>;
-  billingSnapshot: Record<string, unknown>;
-  issuedAt?: string | null;
-  sourceType: string;
-  externalDocumentUrl?: string | null;
-  lines: DocumentLine[];
+  label: string;
+  reference?: string | null;
+  documentDate?: string | null;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  createdAt: string;
+  order: {
+    id: string;
+    number: string;
+    createdAt: string;
+  };
 };
 
-const money = (cents: number, currency = 'EUR') =>
-  new Intl.NumberFormat('pt-PT', { style: 'currency', currency }).format(
-    cents / 100,
-  );
+const labels: Record<string, string> = {
+  INVOICE: 'Fatura',
+  RECEIPT: 'Recibo',
+  INVOICE_RECEIPT: 'Fatura-recibo',
+  CREDIT_NOTE: 'Nota de crédito',
+  DELIVERY_NOTE: 'Guia / documento de entrega',
+  OTHER: 'Outro documento',
+};
 
-const text = (value: unknown) =>
-  typeof value === 'string' || typeof value === 'number' ? String(value) : '';
+const size = (bytes: number) =>
+  bytes < 1024 * 1024
+    ? `${Math.max(1, Math.round(bytes / 1024))} KB`
+    : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 
 export default function AccountDocumentPage() {
   const { id } = useParams<{ id: string }>();
@@ -77,59 +70,31 @@ export default function AccountDocumentPage() {
           <p>A carregar…</p>
         ) : (
           <>
-            <p className="eyebrow">Documento de demonstração</p>
-            <p role="alert">
-              <strong>DEMONSTRAÇÃO — SEM VALOR FISCAL</strong>
-            </p>
-            <h1>{document.number ?? 'Documento sem número'}</h1>
+            <p className="eyebrow">{labels[document.type] ?? document.type}</p>
+            <h1>{document.label}</h1>
             <p>
-              {document.type} · {document.status} ·{' '}
-              {document.issuedAt
-                ? new Date(document.issuedAt).toLocaleString('pt-PT')
-                : 'Sem data de emissão'}
+              Encomenda{' '}
+              <Link href={`/conta/encomendas/${document.order.id}`}>
+                {document.order.number}
+              </Link>
             </p>
+            {document.reference && <p>Referência: {document.reference}</p>}
             <p>
-              Cliente: {text(document.customerSnapshot.name)} ·{' '}
-              {text(document.customerSnapshot.email)}
-            </p>
-            <p>
-              Subtotal {money(document.subtotalCents, document.currency)} ·
-              descontos {money(document.discountCents, document.currency)} ·
-              imposto {money(document.taxCents, document.currency)}
+              Data:{' '}
+              {new Date(
+                document.documentDate ?? document.createdAt,
+              ).toLocaleDateString('pt-PT')}
             </p>
             <p>
-              <strong>
-                Total: {money(document.totalCents, document.currency)}
-              </strong>
+              Ficheiro: {document.fileName} · {size(document.sizeBytes)}
             </p>
-
-            <h2>Linhas</h2>
-            {document.lines.map((line) => (
-              <article key={line.id} className="account-card">
-                <p>
-                  <strong>{line.description}</strong>
-                  {line.sku ? ` · ${line.sku}` : ''}
-                </p>
-                <p>
-                  {line.quantity} ×{' '}
-                  {money(line.unitPriceCents, document.currency)} ={' '}
-                  {money(line.totalCents, document.currency)}
-                </p>
-              </article>
-            ))}
-
-            {document.externalDocumentUrl && (
-              <p>
-                <a href={document.externalDocumentUrl} rel="noreferrer">
-                  Abrir documento externo associado
-                </a>
-              </p>
-            )}
             <p>
-              Este documento reproduz o fluxo e a aparência de faturação para
-              demonstração do software. Não foi emitido por software
-              certificado, não substitui fatura legal e não deve ser usado para
-              fins fiscais ou contabilísticos.
+              <a
+                className="button button-primary"
+                href={`/v1/account/documents/${document.id}/download`}
+              >
+                Descarregar documento
+              </a>
             </p>
             <Link href="/conta/documentos">Voltar aos documentos</Link>
           </>
