@@ -56,6 +56,4 @@ export class AccountController {
   deleteAddress(@CurrentUser() user: AuthPrincipal, @Param('id') id: string) {
     return this.account.deleteAddress(user.sub, id);
   }
-
-
 }
