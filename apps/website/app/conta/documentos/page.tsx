@@ -71,9 +71,8 @@ export default function AccountDocumentsPage() {
           <p>A carregar…</p>
         ) : !documents.length ? (
           <p>
-            Ainda não existem documentos disponíveis. Pode continuar a
-            consultar os pedidos em{' '}
-            <Link href="/conta/encomendas">Encomendas</Link>.
+            Ainda não existem documentos disponíveis. Pode continuar a consultar
+            os pedidos em <Link href="/conta/encomendas">Encomendas</Link>.
           </p>
         ) : (
           documents.map((document) => (
