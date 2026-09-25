@@ -7,7 +7,7 @@ Este documento traduz para configuração operacional a Matriz de Aprovação Fu
 - Website institucional, Blog, destaques de produtos e formulários de contacto/apoio.
 - Loja: catálogo, páginas de produto, cabazes, carrinho/checkout, encomendas e métodos de entrega.
 - Área de cliente: conta/login/perfil, moradas, histórico de encomendas, documentos reais associados aos pedidos e apoio.
-- Gestão de encomendas e devoluções, sem os subfluxos de preparação, produção ou expedição.
+- Gestão de encomendas e devoluções, com ciclo manual de tratamento e fecho da encomenda; sem os subfluxos avançados de preparação, produção ou expedição.
 - Recebimentos: estado de pagamento, acompanhamento de recebimentos e reconciliação manual de pagamentos com encomendas.
 - Marketing: promoções, conteúdos e produtos em destaque.
 - Revendedores/B2B: candidaturas, contas profissionais e membros/utilizadores associados.
@@ -42,4 +42,6 @@ Os módulos de Fase 2 permanecem no código para evolução futura, mas:
 - acessos diretos na Gestão mostram indicação de Fase 2;
 - as áreas públicas selecionadas para Fase 2 são redirecionadas para uma área disponível;
 - ações de Fase 2 dentro de módulos parcialmente aprovados ficam indisponíveis na interface;
-- em produção, `DEFERRED_FEATURES_ENABLED=false` bloqueia também os endpoints de API correspondentes, evitando acesso direto fora da interface.
+- em produção, `DEFERRED_FEATURES_ENABLED=false` bloqueia também os endpoints de API correspondentes, evitando acesso direto fora da interface;
+- os dashboards deixam de consultar/expor indicadores de stock, compras e encomendas B2B enquanto esses módulos estiverem adiados;
+- a encomenda pode ser marcada manualmente como entregue no fluxo simples, permitindo o processo de devolução sem reativar Expedições/tracking.
