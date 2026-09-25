@@ -16,6 +16,7 @@ import type { Response } from 'express';
 import { CurrentUser, Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
 import type { AuthPrincipal } from '../auth/auth.types';
+import { DeferredFeatureGuard } from '../launch-scope/deferred-feature.guard';
 import { UploadOrderDocumentDto } from './order-documents.dto';
 import {
   OrderDocumentsService,
@@ -63,7 +64,10 @@ export class AccountOrderDocumentsController {
 @Roles(UserRole.STAFF, UserRole.ADMIN)
 @Controller('v1/admin/orders/:orderId/documents')
 export class AdminOrderDocumentsController {
-  constructor(private readonly documents: OrderDocumentsService) {}
+  constructor(
+    private readonly documents: OrderDocumentsService,
+    private readonly deferred: DeferredFeatureGuard,
+  ) {}
 
   @Get()
   list(@Param('orderId') orderId: string) {
@@ -82,6 +86,9 @@ export class AdminOrderDocumentsController {
     @Body() body: UploadOrderDocumentDto,
     @UploadedFile() file: UploadedOrderDocumentFile | undefined,
   ) {
+    if (body.type === 'CREDIT_NOTE') {
+      this.deferred.assertEnabled();
+    }
     return this.documents.upload(orderId, body, file, user.sub);
   }
 

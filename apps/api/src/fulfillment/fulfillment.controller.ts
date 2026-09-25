@@ -20,6 +20,7 @@ import {
   CreateSupportCaseDto,
   GuestTrackingDto,
   ReturnDecisionDto,
+  ReturnRequestStatusDtoValue,
   ReturnStatusUpdateDto,
   ShipmentEventDto,
   ShipmentStatusUpdateDto,
@@ -104,7 +105,10 @@ export class CustomerFulfillmentController {
 @Roles(UserRole.STAFF, UserRole.ADMIN)
 @Controller('v1/admin')
 export class AdminFulfillmentController {
-  constructor(private readonly fulfillment: FulfillmentService) {}
+  constructor(
+    private readonly fulfillment: FulfillmentService,
+    private readonly deferred: DeferredFeatureGuard,
+  ) {}
 
   @Get('operations/preparation')
   @UseGuards(DeferredFeatureGuard)
@@ -182,6 +186,12 @@ export class AdminFulfillmentController {
     @Param('id') id: string,
     @Body() body: ReturnStatusUpdateDto,
   ) {
+    if (
+      body.status === ReturnRequestStatusDtoValue.REFUND_PENDING ||
+      body.status === ReturnRequestStatusDtoValue.REFUNDED
+    ) {
+      this.deferred.assertEnabled();
+    }
     return this.fulfillment.updateReturnStatus(
       id,
       body.status,
