@@ -6,7 +6,7 @@ Este documento traduz para configuração operacional a Matriz de Aprovação Fu
 
 - Website institucional, Blog, destaques de produtos e formulários de contacto/apoio.
 - Loja: catálogo, páginas de produto, cabazes, carrinho/checkout, encomendas e métodos de entrega.
-- Área de cliente: conta/login/perfil, moradas, histórico de encomendas e apoio.
+- Área de cliente: conta/login/perfil, moradas, histórico de encomendas, documentos reais associados aos pedidos e apoio.
 - Gestão de encomendas e devoluções, sem os subfluxos de preparação, produção ou expedição.
 - Recebimentos: estado de pagamento, acompanhamento de recebimentos e reconciliação manual de pagamentos com encomendas.
 - Marketing: promoções, conteúdos e produtos em destaque.
@@ -17,14 +17,14 @@ Este documento traduz para configuração operacional a Matriz de Aprovação Fu
 
 - Stock, movimentos, inventários, fornecedores, compras e respetivo painel.
 - Preparação de encomendas, operações/produção e expedições.
-- Documentos comerciais/fiscais, notas de crédito e reconciliação documental/fiscal.
+- Emissão/gestão fiscal automática de documentos comerciais, notas de crédito e reconciliação documental/fiscal.
 - Reembolsos financeiros automáticos.
 - Cupões.
 - Clube Nsabores, fidelização/pontos e vales-oferta.
 - Tabelas de preços e encomendas B2B.
 - Perfis/permissões configuráveis.
 
-A área de cliente deixa igualmente de expor documentos enquanto o módulo de documentos comerciais estiver em Fase 2, por dependência funcional.
+Os documentos disponíveis ao cliente no arranque são ficheiros reais associados manualmente pela equipa a uma encomenda (por exemplo, fatura ou guia recebida do processo comercial). A emissão fiscal automática, notas de crédito e respetiva reconciliação continuam em Fase 2.
 
 ## Pagamentos
 
