@@ -553,7 +553,7 @@ export function OrderAdmin({ id }: { id: string }) {
                 })
               }
             >
-              Iniciar produção
+              Iniciar tratamento
             </button>
           </p>
         )}
@@ -567,7 +567,21 @@ export function OrderAdmin({ id }: { id: string }) {
                 })
               }
             >
-              Marcar produção como concluída
+              Marcar encomenda como pronta
+            </button>
+          </p>
+        )}
+        {order.status === 'READY' && !phase2OperationsEnabled && (
+          <p>
+            <button
+              className="admin-primary"
+              onClick={() =>
+                void act(`/v1/admin/orders/${id}/status`, {
+                  status: 'DELIVERED',
+                })
+              }
+            >
+              Marcar encomenda como entregue
             </button>
           </p>
         )}
