@@ -14,6 +14,7 @@ import './hero-consistency.css';
 import './account-area-fixes.css';
 import './customer-account-final.css';
 import './mobile-account-access.css';
+import './bundle-customizer.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL(
