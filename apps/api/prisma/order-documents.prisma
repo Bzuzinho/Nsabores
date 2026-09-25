@@ -1,0 +1,17 @@
+model OrderDocument {
+  id           String   @id @default(uuid()) @db.Uuid
+  orderId      String   @db.Uuid
+  type         String   @default("OTHER")
+  label        String
+  reference    String?
+  documentDate DateTime?
+  fileName     String
+  mimeType     String
+  sizeBytes    Int
+  content      Bytes
+  uploadedById String?  @db.Uuid
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+
+  @@index([orderId, createdAt])
+}
