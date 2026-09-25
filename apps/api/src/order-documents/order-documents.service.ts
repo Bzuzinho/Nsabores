@@ -132,7 +132,7 @@ export class OrderDocumentsService {
         fileName: file.originalname,
         mimeType: file.mimetype,
         sizeBytes: file.size,
-        content: file.buffer,
+        content: Uint8Array.from(file.buffer),
         uploadedById,
       },
       select: publicDocumentSelect,
