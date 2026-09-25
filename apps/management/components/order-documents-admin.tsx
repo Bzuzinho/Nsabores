@@ -190,7 +190,10 @@ export function OrderDocumentsAdmin({ orderId }: { orderId: string }) {
                     <small>{size(document.sizeBytes)}</small>
                   </td>
                   <td>
-                    <button type="button" onClick={() => void remove(document.id)}>
+                    <button
+                      type="button"
+                      onClick={() => void remove(document.id)}
+                    >
                       Remover
                     </button>
                   </td>
