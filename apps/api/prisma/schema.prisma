@@ -343,6 +343,7 @@ model User {
   supportCaseComments        SupportCaseComment[]  @relation("SupportCaseCommentAuthor")
   couponRedemptions          CouponRedemption[]
   blogPosts                  BlogPost[]             @relation("BlogPostAuthor")
+  uploadedOrderDocuments     OrderDocument[]        @relation("OrderDocumentUploader")
 
   @@index([role, isActive])
 }
@@ -444,6 +445,7 @@ model Order {
   supportCases         SupportCase[]
   couponRedemptions    CouponRedemption[]
   discounts            OrderDiscount[]
+  documents            OrderDocument[]
 
   @@index([userId, createdAt])
   @@index([status, paymentStatus, createdAt])
