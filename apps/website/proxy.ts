@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 const accountPhase2Prefixes = [
   '/conta/clube',
   '/conta/fidelizacao',
-  '/conta/documentos',
   '/conta/precos',
   '/conta/condicoes-comerciais',
 ];
@@ -51,7 +50,6 @@ export const config = {
     '/conta/encomendas/:path*',
     '/conta/clube/:path*',
     '/conta/fidelizacao/:path*',
-    '/conta/documentos/:path*',
     '/conta/precos/:path*',
     '/conta/condicoes-comerciais/:path*',
   ],
