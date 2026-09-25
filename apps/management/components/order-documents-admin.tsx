@@ -43,14 +43,25 @@ export function OrderDocumentsAdmin({ orderId }: { orderId: string }) {
   }, [orderId]);
 
   useEffect(() => {
-    void load().catch((reason: unknown) =>
-      setError(
-        reason instanceof Error
-          ? reason.message
-          : 'Não foi possível carregar os documentos.',
-      ),
-    );
-  }, [load]);
+    let active = true;
+    void managementApi
+      .get<OrderDocument[]>(`/v1/admin/orders/${orderId}/documents`)
+      .then((value) => {
+        if (active) setDocuments(value);
+      })
+      .catch((reason: unknown) => {
+        if (active) {
+          setError(
+            reason instanceof Error
+              ? reason.message
+              : 'Não foi possível carregar os documentos.',
+          );
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [orderId]);
 
   async function upload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
