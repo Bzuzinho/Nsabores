@@ -26,6 +26,11 @@ const labels = {
 
 const particularLinks = [
   ['/conta/encomendas', 'Encomendas', 'Consultar, repetir ou devolver.'],
+  [
+    '/conta/documentos',
+    'Documentos',
+    'Descarregar documentos disponibilizados pela Nsabores.',
+  ],
   ['/conta/apoio', 'Apoio', 'Pedidos e conversa com a equipa.'],
   ['/conta/perfil', 'Perfil', 'Dados pessoais e preferências.'],
   ['/conta/moradas', 'Moradas', 'Entrega e faturação.'],
@@ -34,6 +39,11 @@ const particularLinks = [
 
 const businessLinks = [
   ['/conta/empresa', 'A minha empresa', 'Identificação e estado da conta.'],
+  [
+    '/conta/documentos',
+    'Documentos',
+    'Descarregar documentos disponibilizados pela Nsabores.',
+  ],
   ['/conta/apoio', 'Apoio', 'Pedidos e conversa com a equipa.'],
   ['/conta/perfil', 'Utilizador', 'Dados e contactos do seu acesso.'],
   ['/conta/seguranca', 'Segurança', 'Password e sessões ativas.'],
