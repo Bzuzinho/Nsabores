@@ -86,9 +86,7 @@ export function OrderDocumentsAdmin({ orderId }: { orderId: string }) {
     if (!window.confirm('Remover este documento da área do cliente?')) return;
     setError('');
     try {
-      await managementApi.delete(
-        `/v1/admin/orders/${orderId}/documents/${id}`,
-      );
+      await managementApi.delete(`/v1/admin/orders/${orderId}/documents/${id}`);
       await load();
     } catch (reason) {
       setError(
