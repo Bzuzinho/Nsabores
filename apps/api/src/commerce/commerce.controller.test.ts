@@ -7,7 +7,7 @@ import type { CommerceService } from './commerce.service';
 import type { OrderStatusDto } from './dto';
 import type { ManualPaymentService } from './manual-payment.service';
 
-const user = { sub: '00000000-0000-0000-0000-000000000001' } as AuthPrincipal;
+const user = { sub: 'user-1' } as AuthPrincipal;
 
 function setup() {
   const changeStatus = vi.fn().mockResolvedValue({ id: 'order-1' });
@@ -26,7 +26,7 @@ describe('AdminOrdersController launch scope', () => {
     OrderStatus.SHIPPED,
     OrderStatus.DELIVERED,
     OrderStatus.REFUNDED,
-  ])('protege o estado %s como funcionalidade adiada', async (status) => {
+  ])('protege %s como estado de Fase 2', async (status) => {
     const { controller, assertEnabled } = setup();
 
     await controller.status(
