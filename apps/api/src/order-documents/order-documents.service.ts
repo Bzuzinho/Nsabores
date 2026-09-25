@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import type { UploadOrderDocumentDto } from './order-documents.dto';
 
@@ -9,7 +13,11 @@ export type UploadedOrderDocumentFile = {
   buffer: Buffer;
 };
 
-const allowedMimeTypes = new Set(['application/pdf', 'image/jpeg', 'image/png']);
+const allowedMimeTypes = new Set([
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+]);
 
 const publicDocumentSelect = {
   id: true,
@@ -145,7 +153,8 @@ export class OrderDocumentsService {
     const deleted = await this.prisma.orderDocument.deleteMany({
       where: { id, orderId },
     });
-    if (!deleted.count) throw new NotFoundException('Documento não encontrado.');
+    if (!deleted.count)
+      throw new NotFoundException('Documento não encontrado.');
     return { success: true };
   }
 
