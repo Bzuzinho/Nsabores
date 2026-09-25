@@ -541,24 +541,33 @@ export function OrderAdmin({ id }: { id: string }) {
           </p>
         )}
         <OrderDocumentsAdmin orderId={id} />
-        {phase2OperationsEnabled && (
-          <label>
-            Novo estado de produção
-            <select
-              defaultValue=""
-              onChange={(event) =>
-                event.target.value &&
+        {order.status === 'PAID' && (
+          <p>
+            <button
+              className="admin-primary"
+              onClick={() =>
                 void act(`/v1/admin/orders/${id}/status`, {
-                  status: event.target.value,
+                  status: 'PROCESSING',
                 })
               }
             >
-              <option value="">Selecionar…</option>
-              {['PROCESSING', 'READY'].map((value) => (
-                <option key={value}>{value}</option>
-              ))}
-            </select>
-          </label>
+              Iniciar produção
+            </button>
+          </p>
+        )}
+        {order.status === 'PROCESSING' && (
+          <p>
+            <button
+              className="admin-primary"
+              onClick={() =>
+                void act(`/v1/admin/orders/${id}/status`, {
+                  status: 'READY',
+                })
+              }
+            >
+              Marcar produção como concluída
+            </button>
+          </p>
         )}
         <label>
           Nota interna
@@ -579,7 +588,7 @@ export function OrderAdmin({ id }: { id: string }) {
             Registar reembolso
           </button>
         )}
-        <h2>Histórico de produção</h2>
+        <h2>Histórico do pedido</h2>
         {order.statusHistory.map((item) => (
           <p key={item.id}>
             {new Date(item.createdAt).toLocaleString('pt-PT')} — {item.toStatus}{' '}
