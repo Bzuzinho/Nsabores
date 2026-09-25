@@ -340,7 +340,7 @@ export default function CheckoutPage() {
           className="button button-primary"
           disabled={submitting || !cart?.items.length}
         >
-          {submitting ? 'A confirmar encomenda…' : 'Confirmar encomenda'}
+          {submitting ? 'A enviar pedido…' : 'Enviar pedido de encomenda'}
         </button>
         <p>
           Dúvidas: <a href="mailto:nsabores@outlook.pt">nsabores@outlook.pt</a>

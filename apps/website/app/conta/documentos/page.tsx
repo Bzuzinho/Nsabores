@@ -7,19 +7,28 @@ import { accountApi } from '@/components/auth-provider';
 type AccountDocument = {
   id: string;
   type: string;
-  status: string;
-  number?: string | null;
-  currency: string;
-  totalCents: number;
-  issuedAt?: string | null;
-  sourceType: string;
-  externalDocumentUrl?: string | null;
+  label: string;
+  reference?: string | null;
+  documentDate?: string | null;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  createdAt: string;
+  order: {
+    id: string;
+    number: string;
+    createdAt: string;
+  };
 };
 
-const money = (cents: number, currency = 'EUR') =>
-  new Intl.NumberFormat('pt-PT', { style: 'currency', currency }).format(
-    cents / 100,
-  );
+const labels: Record<string, string> = {
+  INVOICE: 'Fatura',
+  RECEIPT: 'Recibo',
+  INVOICE_RECEIPT: 'Fatura-recibo',
+  CREDIT_NOTE: 'Nota de crédito',
+  DELIVERY_NOTE: 'Guia / documento de entrega',
+  OTHER: 'Outro documento',
+};
 
 export default function AccountDocumentsPage() {
   const [documents, setDocuments] = useState<AccountDocument[] | null>(null);
@@ -49,36 +58,50 @@ export default function AccountDocumentsPage() {
   return (
     <main id="conteudo" className="account-page">
       <section className="account-card">
-        <p className="eyebrow">Documentos de demonstração</p>
-        <h1>Os seus documentos comerciais</h1>
-        <p role="alert">
-          <strong>DEMONSTRAÇÃO — SEM VALOR FISCAL.</strong> Estes documentos
-          simulam o fluxo de faturação da plataforma, mas não foram emitidos por
-          software certificado e não devem ser usados para fins fiscais ou
-          contabilísticos.
+        <p className="eyebrow">Documentos</p>
+        <h1>Documentos dos seus pedidos</h1>
+        <p>
+          Aqui ficam os documentos reais que a Nsabores disponibiliza depois de
+          os emitir ou receber. Cada documento permanece associado à respetiva
+          encomenda.
         </p>
+
         {error && <p role="alert">{error}</p>}
         {!documents ? (
           <p>A carregar…</p>
         ) : !documents.length ? (
-          <p>Ainda não existem documentos disponíveis.</p>
+          <p>
+            Ainda não existem documentos disponíveis. Pode continuar a consultar
+            os pedidos em <Link href="/conta/encomendas">Encomendas</Link>.
+          </p>
         ) : (
           documents.map((document) => (
             <article key={document.id} className="account-card">
               <p>
-                <strong>{document.number ?? 'Documento sem número'}</strong> ·{' '}
-                {document.type} · {document.status}
+                <strong>{document.label}</strong> ·{' '}
+                {labels[document.type] ?? document.type}
               </p>
               <p>
-                {money(document.totalCents, document.currency)} ·{' '}
-                {document.issuedAt
-                  ? new Date(document.issuedAt).toLocaleString('pt-PT')
-                  : 'Sem data de emissão'}
+                Encomenda{' '}
+                <Link href={`/conta/encomendas/${document.order.id}`}>
+                  {document.order.number}
+                </Link>
+                {document.reference ? ` · ${document.reference}` : ''}
               </p>
-              <p>Origem: {document.sourceType}</p>
-              <Link href={`/conta/documentos/${document.id}`}>
-                Ver documento
-              </Link>
+              <p>
+                {new Date(
+                  document.documentDate ?? document.createdAt,
+                ).toLocaleDateString('pt-PT')}
+              </p>
+              <p>
+                <Link href={`/conta/documentos/${document.id}`}>
+                  Ver documento
+                </Link>{' '}
+                ·{' '}
+                <a href={`/v1/account/documents/${document.id}/download`}>
+                  Descarregar
+                </a>
+              </p>
             </article>
           ))
         )}

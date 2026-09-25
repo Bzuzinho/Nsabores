@@ -28,10 +28,10 @@ function Confirmation() {
 
   return (
     <section className="account-card">
-      <p className="eyebrow">Encomenda recebida</p>
+      <p className="eyebrow">Pedido recebido</p>
       <h1>
         {state === 'manual'
-          ? 'A encomenda foi registada'
+          ? 'O pedido de encomenda foi registado'
           : state === 'paid'
             ? 'Pagamento confirmado'
             : state === 'error'
@@ -40,8 +40,9 @@ function Confirmation() {
       </h1>
       {state === 'manual' ? (
         <p>
-          A Nsabores entrará em contacto para combinar o pagamento. A empresa
-          atualizará manualmente o estado assim que o valor for recebido.
+          A Nsabores entrará em contacto para confirmar o pedido e combinar o
+          pagamento. O estado será atualizado manualmente quando o valor for
+          recebido.
         </p>
       ) : (
         <p>
