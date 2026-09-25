@@ -1,4 +1,10 @@
-import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsDateString,
+  IsIn,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 export class UploadOrderDocumentDto {
   @IsString()
@@ -22,7 +28,6 @@ export class UploadOrderDocumentDto {
   reference?: string;
 
   @IsOptional()
-  @IsString()
-  @MaxLength(30)
+  @IsDateString()
   documentDate?: string;
 }
