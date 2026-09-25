@@ -247,10 +247,7 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
     note?: string,
   ) {
     const result = await super.changeStatus(id, status, authorId, note);
-    if (
-      status === OrderStatus.CANCELLED &&
-      this.deferredFeaturesEnabled()
-    ) {
+    if (status === OrderStatus.CANCELLED && this.deferredFeaturesEnabled()) {
       if (this.manualFlow()) await this.loyaltyOrders.refund(id);
       else await this.loyaltyOrders.release(id);
     }
