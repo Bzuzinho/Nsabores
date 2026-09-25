@@ -61,9 +61,9 @@ export default function AccountDocumentsPage() {
         <p className="eyebrow">Documentos</p>
         <h1>Documentos dos seus pedidos</h1>
         <p>
-          Aqui ficam os documentos reais que a Nsabores disponibiliza depois
-          de os emitir ou receber. Cada documento permanece associado à
-          respetiva encomenda.
+          Aqui ficam os documentos reais que a Nsabores disponibiliza depois de
+          os emitir ou receber. Cada documento permanece associado à respetiva
+          encomenda.
         </p>
 
         {error && <p role="alert">{error}</p>}
