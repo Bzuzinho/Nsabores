@@ -47,13 +47,13 @@ const sectionCopy = {
   sales: {
     eyebrow: 'Vendas',
     title: 'Desempenho comercial',
-    description: 'Canais, valor vendido e encomendas que exigem atenção.',
+    description: 'Valor vendido e encomendas que exigem atenção.',
     action: ['/encomendas', 'Ver encomendas'],
   },
   operations: {
     eyebrow: 'Operações',
     title: 'Fluxo operacional',
-    description: 'Trabalho em curso, reservas e incidências abertas.',
+    description: 'Trabalho em curso e incidências abertas.',
     action: ['/apoio', 'Abrir apoio'],
   },
   purchasing: {
@@ -195,12 +195,12 @@ function buildView(section: Section, data?: DashboardData) {
               0,
             ),
           ),
-          'Todos os canais',
+          'Encomendas registadas',
         ],
         [
           'Encomendas',
           String(data.sales.reduce((sum, item) => sum + item._count, 0)),
-          'B2C e B2B',
+          'Pedidos no âmbito de arranque',
         ],
         ['Ticket médio', averageTicket(data.sales), 'Sobre vendas registadas'],
         [
