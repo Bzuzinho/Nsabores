@@ -185,9 +185,7 @@ export function OrderDocumentsAdmin({ orderId }: { orderId: string }) {
                   </td>
                   <td>
                     <a
-                      href={
-                        `/v1/admin/orders/${orderId}/documents/${document.id}/download`
-                      }
+                      href={`/v1/admin/orders/${orderId}/documents/${document.id}/download`}
                     >
                       {document.fileName}
                     </a>
