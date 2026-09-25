@@ -19,11 +19,15 @@ export class ApiClient {
     init: RequestInit = {},
     retry = true,
   ): Promise<T> {
+    const isFormData =
+      typeof FormData !== 'undefined' && init.body instanceof FormData;
     const response = await fetch(`${this.baseUrl}${path}`, {
       ...init,
       credentials: 'include',
       headers: {
-        ...(init.body ? { 'content-type': 'application/json' } : {}),
+        ...(init.body && !isFormData
+          ? { 'content-type': 'application/json' }
+          : {}),
         ...init.headers,
       },
     });
@@ -59,6 +63,10 @@ export class ApiClient {
       method: 'POST',
       body: body === undefined ? undefined : JSON.stringify(body),
     });
+  }
+
+  postForm<T>(path: string, body: FormData) {
+    return this.request<T>(path, { method: 'POST', body });
   }
 
   patch<T>(path: string, body: unknown) {
