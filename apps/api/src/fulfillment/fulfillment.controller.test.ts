@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { AuthPrincipal } from '../auth/auth.types';
-import type { DeferredFeatureGuard } from '../launch-scope/deferred-feature.guard';
+import type {
+  DeferredFeatureGuard,
+} from '../launch-scope/deferred-feature.guard';
 import {
   ReturnRequestStatusDtoValue,
   type ReturnStatusUpdateDto,
@@ -37,21 +39,26 @@ describe('AdminFulfillmentController launch scope', () => {
     expect(assertEnabled).toHaveBeenCalledOnce();
   });
 
-  it('mantém os restantes estados da devolução disponíveis no arranque', async () => {
-    const { controller, updateReturnStatus, assertEnabled } = setup();
+  it(
+    'mantém os restantes estados da devolução disponíveis no arranque',
+    async () => {
+      const { controller, updateReturnStatus, assertEnabled } = setup();
 
-    await controller.updateReturnStatus(
-      user,
-      'return-1',
-      { status: ReturnRequestStatusDtoValue.INSPECTED } as ReturnStatusUpdateDto,
-    );
+      await controller.updateReturnStatus(
+        user,
+        'return-1',
+        {
+          status: ReturnRequestStatusDtoValue.INSPECTED,
+        } as ReturnStatusUpdateDto,
+      );
 
-    expect(assertEnabled).not.toHaveBeenCalled();
-    expect(updateReturnStatus).toHaveBeenCalledWith(
-      'return-1',
-      ReturnRequestStatusDtoValue.INSPECTED,
-      user.sub,
-      undefined,
-    );
-  });
+      expect(assertEnabled).not.toHaveBeenCalled();
+      expect(updateReturnStatus).toHaveBeenCalledWith(
+        'return-1',
+        ReturnRequestStatusDtoValue.INSPECTED,
+        user.sub,
+        undefined,
+      );
+    },
+  );
 });
