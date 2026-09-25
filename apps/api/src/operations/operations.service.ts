@@ -65,6 +65,9 @@ export class OperationsService {
   ) {}
 
   dashboard() {
+    const deferredFeaturesEnabled =
+      this.config?.get<boolean>('DEFERRED_FEATURES_ENABLED') ?? true;
+
     return this.prisma.$transaction(async (tx) => {
       const [
         stock,
@@ -82,20 +85,24 @@ export class OperationsService {
         featuredProductCount,
         categoryCount,
       ] = await Promise.all([
-        tx.stockItem.findMany({
-          include: { product: { select: { priceCents: true } } },
-        }),
-        tx.purchaseOrder.count({
-          where: {
-            status: {
-              in: [
-                PurchaseOrderStatus.SUBMITTED,
-                PurchaseOrderStatus.CONFIRMED,
-                PurchaseOrderStatus.PARTIALLY_RECEIVED,
-              ],
-            },
-          },
-        }),
+        deferredFeaturesEnabled
+          ? tx.stockItem.findMany({
+              include: { product: { select: { priceCents: true } } },
+            })
+          : Promise.resolve([]),
+        deferredFeaturesEnabled
+          ? tx.purchaseOrder.count({
+              where: {
+                status: {
+                  in: [
+                    PurchaseOrderStatus.SUBMITTED,
+                    PurchaseOrderStatus.CONFIRMED,
+                    PurchaseOrderStatus.PARTIALLY_RECEIVED,
+                  ],
+                },
+              },
+            })
+          : Promise.resolve(0),
         tx.resellerApplication.count({
           where: { status: ResellerApplicationStatus.PENDING },
         }),
@@ -104,6 +111,9 @@ export class OperationsService {
         }),
         tx.order.groupBy({
           by: ['salesChannel'],
+          where: deferredFeaturesEnabled
+            ? undefined
+            : { salesChannel: SalesChannel.B2C },
           _sum: { totalCents: true },
           _count: true,
         }),
@@ -112,7 +122,9 @@ export class OperationsService {
           _sum: { totalCents: true },
           _count: true,
         }),
-        tx.purchaseOrder.groupBy({ by: ['status'], _count: true }),
+        deferredFeaturesEnabled
+          ? tx.purchaseOrder.groupBy({ by: ['status'], _count: true })
+          : Promise.resolve([]),
         tx.supportCase.groupBy({ by: ['status'], _count: true }),
         tx.user.groupBy({ by: ['role'], _count: true }),
         tx.blogPost.groupBy({ by: ['status'], _count: true }),

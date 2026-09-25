@@ -250,7 +250,6 @@ export class AdminOrdersController {
   ) {
     if (
       body.status === OrderStatus.SHIPPED ||
-      body.status === OrderStatus.DELIVERED ||
       body.status === OrderStatus.REFUNDED
     ) {
       this.deferred.assertEnabled();
