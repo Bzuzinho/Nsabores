@@ -28,7 +28,7 @@ Os documentos disponíveis ao cliente no arranque são ficheiros reais associado
 
 ## Pagamentos
 
-Por decisão operacional posterior à matriz, os pagamentos do arranque são exclusivamente manuais. O cliente submete a encomenda, a equipa combina/recebe o pagamento e confirma o recebimento na Gestão.
+Por decisão operacional posterior à matriz, os pagamentos do arranque são exclusivamente manuais. O cliente submete a encomenda, que permanece a aguardar pagamento; a equipa combina/recebe o pagamento e confirma o recebimento na Gestão antes de iniciar o tratamento.
 
 Os pagamentos online ficam para o último lote do projeto. O endpoint de pagamento automático, webhooks e confirmações mock ficam bloqueados enquanto `PAYMENT_FLOW_MODE=manual`.
 
@@ -44,4 +44,5 @@ Os módulos de Fase 2 permanecem no código para evolução futura, mas:
 - ações de Fase 2 dentro de módulos parcialmente aprovados ficam indisponíveis na interface;
 - em produção, `DEFERRED_FEATURES_ENABLED=false` bloqueia também os endpoints de API correspondentes, evitando acesso direto fora da interface;
 - os dashboards deixam de consultar/expor indicadores de stock, compras e encomendas B2B enquanto esses módulos estiverem adiados;
-- a encomenda pode ser marcada manualmente como entregue no fluxo simples, permitindo o processo de devolução sem reativar Expedições/tracking.
+- a encomenda pode ser marcada manualmente como entregue no fluxo simples, permitindo o processo de devolução sem reativar Expedições/tracking;
+- pontos, fidelização e vales-oferta não são aplicados nem acumulados em produção enquanto `DEFERRED_FEATURES_ENABLED=false`, mesmo através de chamadas diretas à API.
