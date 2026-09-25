@@ -24,6 +24,10 @@ const labels: Record<string, string> = {
   OTHER: 'Outro documento',
 };
 
+const uploadLabels = Object.entries(labels).filter(
+  ([value]) => value !== 'CREDIT_NOTE',
+);
+
 const size = (bytes: number) =>
   bytes < 1024 * 1024
     ? `${Math.max(1, Math.round(bytes / 1024))} KB`
@@ -122,7 +126,7 @@ export function OrderDocumentsAdmin({ orderId }: { orderId: string }) {
         <label>
           Tipo de documento
           <select name="type" defaultValue="INVOICE">
-            {Object.entries(labels).map(([value, label]) => (
+            {uploadLabels.map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
               </option>
