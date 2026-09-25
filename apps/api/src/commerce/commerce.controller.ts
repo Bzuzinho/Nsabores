@@ -193,6 +193,7 @@ export class AdminOrdersController {
   constructor(
     private readonly commerce: CommerceService,
     private readonly manualPayments: ManualPaymentService,
+    private readonly deferred: DeferredFeatureGuard,
   ) {}
 
   @Get('orders')
@@ -247,6 +248,13 @@ export class AdminOrdersController {
     @Param('id') id: string,
     @Body() body: OrderStatusDto,
   ) {
+    if (
+      body.status === OrderStatus.SHIPPED ||
+      body.status === OrderStatus.DELIVERED ||
+      body.status === OrderStatus.REFUNDED
+    ) {
+      this.deferred.assertEnabled();
+    }
     return this.commerce.changeStatus(id, body.status, user.sub, body.note);
   }
 
