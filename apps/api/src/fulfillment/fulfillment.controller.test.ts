@@ -8,7 +8,7 @@ import {
 import { AdminFulfillmentController } from './fulfillment.controller';
 import type { FulfillmentService } from './fulfillment.service';
 
-const user = { sub: '00000000-0000-0000-0000-000000000001' } as AuthPrincipal;
+const user = { sub: 'user-1' } as AuthPrincipal;
 
 function setup() {
   const updateReturnStatus = vi.fn().mockResolvedValue({ id: 'return-1' });
@@ -25,7 +25,7 @@ describe('AdminFulfillmentController launch scope', () => {
   it.each([
     ReturnRequestStatusDtoValue.REFUND_PENDING,
     ReturnRequestStatusDtoValue.REFUNDED,
-  ])('protege o estado financeiro %s como funcionalidade adiada', async (status) => {
+  ])('protege %s como estado financeiro adiado', async (status) => {
     const { controller, assertEnabled } = setup();
 
     await controller.updateReturnStatus(
