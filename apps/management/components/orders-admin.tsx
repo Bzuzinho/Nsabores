@@ -9,6 +9,7 @@ import type {
 import Link from 'next/link';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { managementApi } from './management-auth';
+import { OrderDocumentsAdmin } from './order-documents-admin';
 
 const money = (cents: number) =>
   new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(
@@ -539,6 +540,7 @@ export function OrderAdmin({ id }: { id: string }) {
             Nota de transporte: {order.paymentTermsSnapshot.shippingQuoteNote}
           </p>
         )}
+        <OrderDocumentsAdmin orderId={id} />
         {phase2OperationsEnabled && (
           <label>
             Novo estado de produção
