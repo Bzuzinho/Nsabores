@@ -49,10 +49,23 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
     );
   }
 
+  private deferredFeaturesEnabled() {
+    return this.config.get<boolean>('DEFERRED_FEATURES_ENABLED') ?? true;
+  }
+
   override async checkout(
     identity: CartIdentity,
     body: CheckoutDto,
   ): Promise<CheckoutResult> {
+    if (
+      !this.deferredFeaturesEnabled() &&
+      (body.loyaltyPoints !== undefined || body.giftCardCode?.trim())
+    ) {
+      throw new ConflictException(
+        'Pontos e vales-oferta estão previstos para uma fase posterior.',
+      );
+    }
+
     const cart = await super.cart(identity);
     const order = await super.checkout(identity, body);
     const shippingQuotePending = order.deliveryMethod.code === 'case-by-case';
@@ -71,6 +84,15 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
         },
       },
     });
+
+    if (!this.deferredFeaturesEnabled()) {
+      await this.receivables.ensureAgreement(order.id);
+      const finalOrder = await this.orderWithBenefits(order.id);
+      return {
+        ...finalOrder,
+        discounts: order.discounts,
+      } as CheckoutResult;
+    }
 
     try {
       await this.loyaltyOrders.reserve(
@@ -225,7 +247,7 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
     note?: string,
   ) {
     const result = await super.changeStatus(id, status, authorId, note);
-    if (status === OrderStatus.CANCELLED) {
+    if (status === OrderStatus.CANCELLED && this.deferredFeaturesEnabled()) {
       if (this.manualFlow()) await this.loyaltyOrders.refund(id);
       else await this.loyaltyOrders.release(id);
     }
@@ -274,7 +296,9 @@ export class LoyaltyCommerceService extends BundleAwareCommerceService {
           statusHistory: { orderBy: { createdAt: 'asc' } },
         },
       }),
-      this.loyaltyOrders.applications(orderId),
+      this.deferredFeaturesEnabled()
+        ? this.loyaltyOrders.applications(orderId)
+        : Promise.resolve({ loyalty: null, giftCard: null }),
     ]);
     return {
       ...order,

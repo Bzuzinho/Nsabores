@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma.service';
 import { LoyaltyLedgerService } from './loyalty-ledger.service';
 
@@ -29,9 +30,15 @@ export class LoyaltyEarningService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ledger: LoyaltyLedgerService,
+    @Optional() private readonly config?: ConfigService,
   ) {}
 
+  private enabled() {
+    return this.config?.get<boolean>('DEFERRED_FEATURES_ENABLED') ?? true;
+  }
+
   async accrueForPaidOrder(orderId: string) {
+    if (!this.enabled()) return null;
     const orders = await this.prisma.$queryRaw<OrderRow[]>`
       SELECT o."id", o."userId", o."totalCents", o."salesChannel",
              COALESCE(ola."amountCents", 0) AS "loyaltyAmountCents",
@@ -90,6 +97,7 @@ export class LoyaltyEarningService {
   }
 
   async reverseForRefundedOrder(orderId: string) {
+    if (!this.enabled()) return null;
     return this.prisma.$transaction(async (tx) => {
       const duplicate = await tx.$queryRaw<Array<{ id: string }>>`
         SELECT "id" FROM "LoyaltyTransaction"
