@@ -145,7 +145,9 @@ export function CatalogAdmin({
       {mode === 'product-form' && (
         <ProductForm
           categories={categories}
-          product={selectedProduct ?? products.find((item) => item.id === productId)}
+          product={
+            selectedProduct ?? products.find((item) => item.id === productId)
+          }
           mutate={mutate}
         />
       )}
