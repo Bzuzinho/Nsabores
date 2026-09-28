@@ -167,7 +167,9 @@ export function OrderDraftAdmin({ id }: { id?: string }) {
             name="firstName"
             required
             defaultValue={
-              address.firstName ?? customer?.firstName ?? order?.customerName?.split(' ')[0]
+              address.firstName ??
+              customer?.firstName ??
+              order?.customerName?.split(' ')[0]
             }
           />
         </label>
@@ -185,11 +187,19 @@ export function OrderDraftAdmin({ id }: { id?: string }) {
         </label>
         <label>
           Telefone
-          <input name="phone" required defaultValue={order?.phone ?? customer?.phone ?? ''} />
+          <input
+            name="phone"
+            required
+            defaultValue={order?.phone ?? customer?.phone ?? ''}
+          />
         </label>
         <label>
           Morada
-          <input name="line1" required defaultValue={address.line1 ?? customerAddress?.line1} />
+          <input
+            name="line1"
+            required
+            defaultValue={address.line1 ?? customerAddress?.line1}
+          />
         </label>
         <label>
           Código postal
@@ -202,7 +212,11 @@ export function OrderDraftAdmin({ id }: { id?: string }) {
         </label>
         <label>
           Localidade
-          <input name="city" required defaultValue={address.city ?? customerAddress?.city} />
+          <input
+            name="city"
+            required
+            defaultValue={address.city ?? customerAddress?.city}
+          />
         </label>
         <label>
           Origem
