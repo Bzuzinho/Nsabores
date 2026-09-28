@@ -7,7 +7,7 @@ import type {
   Paginated,
 } from '@nsabores/types';
 import { FormEvent, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { managementApi } from './management-auth';
 
 type DraftLine = {
@@ -16,8 +16,25 @@ type DraftLine = {
   unitPriceCents?: number;
 };
 
+type CustomerPrefill = {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  addresses?: Array<{
+    line1: string;
+    postalCode: string;
+    city: string;
+    isDefaultShipping: boolean;
+  }>;
+};
+
 export function OrderDraftAdmin({ id }: { id?: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const customerId = id ? '' : (searchParams.get('customer') ?? '');
+  const [customer, setCustomer] = useState<CustomerPrefill | null>(null);
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [deliveryMethods, setDeliveryMethods] = useState<DeliveryMethod[]>([]);
   const [order, setOrder] = useState<CommerceOrder | null>(null);
@@ -29,17 +46,23 @@ export function OrderDraftAdmin({ id }: { id?: string }) {
   useEffect(() => {
     void Promise.all([
       managementApi.get<Paginated<CatalogProduct>>(
-        '/v1/admin/catalog/products?limit=100',
+        '/v1/admin/products?limit=100&active=true',
       ),
       managementApi.get<DeliveryMethod[]>('/v1/admin/delivery-methods'),
       id
         ? managementApi.get<CommerceOrder>(`/v1/admin/orders/${id}`)
         : Promise.resolve(null),
+      customerId
+        ? managementApi.get<CustomerPrefill>(
+            `/v1/admin/customers/${customerId}`,
+          )
+        : Promise.resolve(null),
     ])
-      .then(([catalog, methods, current]) => {
+      .then(([catalog, methods, current, selectedCustomer]) => {
         setProducts(catalog.data);
         setDeliveryMethods(methods);
         setOrder(current);
+        setCustomer(selectedCustomer);
         if (current)
           setLines(
             current.items.map((item) => ({
@@ -56,11 +79,12 @@ export function OrderDraftAdmin({ id }: { id?: string }) {
             : 'Não foi possível carregar os dados.',
         ),
       );
-  }, [id]);
+  }, [customerId, id]);
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    const userId = String(form.get('userId') ?? '') || undefined;
     const address = {
       firstName: String(form.get('firstName')),
       lastName: String(form.get('lastName')),
@@ -70,6 +94,7 @@ export function OrderDraftAdmin({ id }: { id?: string }) {
       countryCode: 'PT',
     };
     const body = {
+      userId,
       email: String(form.get('email')),
       customerName: `${address.firstName} ${address.lastName}`.trim(),
       phone: String(form.get('phone')),
@@ -99,6 +124,10 @@ export function OrderDraftAdmin({ id }: { id?: string }) {
   }
 
   const address = (order?.shippingAddress ?? {}) as Record<string, string>;
+  const customerAddress =
+    customer?.addresses?.find((item) => item.isDefaultShipping) ??
+    customer?.addresses?.[0];
+
   return (
     <>
       <header className="admin-header">
@@ -111,14 +140,25 @@ export function OrderDraftAdmin({ id }: { id?: string }) {
         </div>
       </header>
       {error && <p className="admin-error">{error}</p>}
-      <form className="operational-form" onSubmit={save}>
+      <form
+        className="operational-form"
+        key={customer?.id ?? id ?? 'new'}
+        onSubmit={save}
+      >
+        {customer && (
+          <div className="admin-message">
+            Encomenda associada à conta de {customer.firstName}{' '}
+            {customer.lastName}. O cliente poderá consultá-la na sua área.
+          </div>
+        )}
+        <input type="hidden" name="userId" value={customer?.id ?? ''} />
         <label>
           Email
           <input
             name="email"
             type="email"
             required
-            defaultValue={order?.email}
+            defaultValue={order?.email ?? customer?.email}
           />
         </label>
         <label>
@@ -127,7 +167,7 @@ export function OrderDraftAdmin({ id }: { id?: string }) {
             name="firstName"
             required
             defaultValue={
-              address.firstName ?? order?.customerName?.split(' ')[0]
+              address.firstName ?? customer?.firstName ?? order?.customerName?.split(' ')[0]
             }
           />
         </label>
@@ -138,17 +178,18 @@ export function OrderDraftAdmin({ id }: { id?: string }) {
             required
             defaultValue={
               address.lastName ??
+              customer?.lastName ??
               order?.customerName?.split(' ').slice(1).join(' ')
             }
           />
         </label>
         <label>
           Telefone
-          <input name="phone" required defaultValue={order?.phone} />
+          <input name="phone" required defaultValue={order?.phone ?? customer?.phone ?? ''} />
         </label>
         <label>
           Morada
-          <input name="line1" required defaultValue={address.line1} />
+          <input name="line1" required defaultValue={address.line1 ?? customerAddress?.line1} />
         </label>
         <label>
           Código postal
@@ -156,12 +197,12 @@ export function OrderDraftAdmin({ id }: { id?: string }) {
             name="postalCode"
             required
             pattern="\d{4}-\d{3}"
-            defaultValue={address.postalCode}
+            defaultValue={address.postalCode ?? customerAddress?.postalCode}
           />
         </label>
         <label>
           Localidade
-          <input name="city" required defaultValue={address.city} />
+          <input name="city" required defaultValue={address.city ?? customerAddress?.city} />
         </label>
         <label>
           Origem
