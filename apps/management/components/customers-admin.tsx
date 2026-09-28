@@ -42,7 +42,7 @@ export function CustomersAdmin() {
   }, []);
 
   useEffect(() => {
-    void load('');
+    void Promise.resolve().then(() => load(''));
   }, [load]);
 
   async function create(event: FormEvent<HTMLFormElement>) {
@@ -142,7 +142,9 @@ export function CustomersAdmin() {
                 ))}
                 {!customers.length && (
                   <tr>
-                    <td colSpan={5}>Não existem clientes com estes critérios.</td>
+                    <td colSpan={5}>
+                      Não existem clientes com estes critérios.
+                    </td>
                   </tr>
                 )}
               </tbody>
