@@ -247,6 +247,7 @@ export interface DeliveryMethod {
 export interface CommerceOrder {
   id: string;
   number: string;
+  userId: string | null;
   email: string;
   customerName: string;
   phone: string;
