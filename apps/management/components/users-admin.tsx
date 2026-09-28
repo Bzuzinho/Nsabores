@@ -53,11 +53,17 @@ export function UsersAdmin({ selectedId }: { selectedId?: string }) {
     if (!firstName) return;
     const lastName = window.prompt('Apelido:');
     if (!lastName) return;
+    const phone =
+      role === 'CUSTOMER' ? window.prompt('Telefone (opcional):') : '';
+    const taxNumber =
+      role === 'CUSTOMER' ? window.prompt('NIF (opcional, 9 dígitos):') : '';
     try {
       await managementApi.post('/v1/admin/users', {
         email,
         firstName,
         lastName,
+        phone: phone?.trim() || undefined,
+        taxNumber: taxNumber?.trim() || undefined,
         role,
       });
       await load();
