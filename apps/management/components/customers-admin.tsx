@@ -88,11 +88,11 @@ function CustomerIndex() {
       const created = await managementApi.post<Customer>(
         '/v1/admin/customers',
         {
-        email: form.get('email'),
-        firstName: form.get('firstName'),
-        lastName: form.get('lastName'),
-        phone: String(form.get('phone') ?? '') || undefined,
-        taxNumber: String(form.get('taxNumber') ?? '') || undefined,
+          email: form.get('email'),
+          firstName: form.get('firstName'),
+          lastName: form.get('lastName'),
+          phone: String(form.get('phone') ?? '') || undefined,
+          taxNumber: String(form.get('taxNumber') ?? '') || undefined,
           notes: String(form.get('notes') ?? '') || undefined,
         },
       );
