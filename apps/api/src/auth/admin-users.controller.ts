@@ -15,10 +15,15 @@ import { CurrentUser, Roles } from './auth.decorators';
 import { AuthGuard, RolesGuard } from './auth.guards';
 import type { AuthPrincipal } from './auth.types';
 import { AdminUsersService } from './admin-users.service';
-import { InviteUserDto, UpdateUserAdminDto, UsersQueryDto } from './dto';
+import {
+  CreateCustomerDto,
+  InviteUserDto,
+  UpdateUserAdminDto,
+  UsersQueryDto,
+} from './dto';
 
 @UseGuards(AuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.STAFF, UserRole.ADMIN)
 @Controller('v1/admin/users')
 export class AdminUsersController {
   constructor(
@@ -31,11 +36,21 @@ export class AdminUsersController {
   }
 
   @Get()
-  list(@Query() query: UsersQueryDto) {
-    return this.users.list(query);
+  list(@CurrentUser() actor: AuthPrincipal, @Query() query: UsersQueryDto) {
+    return this.users.list(
+      actor.role === UserRole.STAFF
+        ? { ...query, role: UserRole.CUSTOMER }
+        : query,
+    );
+  }
+
+  @Post('customers')
+  createCustomer(@Body() body: CreateCustomerDto) {
+    return this.users.createCustomer(body);
   }
 
   @Post()
+  @Roles(UserRole.ADMIN)
   invite(@Body() body: InviteUserDto) {
     if (this.permissionsDeferred() && body.role !== UserRole.STAFF) {
       throw new ConflictException(
@@ -46,11 +61,14 @@ export class AdminUsersController {
   }
 
   @Get(':id')
-  detail(@Param('id') id: string) {
-    return this.users.detail(id);
+  detail(@CurrentUser() actor: AuthPrincipal, @Param('id') id: string) {
+    return actor.role === UserRole.STAFF
+      ? this.users.customerDetail(id)
+      : this.users.detail(id);
   }
 
   @Patch(':id')
+  @Roles(UserRole.ADMIN)
   update(
     @CurrentUser() actor: AuthPrincipal,
     @Param('id') id: string,
@@ -65,6 +83,7 @@ export class AdminUsersController {
   }
 
   @Post(':id/revoke-sessions')
+  @Roles(UserRole.ADMIN)
   revoke(@Param('id') id: string) {
     return this.users.revokeSessions(id);
   }

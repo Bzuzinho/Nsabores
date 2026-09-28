@@ -3,9 +3,14 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
-import type { InviteUserDto, UpdateUserAdminDto, UsersQueryDto } from './dto';
+import type {
+  CreateCustomerDto,
+  InviteUserDto,
+  UpdateUserAdminDto,
+  UsersQueryDto,
+} from './dto';
 import { MailProvider } from './mail.provider';
 import argon2 from 'argon2';
 import { createHash, randomBytes } from 'node:crypto';
@@ -37,6 +42,34 @@ export class AdminUsersService {
     private readonly prisma: PrismaService,
     private readonly mail: MailProvider,
   ) {}
+
+  async createCustomer(body: CreateCustomerDto) {
+    const email = body.email.trim().toLowerCase();
+    if (await this.prisma.user.findUnique({ where: { email } })) {
+      throw new ForbiddenException('Já existe um utilizador com este email.');
+    }
+    const token = randomBytes(32).toString('hex');
+    const user = await this.prisma.user.create({
+      data: {
+        email,
+        firstName: body.firstName.trim(),
+        lastName: body.lastName.trim(),
+        phone: body.phone?.trim() || null,
+        role: UserRole.CUSTOMER,
+        passwordHash: await argon2.hash(randomBytes(32).toString('hex')),
+        passwordResetTokenHash: createHash('sha256')
+          .update(token)
+          .digest('hex'),
+        passwordResetExpiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000),
+        customerProfile: {
+          create: { taxNumber: body.taxNumber?.trim() || null },
+        },
+      },
+      select: adminUser,
+    });
+    this.mail.sendPasswordReset(email, token);
+    return user;
+  }
 
   async invite(body: InviteUserDto) {
     const email = body.email.trim().toLowerCase();
@@ -104,6 +137,18 @@ export class AdminUsersService {
       data,
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
+  }
+
+  async customerDetail(id: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { id, role: UserRole.CUSTOMER },
+      select: {
+        ...adminUser,
+        addresses: true,
+      },
+    });
+    if (!user) throw new NotFoundException('Cliente não encontrado.');
+    return user;
   }
 
   async detail(id: string) {

@@ -6,7 +6,13 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CartStatus, OrderStatus, PaymentStatus, Prisma } from '@prisma/client';
+import {
+  CartStatus,
+  OrderStatus,
+  PaymentStatus,
+  Prisma,
+  UserRole,
+} from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import type {
   AdminOrderDraftDto,
@@ -651,9 +657,28 @@ export class CommerceService {
       subtotalCents >= delivery.freeShippingAboveCents
         ? 0
         : delivery.priceCents;
+    const normalizedEmail = body.email.trim().toLowerCase();
+    const customer = body.userId
+      ? await this.prisma.user.findUnique({
+          where: { id: body.userId },
+          select: { id: true, email: true, role: true },
+        })
+      : await this.prisma.user.findUnique({
+          where: { email: normalizedEmail },
+          select: { id: true, email: true, role: true },
+        });
+    if (body.userId && (!customer || customer.role !== UserRole.CUSTOMER)) {
+      throw new BadRequestException('Cliente selecionado não encontrado.');
+    }
+    if (customer && customer.email !== normalizedEmail) {
+      throw new BadRequestException(
+        'O email da encomenda não corresponde ao cliente selecionado.',
+      );
+    }
+
     const data = {
-      userId: body.userId ?? null,
-      email: body.email.trim().toLowerCase(),
+      userId: customer?.role === UserRole.CUSTOMER ? customer.id : null,
+      email: normalizedEmail,
       customerName: body.customerName.trim(),
       phone: body.phone.trim(),
       billingAddress: body.billingAddress as unknown as Prisma.InputJsonValue,

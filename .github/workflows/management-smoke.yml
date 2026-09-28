@@ -89,6 +89,12 @@ jobs:
       - name: Validate authenticated API and permissions
         run: pnpm --filter @nsabores/api validate:e2e
 
+      - name: Validate production launch scope
+        env:
+          DEFERRED_FEATURES_ENABLED: 'false'
+          PAYMENT_FLOW_MODE: manual
+        run: pnpm --filter @nsabores/api validate:launch
+
       - name: Validate management route files
         run: pnpm --filter @nsabores/management exec vitest run components/management-routes.test.ts
 
