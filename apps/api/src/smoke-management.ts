@@ -48,6 +48,8 @@ type AuthMe = {
 
 type PublicProduct = {
   id: string;
+  slug?: string;
+  imageUrl?: string;
 };
 
 type DeliveryMethod = {
@@ -193,6 +195,65 @@ async function validateManualCheckout(
   assert.equal(quoted.totalCents, order.totalCents + 725);
   assert.equal(quoted.paymentTermsSnapshot?.shippingQuoteStatus, 'CONFIRMED');
   assert.equal(quoted.paymentTermsSnapshot?.shippingQuoteCents, 725);
+}
+
+async function validatePersistentMediaUpload(
+  baseUrl: string,
+  staffCookie: string,
+  products: PublicProduct[],
+) {
+  const product = products[0];
+  assert.ok(product?.id, 'Produto público não disponível para testar media.');
+
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Z4xQAAAAASUVORK5CYII=',
+    'base64',
+  );
+  const form = new FormData();
+  form.append(
+    'file',
+    new Blob([png], { type: 'image/png' }),
+    'smoke-product.png',
+  );
+
+  const uploadResponse = await fetch(`${baseUrl}/v1/admin/media`, {
+    method: 'POST',
+    headers: { cookie: staffCookie },
+    body: form,
+  });
+  assert.equal(uploadResponse.status, 201);
+  const media = (await uploadResponse.json()) as {
+    id: string;
+    url: string;
+    mimeType: string;
+    sizeBytes: number;
+  };
+  assert.match(media.url, /^\/v1\/media\/[a-f0-9-]+$/i);
+  assert.equal(media.mimeType, 'image/png');
+  assert.equal(media.sizeBytes, png.length);
+
+  const publicResponse = await fetch(`${baseUrl}${media.url}`);
+  assert.equal(publicResponse.status, 200);
+  assert.equal(publicResponse.headers.get('content-type'), 'image/png');
+  assert.equal(
+    Buffer.from(await publicResponse.arrayBuffer()).length,
+    png.length,
+  );
+
+  const updateResponse = await fetch(
+    `${baseUrl}/v1/admin/products/${product.id}`,
+    {
+      method: 'PATCH',
+      headers: {
+        'content-type': 'application/json',
+        cookie: staffCookie,
+      },
+      body: JSON.stringify({ imageUrl: media.url }),
+    },
+  );
+  assert.equal(updateResponse.status, 200);
+  const updated = (await updateResponse.json()) as PublicProduct;
+  assert.equal(updated.imageUrl, media.url);
 }
 
 async function validateAdminOrderLifecycle(
@@ -361,6 +422,11 @@ async function main() {
     });
     assert.equal(forbidden.status, 403);
 
+    await validatePersistentMediaUpload(
+      baseUrl,
+      staffCookie,
+      publicProducts.data ?? [],
+    );
     await validateManualCheckout(
       baseUrl,
       staffCookie,
@@ -415,7 +481,7 @@ async function main() {
     assert.ok(production.length >= 3);
 
     console.log(
-      `E2E validado: autenticação, permissões, associação Cliente ↔ Encomenda manual, ciclo PENDING_PAYMENT → PAID → PROCESSING → READY → DELIVERED, checkout manual, transporte caso a caso, catálogo público, ${endpoints.length} endpoints administrativos, ${productCount} produtos, ${categoryCount} categorias e ${orderCount} encomendas.`,
+      `E2E validado: autenticação, permissões, upload persistente de imagens, associação Cliente ↔ Encomenda manual, ciclo PENDING_PAYMENT → PAID → PROCESSING → READY → DELIVERED, checkout manual, transporte caso a caso, catálogo público, ${endpoints.length} endpoints administrativos, ${productCount} produtos, ${categoryCount} categorias e ${orderCount} encomendas.`,
     );
   } finally {
     await app.close();
