@@ -50,13 +50,16 @@ export class AdminUsersService {
         firstName: body.firstName.trim(),
         lastName: body.lastName.trim(),
         role: body.role,
+        phone: body.phone?.trim() || null,
         passwordHash: await argon2.hash(randomBytes(32).toString('hex')),
         passwordResetTokenHash: createHash('sha256')
           .update(token)
           .digest('hex'),
         passwordResetExpiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000),
         emailVerifiedAt: new Date(),
-        customerProfile: { create: {} },
+        customerProfile: {
+          create: { taxNumber: body.taxNumber?.trim() || null },
+        },
       },
       select: adminUser,
     });
