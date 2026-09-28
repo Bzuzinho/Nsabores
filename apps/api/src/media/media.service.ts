@@ -12,11 +12,7 @@ export type UploadedMediaFile = {
   buffer: Buffer;
 };
 
-const allowedMimeTypes = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-]);
+const allowedMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 const mediaSelect = {
   id: true,
