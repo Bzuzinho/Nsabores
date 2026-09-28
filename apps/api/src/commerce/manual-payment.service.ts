@@ -91,6 +91,22 @@ export class ManualPaymentService {
       throw new ConflictException('A encomenda já foi reembolsada.');
     }
     if (order.paymentStatus !== PaymentStatus.PAID) {
+      if (order.status !== OrderStatus.PENDING_PAYMENT) {
+        throw new ConflictException(
+          'O pagamento só pode ser confirmado quando a encomenda aguarda pagamento.',
+        );
+      }
+      const terms =
+        order.paymentTermsSnapshot &&
+        typeof order.paymentTermsSnapshot === 'object' &&
+        !Array.isArray(order.paymentTermsSnapshot)
+          ? order.paymentTermsSnapshot
+          : {};
+      if (terms.shippingQuoteStatus === 'PENDING') {
+        throw new ConflictException(
+          'Confirme primeiro o custo de transporte da encomenda.',
+        );
+      }
       await this.prisma.$transaction(async (tx) => {
         await tx.payment.upsert({
           where: { idempotencyKey: `manual-payment:${orderId}` },
