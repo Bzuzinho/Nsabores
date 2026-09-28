@@ -153,8 +153,9 @@ export function OrderDraftAdmin({ id }: { id?: string }) {
                   const form = formRef.current;
                   if (!form) return;
                   const address =
-                    customer.addresses?.find((item) => item.isDefaultShipping) ??
-                    customer.addresses?.[0];
+                    customer.addresses?.find(
+                      (item) => item.isDefaultShipping,
+                    ) ?? customer.addresses?.[0];
                   const set = (name: string, value?: string | null) => {
                     const field = form.elements.namedItem(name);
                     if (
