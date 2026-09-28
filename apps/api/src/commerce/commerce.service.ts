@@ -6,7 +6,13 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CartStatus, OrderStatus, PaymentStatus, Prisma } from '@prisma/client';
+import {
+  CartStatus,
+  OrderStatus,
+  PaymentStatus,
+  Prisma,
+  UserRole,
+} from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import type {
   AdminOrderDraftDto,
@@ -655,13 +661,16 @@ export class CommerceService {
     const customer = body.userId
       ? await this.prisma.user.findUnique({
           where: { id: body.userId },
-          select: { id: true, email: true },
+          select: { id: true, email: true, role: true },
         })
       : await this.prisma.user.findUnique({
           where: { email: normalizedEmail },
-          select: { id: true, email: true },
+          select: { id: true, email: true, role: true },
         });
-    if (body.userId && !customer) {
+    if (
+      body.userId &&
+      (!customer || customer.role !== UserRole.CUSTOMER)
+    ) {
       throw new BadRequestException('Cliente selecionado não encontrado.');
     }
     if (customer && customer.email !== normalizedEmail) {
@@ -671,7 +680,8 @@ export class CommerceService {
     }
 
     const data = {
-      userId: customer?.id ?? null,
+      userId:
+        customer?.role === UserRole.CUSTOMER ? customer.id : null,
       email: normalizedEmail,
       customerName: body.customerName.trim(),
       phone: body.phone.trim(),
