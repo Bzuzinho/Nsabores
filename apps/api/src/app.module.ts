@@ -6,6 +6,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import Joi from 'joi';
 import { AccountController } from './auth/account.controller';
 import { AccountService } from './auth/account.service';
+import { AdminCustomersController } from './auth/admin-customers.controller';
 import { AdminUsersController } from './auth/admin-users.controller';
 import { AdminUsersService } from './auth/admin-users.service';
 import { AuthController } from './auth/auth.controller';
@@ -211,6 +212,7 @@ import { ReceivablesService } from './receivables/receivables.service';
     AuthController,
     AccountController,
     AdminUsersController,
+    AdminCustomersController,
     CartController,
     CheckoutController,
     PublicContentController,
