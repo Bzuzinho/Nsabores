@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
 import { accountApi } from './auth-provider';
 
@@ -79,6 +80,9 @@ export function NewsletterForm() {
         </label>
         <p id="newsletter-message" className="form-message" role="status">
           {message}
+        </p>
+        <p className="newsletter-unsubscribe">
+          <Link href="/newsletter/cancelar">Cancelar subscrição</Link>
         </p>
       </form>
     </section>
