@@ -18,7 +18,7 @@ import { AdminUsersService } from './admin-users.service';
 import { InviteUserDto, UpdateUserAdminDto, UsersQueryDto } from './dto';
 
 @UseGuards(AuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.STAFF, UserRole.ADMIN)
 @Controller('v1/admin/users')
 export class AdminUsersController {
   constructor(
@@ -36,8 +36,13 @@ export class AdminUsersController {
   }
 
   @Post()
+  @Roles(UserRole.ADMIN)
   invite(@Body() body: InviteUserDto) {
-    if (this.permissionsDeferred() && body.role !== UserRole.STAFF) {
+    if (
+      this.permissionsDeferred() &&
+      body.role !== UserRole.STAFF &&
+      body.role !== UserRole.CUSTOMER
+    ) {
       throw new ConflictException(
         'A atribuição de perfis avançados está prevista para uma fase posterior.',
       );
@@ -51,6 +56,7 @@ export class AdminUsersController {
   }
 
   @Patch(':id')
+  @Roles(UserRole.ADMIN)
   update(
     @CurrentUser() actor: AuthPrincipal,
     @Param('id') id: string,
@@ -65,6 +71,7 @@ export class AdminUsersController {
   }
 
   @Post(':id/revoke-sessions')
+  @Roles(UserRole.ADMIN)
   revoke(@Param('id') id: string) {
     return this.users.revokeSessions(id);
   }

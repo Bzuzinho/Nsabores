@@ -111,5 +111,7 @@ export class InviteUserDto {
   @IsEmail() email!: string;
   @IsString() @IsNotEmpty() @MaxLength(100) firstName!: string;
   @IsString() @IsNotEmpty() @MaxLength(100) lastName!: string;
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(30) phone?: string;
+  @IsOptional() @Transform(trim) @Matches(/^\d{9}$/) taxNumber?: string;
   @IsIn(['CUSTOMER', 'STAFF', 'ADMIN']) role!: 'CUSTOMER' | 'STAFF' | 'ADMIN';
 }

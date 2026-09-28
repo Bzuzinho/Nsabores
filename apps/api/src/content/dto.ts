@@ -68,6 +68,10 @@ export class NewsletterSubscriptionDto {
   @IsOptional() @IsString() @MaxLength(40) source?: string;
 }
 
+export class NewsletterUnsubscribeDto {
+  @IsEmail() @MaxLength(180) email!: string;
+}
+
 export class NewsletterStatusDto {
   @IsBoolean() isActive!: boolean;
 }

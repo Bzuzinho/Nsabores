@@ -9,6 +9,7 @@ const endpoints = [
   '/v1/admin/products?limit=100',
   '/v1/admin/categories',
   '/v1/admin/orders',
+  '/v1/admin/users?role=CUSTOMER&limit=100',
   '/v1/admin/operations/dashboard',
   '/v1/admin/operations/preparation',
   '/v1/admin/production',
@@ -56,6 +57,7 @@ type DeliveryMethod = {
 
 type ManualOrder = {
   id: string;
+  userId?: string | null;
   status: string;
   paymentStatus: string;
   shippingCents: number;
@@ -193,6 +195,116 @@ async function validateManualCheckout(
   assert.equal(quoted.paymentTermsSnapshot?.shippingQuoteCents, 725);
 }
 
+async function validateAdminOrderLifecycle(
+  baseUrl: string,
+  staffCookie: string,
+  customerCookie: string,
+  customer: AuthMe,
+  products: PublicProduct[],
+) {
+  const deliveryResponse = await fetch(`${baseUrl}/v1/delivery-methods`);
+  assert.equal(deliveryResponse.status, 200);
+  const deliveryMethods = (await deliveryResponse.json()) as DeliveryMethod[];
+  const delivery = deliveryMethods.find(({ code }) => code !== 'case-by-case');
+  assert.ok(delivery, 'Método de entrega normal não disponível.');
+  assert.ok(products[0]?.id, 'Produto público não disponível para encomenda.');
+
+  const draftResponse = await fetch(`${baseUrl}/v1/admin/orders`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      cookie: staffCookie,
+    },
+    body: JSON.stringify({
+      email: customer.email,
+      customerName: 'Cliente Demo Associado',
+      phone: '+351912345678',
+      shippingAddress: {
+        firstName: 'Cliente',
+        lastName: 'Demo',
+        line1: 'Rua de Teste 2',
+        postalCode: '1000-002',
+        city: 'Lisboa',
+        countryCode: 'PT',
+      },
+      billingAddress: {
+        firstName: 'Cliente',
+        lastName: 'Demo',
+        line1: 'Rua de Teste 2',
+        postalCode: '1000-002',
+        city: 'Lisboa',
+        countryCode: 'PT',
+      },
+      deliveryMethodId: delivery.id,
+      source: 'PHONE',
+      requiresApproval: false,
+      items: [{ productId: products[0].id, quantity: 1 }],
+    }),
+  });
+  assert.equal(draftResponse.status, 201);
+  let order = (await draftResponse.json()) as ManualOrder;
+  assert.equal(order.status, 'DRAFT');
+  assert.equal(
+    order.userId,
+    customer.id,
+    'Encomenda manual não foi associada ao cliente pelo email.',
+  );
+
+  const submitResponse = await fetch(
+    `${baseUrl}/v1/admin/orders/${order.id}/submit`,
+    { method: 'POST', headers: { cookie: staffCookie } },
+  );
+  assert.equal(submitResponse.status, 201);
+  order = (await submitResponse.json()) as ManualOrder;
+  assert.equal(order.status, 'PENDING_PAYMENT');
+
+  const paidResponse = await fetch(
+    `${baseUrl}/v1/admin/orders/${order.id}/mark-paid`,
+    {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        cookie: staffCookie,
+      },
+      body: JSON.stringify({
+        method: 'transferencia',
+        reference: 'SMOKE-ADMIN',
+      }),
+    },
+  );
+  assert.equal(paidResponse.status, 201);
+  order = (await paidResponse.json()) as ManualOrder;
+  assert.equal(order.status, 'PAID');
+  assert.equal(order.paymentStatus, 'PAID');
+
+  for (const status of ['PROCESSING', 'READY', 'DELIVERED']) {
+    const statusResponse = await fetch(
+      `${baseUrl}/v1/admin/orders/${order.id}/status`,
+      {
+        method: 'PATCH',
+        headers: {
+          'content-type': 'application/json',
+          cookie: staffCookie,
+        },
+        body: JSON.stringify({ status }),
+      },
+    );
+    assert.equal(statusResponse.status, 200);
+    order = (await statusResponse.json()) as ManualOrder;
+    assert.equal(order.status, status);
+  }
+
+  const customerOrdersResponse = await fetch(`${baseUrl}/v1/account/orders`, {
+    headers: { cookie: customerCookie },
+  });
+  assert.equal(customerOrdersResponse.status, 200);
+  const customerOrders = (await customerOrdersResponse.json()) as ManualOrder[];
+  assert.ok(
+    customerOrders.some(({ id }) => id === order.id),
+    'Encomenda manual associada não aparece na área do cliente.',
+  );
+}
+
 async function main() {
   const password = process.env.DEMO_USER_PASSWORD;
   if (!password) throw new Error('DEMO_USER_PASSWORD é obrigatória.');
@@ -238,6 +350,12 @@ async function main() {
       'demo.cliente1@nsabores.pt',
       password,
     );
+    const customerMeResponse = await fetch(`${baseUrl}/v1/auth/me`, {
+      headers: { cookie: customerCookie },
+    });
+    assert.equal(customerMeResponse.status, 200);
+    const customerMe = (await customerMeResponse.json()) as AuthMe;
+
     const forbidden = await fetch(`${baseUrl}/v1/admin/orders`, {
       headers: { cookie: customerCookie },
     });
@@ -246,6 +364,13 @@ async function main() {
     await validateManualCheckout(
       baseUrl,
       staffCookie,
+      publicProducts.data ?? [],
+    );
+    await validateAdminOrderLifecycle(
+      baseUrl,
+      staffCookie,
+      customerCookie,
+      customerMe,
       publicProducts.data ?? [],
     );
 
@@ -290,7 +415,7 @@ async function main() {
     assert.ok(production.length >= 3);
 
     console.log(
-      `E2E validado: autenticação, permissões, checkout manual, transporte caso a caso, catálogo público, ${endpoints.length} endpoints administrativos, ${productCount} produtos, ${categoryCount} categorias e ${orderCount} encomendas.`,
+      `E2E validado: autenticação, permissões, associação Cliente ↔ Encomenda manual, ciclo PENDING_PAYMENT → PAID → PROCESSING → READY → DELIVERED, checkout manual, transporte caso a caso, catálogo público, ${endpoints.length} endpoints administrativos, ${productCount} produtos, ${categoryCount} categorias e ${orderCount} encomendas.`,
     );
   } finally {
     await app.close();

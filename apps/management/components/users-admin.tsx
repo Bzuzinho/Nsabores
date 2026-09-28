@@ -44,19 +44,29 @@ export function UsersAdmin({ selectedId }: { selectedId?: string }) {
     }
   };
 
-  const invite = async () => {
-    const email = window.prompt('Email do novo utilizador:');
+  const invite = async (role: 'CUSTOMER' | 'STAFF') => {
+    const email = window.prompt(
+      role === 'CUSTOMER'
+        ? 'Email do novo cliente:'
+        : 'Email do novo utilizador:',
+    );
     if (!email) return;
     const firstName = window.prompt('Nome:');
     if (!firstName) return;
     const lastName = window.prompt('Apelido:');
     if (!lastName) return;
+    const phone =
+      role === 'CUSTOMER' ? window.prompt('Telefone (opcional):') : '';
+    const taxNumber =
+      role === 'CUSTOMER' ? window.prompt('NIF (opcional, 9 dígitos):') : '';
     try {
       await managementApi.post('/v1/admin/users', {
         email,
         firstName,
         lastName,
-        role: 'STAFF',
+        phone: phone?.trim() || undefined,
+        taxNumber: taxNumber?.trim() || undefined,
+        role,
       });
       await load();
     } catch (reason) {
@@ -117,9 +127,17 @@ export function UsersAdmin({ selectedId }: { selectedId?: string }) {
           <h1>Utilizadores</h1>
           <p>Contas de clientes e equipa.</p>
         </div>
-        <button className="admin-primary" onClick={() => void invite()}>
-          + Convidar utilizador
-        </button>
+        <div className="admin-actions">
+          <button
+            className="admin-primary"
+            onClick={() => void invite('CUSTOMER')}
+          >
+            + Novo cliente
+          </button>
+          <button onClick={() => void invite('STAFF')}>
+            + Convidar equipa
+          </button>
+        </div>
       </header>
       <input
         className="user-search"

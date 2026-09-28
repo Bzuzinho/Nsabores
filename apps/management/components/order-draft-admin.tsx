@@ -6,7 +6,7 @@ import type {
   DeliveryMethod,
   Paginated,
 } from '@nsabores/types';
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { managementApi } from './management-auth';
 
@@ -16,11 +16,35 @@ type DraftLine = {
   unitPriceCents?: number;
 };
 
+type AdminOrder = CommerceOrder & {
+  userId?: string | null;
+};
+
+type CustomerOption = {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string | null;
+  addresses?: Array<{
+    id: string;
+    firstName: string;
+    lastName: string;
+    line1: string;
+    postalCode: string;
+    city: string;
+    isDefaultShipping?: boolean;
+  }>;
+};
+
 export function OrderDraftAdmin({ id }: { id?: string }) {
   const router = useRouter();
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [deliveryMethods, setDeliveryMethods] = useState<DeliveryMethod[]>([]);
-  const [order, setOrder] = useState<CommerceOrder | null>(null);
+  const [customers, setCustomers] = useState<CustomerOption[]>([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState('');
+  const formRef = useRef<HTMLFormElement>(null);
+  const [order, setOrder] = useState<AdminOrder | null>(null);
   const [lines, setLines] = useState<DraftLine[]>([
     { productId: '', quantity: 1 },
   ]);
@@ -32,14 +56,19 @@ export function OrderDraftAdmin({ id }: { id?: string }) {
         '/v1/admin/catalog/products?limit=100',
       ),
       managementApi.get<DeliveryMethod[]>('/v1/admin/delivery-methods'),
+      managementApi.get<Paginated<CustomerOption>>(
+        '/v1/admin/users?role=CUSTOMER&limit=100',
+      ),
       id
-        ? managementApi.get<CommerceOrder>(`/v1/admin/orders/${id}`)
+        ? managementApi.get<AdminOrder>(`/v1/admin/orders/${id}`)
         : Promise.resolve(null),
     ])
-      .then(([catalog, methods, current]) => {
+      .then(([catalog, methods, customerResult, current]) => {
         setProducts(catalog.data);
         setDeliveryMethods(methods);
+        setCustomers(customerResult.data);
         setOrder(current);
+        setSelectedCustomerId(current?.userId ?? '');
         if (current)
           setLines(
             current.items.map((item) => ({
@@ -70,6 +99,7 @@ export function OrderDraftAdmin({ id }: { id?: string }) {
       countryCode: 'PT',
     };
     const body = {
+      userId: String(form.get('userId') || '') || undefined,
       email: String(form.get('email')),
       customerName: `${address.firstName} ${address.lastName}`.trim(),
       phone: String(form.get('phone')),
@@ -111,7 +141,63 @@ export function OrderDraftAdmin({ id }: { id?: string }) {
         </div>
       </header>
       {error && <p className="admin-error">{error}</p>}
-      <form className="operational-form" onSubmit={save}>
+      <form ref={formRef} className="operational-form" onSubmit={save}>
+        <label>
+          Cliente existente
+          <select
+            name="userId"
+            value={selectedCustomerId}
+            onChange={(event) => {
+              const customerId = event.target.value;
+              setSelectedCustomerId(customerId);
+              if (!customerId) return;
+              void managementApi
+                .get<CustomerOption>(`/v1/admin/users/${customerId}`)
+                .then((customer) => {
+                  const form = formRef.current;
+                  if (!form) return;
+                  const address =
+                    customer.addresses?.find(
+                      (item) => item.isDefaultShipping,
+                    ) ?? customer.addresses?.[0];
+                  const set = (name: string, value?: string | null) => {
+                    const field = form.elements.namedItem(name);
+                    if (
+                      field instanceof HTMLInputElement ||
+                      field instanceof HTMLTextAreaElement
+                    ) {
+                      field.value = value ?? '';
+                    }
+                  };
+                  set('email', customer.email);
+                  set('firstName', address?.firstName ?? customer.firstName);
+                  set('lastName', address?.lastName ?? customer.lastName);
+                  set('phone', customer.phone);
+                  set('line1', address?.line1);
+                  set('postalCode', address?.postalCode);
+                  set('city', address?.city);
+                })
+                .catch((reason: unknown) =>
+                  setError(
+                    reason instanceof Error
+                      ? reason.message
+                      : 'Não foi possível carregar o cliente.',
+                  ),
+                );
+            }}
+          >
+            <option value="">Sem conta associada</option>
+            {customers.map((customer) => (
+              <option key={customer.id} value={customer.id}>
+                {customer.firstName} {customer.lastName} — {customer.email}
+              </option>
+            ))}
+          </select>
+          <small>
+            Ao selecionar um cliente, os dados conhecidos são preenchidos e a
+            encomenda ficará visível na respetiva área de cliente.
+          </small>
+        </label>
         <label>
           Email
           <input

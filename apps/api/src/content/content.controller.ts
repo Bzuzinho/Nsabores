@@ -21,6 +21,7 @@ import {
   CreateBlogPostDto,
   UpdateBlogPostDto,
   NewsletterSubscriptionDto,
+  NewsletterUnsubscribeDto,
   NewsletterStatusDto,
 } from './dto';
 
@@ -48,6 +49,12 @@ export class PublicContentController {
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   newsletter(@Body() body: NewsletterSubscriptionDto) {
     return this.content.subscribeNewsletter(body);
+  }
+
+  @Post('newsletter/unsubscribe')
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  unsubscribeNewsletter(@Body() body: NewsletterUnsubscribeDto) {
+    return this.content.unsubscribeNewsletter(body.email);
   }
 }
 

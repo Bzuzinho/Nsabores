@@ -651,9 +651,18 @@ export class CommerceService {
       subtotalCents >= delivery.freeShippingAboveCents
         ? 0
         : delivery.priceCents;
+    const normalizedEmail = body.email.trim().toLowerCase();
+    const matchedUser = body.userId
+      ? await this.prisma.user.findUnique({ where: { id: body.userId } })
+      : await this.prisma.user.findUnique({
+          where: { email: normalizedEmail },
+        });
+    if (body.userId && !matchedUser) {
+      throw new BadRequestException('Cliente selecionado não encontrado.');
+    }
     const data = {
-      userId: body.userId ?? null,
-      email: body.email.trim().toLowerCase(),
+      userId: matchedUser?.id ?? null,
+      email: normalizedEmail,
       customerName: body.customerName.trim(),
       phone: body.phone.trim(),
       billingAddress: body.billingAddress as unknown as Prisma.InputJsonValue,
