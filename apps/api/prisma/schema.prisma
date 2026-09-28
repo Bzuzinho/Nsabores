@@ -344,8 +344,24 @@ model User {
   couponRedemptions          CouponRedemption[]
   blogPosts                  BlogPost[]             @relation("BlogPostAuthor")
   uploadedOrderDocuments     OrderDocument[]        @relation("OrderDocumentUploader")
+  uploadedMediaAssets        MediaAsset[]           @relation("MediaAssetUploader")
 
   @@index([role, isActive])
+}
+
+model MediaAsset {
+  id          String   @id @default(uuid()) @db.Uuid
+  fileName    String
+  mimeType    String
+  sizeBytes   Int
+  content     Bytes
+  uploadedById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  uploadedBy  User?    @relation("MediaAssetUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([uploadedById])
 }
 
 model Cart {
