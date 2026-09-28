@@ -654,7 +654,9 @@ export class CommerceService {
     const normalizedEmail = body.email.trim().toLowerCase();
     const matchedUser = body.userId
       ? await this.prisma.user.findUnique({ where: { id: body.userId } })
-      : await this.prisma.user.findUnique({ where: { email: normalizedEmail } });
+      : await this.prisma.user.findUnique({
+          where: { email: normalizedEmail },
+        });
     if (body.userId && !matchedUser) {
       throw new BadRequestException('Cliente selecionado não encontrado.');
     }
