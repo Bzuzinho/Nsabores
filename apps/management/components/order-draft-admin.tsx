@@ -16,6 +16,10 @@ type DraftLine = {
   unitPriceCents?: number;
 };
 
+type AdminOrder = CommerceOrder & {
+  userId?: string | null;
+};
+
 type CustomerOption = {
   id: string;
   email: string;
@@ -40,7 +44,7 @@ export function OrderDraftAdmin({ id }: { id?: string }) {
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const formRef = useRef<HTMLFormElement>(null);
-  const [order, setOrder] = useState<CommerceOrder | null>(null);
+  const [order, setOrder] = useState<AdminOrder | null>(null);
   const [lines, setLines] = useState<DraftLine[]>([
     { productId: '', quantity: 1 },
   ]);
@@ -56,7 +60,7 @@ export function OrderDraftAdmin({ id }: { id?: string }) {
         '/v1/admin/users?role=CUSTOMER&limit=100',
       ),
       id
-        ? managementApi.get<CommerceOrder>(`/v1/admin/orders/${id}`)
+        ? managementApi.get<AdminOrder>(`/v1/admin/orders/${id}`)
         : Promise.resolve(null),
     ])
       .then(([catalog, methods, customerResult, current]) => {
