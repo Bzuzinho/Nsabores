@@ -91,7 +91,7 @@ jobs:
 
       - name: Validate production launch scope
         env:
-          DEFERRED_FEATURES_ENABLED: "false"
+          DEFERRED_FEATURES_ENABLED: 'false'
           PAYMENT_FLOW_MODE: manual
         run: pnpm --filter @nsabores/api validate:launch
 
