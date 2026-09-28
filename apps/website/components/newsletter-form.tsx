@@ -9,6 +9,29 @@ export function NewsletterForm() {
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  async function unsubscribe() {
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setMessage('Indique o email que pretende retirar da newsletter.');
+      return;
+    }
+    setBusy(true);
+    try {
+      await accountApi.post('/v1/newsletter/unsubscribe', { email });
+      setMessage(
+        'Pedido registado. Se o email estava subscrito, deixou de receber a newsletter.',
+      );
+      setConsent(false);
+    } catch (reason) {
+      setMessage(
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível cancelar a subscrição.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!email.trim()) {
@@ -65,8 +88,8 @@ export function NewsletterForm() {
             aria-describedby="newsletter-message"
             onChange={(event) => setEmail(event.target.value)}
           />
-          <button className="button button-primary" type="submit">
-            {busy ? 'A registar…' : 'Subscrever'}
+          <button className="button button-primary" type="submit" disabled={busy}>
+            {busy ? 'A processar…' : 'Subscrever'}
           </button>
         </div>
         <label className="newsletter-consent">
@@ -77,6 +100,14 @@ export function NewsletterForm() {
           />{' '}
           Aceito receber novidades e posso cancelar a qualquer momento.
         </label>
+        <button
+          className="text-button"
+          type="button"
+          disabled={busy}
+          onClick={() => void unsubscribe()}
+        >
+          Cancelar subscrição deste email
+        </button>
         <p id="newsletter-message" className="form-message" role="status">
           {message}
         </p>
