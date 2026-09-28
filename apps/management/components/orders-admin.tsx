@@ -466,7 +466,9 @@ export function OrderAdmin({ id }: { id: string }) {
             </button>
           </p>
         )}
-        {order.paymentStatus === 'PENDING' && (
+        {order.status === 'PENDING_PAYMENT' &&
+          order.paymentStatus === 'PENDING' &&
+          !shippingPending && (
           <p>
             <button className="admin-primary" onClick={() => void markPaid()}>
               Marcar pagamento como recebido
