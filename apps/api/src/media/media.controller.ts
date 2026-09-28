@@ -24,10 +24,7 @@ export class PublicMediaController {
   async image(@Param('id') id: string, @Res() response: Response) {
     const asset = await this.media.download(id);
     response.setHeader('Content-Type', asset.mimeType);
-    response.setHeader(
-      'Cache-Control',
-      'public, max-age=31536000, immutable',
-    );
+    response.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     response.setHeader('Content-Length', String(asset.sizeBytes));
     response.send(Buffer.from(asset.content));
   }
