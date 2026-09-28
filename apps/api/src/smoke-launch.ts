@@ -6,7 +6,6 @@ import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { PrismaService } from './prisma.service';
 
-
 type SetCookieHeaders = Headers & { getSetCookie?: () => string[] };
 
 function cookieHeader(response: Response) {
