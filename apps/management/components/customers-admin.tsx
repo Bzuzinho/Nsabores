@@ -68,7 +68,9 @@ function CustomerIndex() {
       );
       setCustomers(result.data);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Erro ao carregar clientes.');
+      setError(
+        reason instanceof Error ? reason.message : 'Erro ao carregar clientes.',
+      );
     }
   }, [search]);
 
@@ -83,14 +85,17 @@ function CustomerIndex() {
     setError('');
     setMessage('');
     try {
-      const created = await managementApi.post<Customer>('/v1/admin/customers', {
+      const created = await managementApi.post<Customer>(
+        '/v1/admin/customers',
+        {
         email: form.get('email'),
         firstName: form.get('firstName'),
         lastName: form.get('lastName'),
         phone: String(form.get('phone') ?? '') || undefined,
         taxNumber: String(form.get('taxNumber') ?? '') || undefined,
-        notes: String(form.get('notes') ?? '') || undefined,
-      });
+          notes: String(form.get('notes') ?? '') || undefined,
+        },
+      );
       setMessage(
         'Cliente criado. O acesso à conta é concluído através do email de definição de password.',
       );
@@ -98,7 +103,11 @@ function CustomerIndex() {
       await load();
       window.location.assign(`/gestao/clientes/${created.id}`);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Não foi possível criar o cliente.');
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível criar o cliente.',
+      );
     } finally {
       setBusy(false);
     }
@@ -160,7 +169,9 @@ function CustomerIndex() {
               ))}
               {!customers.length && (
                 <tr>
-                  <td colSpan={5}>Ainda não existem clientes neste resultado.</td>
+                  <td colSpan={5}>
+                    Ainda não existem clientes neste resultado.
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -214,9 +225,13 @@ function CustomerDetail({ id }: { id: string }) {
   const load = useCallback(async () => {
     setError('');
     try {
-      setCustomer(await managementApi.get<Customer>(`/v1/admin/customers/${id}`));
+      setCustomer(
+        await managementApi.get<Customer>(`/v1/admin/customers/${id}`),
+      );
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Erro ao carregar cliente.');
+      setError(
+        reason instanceof Error ? reason.message : 'Erro ao carregar cliente.',
+      );
     }
   }, [id]);
 
@@ -242,7 +257,11 @@ function CustomerDetail({ id }: { id: string }) {
       setMessage('Cliente atualizado.');
       await load();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Não foi possível atualizar o cliente.');
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Não foi possível atualizar o cliente.',
+      );
     } finally {
       setBusy(false);
     }
@@ -358,7 +377,9 @@ function CustomerDetail({ id }: { id: string }) {
                     <td>{order.status}</td>
                     <td>{order.paymentStatus}</td>
                     <td>{money(order.totalCents)}</td>
-                    <td>{new Date(order.createdAt).toLocaleDateString('pt-PT')}</td>
+                    <td>
+                      {new Date(order.createdAt).toLocaleDateString('pt-PT')}
+                    </td>
                     <td className="admin-table-action">
                       <Link href={`/encomendas/${order.id}`}>Abrir</Link>
                     </td>
