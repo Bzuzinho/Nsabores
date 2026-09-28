@@ -9,6 +9,7 @@ import type {
 import Link from 'next/link';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { managementApi } from './management-auth';
+import { MediaUploadControl } from './media-upload-control';
 
 type Mode = 'dashboard' | 'products' | 'product-form' | 'categories';
 type Mutate = (
@@ -451,13 +452,22 @@ function ProductForm({
           <input
             required
             name="imageUrl"
-            pattern="(/images/.+|https?://.+)"
+            pattern="(/images/.+|/v1/media/.+|https?://.+)"
             defaultValue={product?.imageUrl}
+          />
+          <MediaUploadControl
+            targetName="imageUrl"
+            label="Carregar imagem principal"
           />
         </label>
         <label className="wide">
           Galeria, um URL por linha
           <textarea name="gallery" defaultValue={product?.gallery.join('\n')} />
+          <MediaUploadControl
+            targetName="gallery"
+            multiple
+            label="Adicionar imagens à galeria"
+          />
         </label>
         <label>
           Stock
@@ -561,6 +571,7 @@ function CategoryManager({
       name: form.get('name'),
       slug: form.get('slug'),
       description: form.get('description'),
+      imageUrl: String(form.get('imageUrl') ?? '').trim() || undefined,
       sortOrder: Number(form.get('sortOrder')),
       isActive: form.get('isActive') === 'on',
     };
@@ -634,6 +645,18 @@ function CategoryManager({
             <textarea
               name="description"
               defaultValue={editing?.description ?? ''}
+            />
+          </label>
+          <label className="wide">
+            Imagem da categoria
+            <input
+              name="imageUrl"
+              pattern="(/images/.+|/v1/media/.+|https?://.+)"
+              defaultValue={editing?.imageUrl ?? ''}
+            />
+            <MediaUploadControl
+              targetName="imageUrl"
+              label="Carregar imagem da categoria"
             />
           </label>
           <label>

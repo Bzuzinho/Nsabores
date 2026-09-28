@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { managementApi } from './management-auth';
+import { MediaUploadControl } from './media-upload-control';
 
 export function BlogAdmin({ postId }: { postId?: string }) {
   const router = useRouter();
@@ -169,10 +170,14 @@ export function BlogAdmin({ postId }: { postId?: string }) {
             <input
               required
               name="coverImageUrl"
-              pattern="(/images/.+|https?://.+)"
+              pattern="(/images/.+|/v1/media/.+|https?://.+)"
               defaultValue={
                 post?.coverImageUrl ?? '/images/experience-dinner-clean.jpg'
               }
+            />
+            <MediaUploadControl
+              targetName="coverImageUrl"
+              label="Carregar imagem de capa"
             />
           </label>
           <label className="wide">

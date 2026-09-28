@@ -17,7 +17,8 @@ import { ProductChannel, SaleUnit, StockStatus } from '@prisma/client';
 import { PartialType } from '@nestjs/mapped-types';
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const localOrHttpUrl = /^(\/images\/[a-zA-Z0-9._/-]+|https?:\/\/.+)$/;
+const localOrHttpUrl =
+  /^(\/images\/[a-zA-Z0-9._/-]+|\/v1\/media\/[a-fA-F0-9-]+|https?:\/\/.+)$/;
 
 const emptyToUndefined = ({ value }: { value: unknown }) =>
   value === '' ? undefined : value;
