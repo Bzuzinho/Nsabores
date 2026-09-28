@@ -25,7 +25,7 @@ export function CustomersAdmin() {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(async (term = search) => {
+  const load = useCallback(async (term: string) => {
     setError('');
     try {
       const result = await managementApi.get<Paginated<Customer>>(
@@ -39,7 +39,7 @@ export function CustomersAdmin() {
           : 'Não foi possível carregar os clientes.',
       );
     }
-  }, [search]);
+  }, []);
 
   useEffect(() => {
     void load('');
@@ -107,7 +107,7 @@ export function CustomersAdmin() {
                 onChange={(event) => setSearch(event.target.value)}
               />
             </label>
-            <button type="button" onClick={() => void load()}>
+            <button type="button" onClick={() => void load(search)}>
               Pesquisar
             </button>
           </div>
