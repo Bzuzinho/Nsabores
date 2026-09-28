@@ -134,7 +134,9 @@ export function UsersAdmin({ selectedId }: { selectedId?: string }) {
           >
             + Novo cliente
           </button>
-          <button onClick={() => void invite('STAFF')}>+ Convidar equipa</button>
+          <button onClick={() => void invite('STAFF')}>
+            + Convidar equipa
+          </button>
         </div>
       </header>
       <input
