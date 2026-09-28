@@ -12,7 +12,10 @@ import { AuthController } from './auth/auth.controller';
 import { AuthGuard, RolesGuard } from './auth/auth.guards';
 import { AuthService } from './auth/auth.service';
 import { MailProvider } from './auth/mail.provider';
-import { AdminMediaController, PublicMediaController } from './media/media.controller';
+import {
+  AdminMediaController,
+  PublicMediaController,
+} from './media/media.controller';
 import { MediaService } from './media/media.service';
 import { BootstrapAdminService } from './bootstrap-admin';
 import { BundleAwareCommerceService } from './bundles/bundle-aware-commerce.service';
