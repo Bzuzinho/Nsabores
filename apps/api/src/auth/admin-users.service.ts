@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import type {
   CreateCustomerDto,
@@ -55,7 +55,7 @@ export class AdminUsersService {
         firstName: body.firstName.trim(),
         lastName: body.lastName.trim(),
         phone: body.phone?.trim() || null,
-        role: 'CUSTOMER',
+        role: UserRole.CUSTOMER,
         passwordHash: await argon2.hash(randomBytes(32).toString('hex')),
         passwordResetTokenHash: createHash('sha256')
           .update(token)
@@ -141,7 +141,7 @@ export class AdminUsersService {
 
   async customerDetail(id: string) {
     const user = await this.prisma.user.findFirst({
-      where: { id, role: 'CUSTOMER' },
+      where: { id, role: UserRole.CUSTOMER },
       select: {
         ...adminUser,
         addresses: true,
