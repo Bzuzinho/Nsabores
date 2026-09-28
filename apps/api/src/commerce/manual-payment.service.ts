@@ -6,6 +6,7 @@ import {
 import { OrderStatus, PaymentStatus } from '@prisma/client';
 import { LoyaltyEarningService } from '../loyalty/loyalty-earning.service';
 import { PrismaService } from '../prisma.service';
+import { CommerceMailProvider } from './mail.provider';
 import { ReceivablesService } from '../receivables/receivables.service';
 import type { ManualPaymentDto, ShippingQuoteDto } from './dto';
 
@@ -15,6 +16,7 @@ export class ManualPaymentService {
     private readonly prisma: PrismaService,
     private readonly earning: LoyaltyEarningService,
     private readonly receivables: ReceivablesService,
+    private readonly mail: CommerceMailProvider,
   ) {}
 
   async setShippingQuote(
@@ -90,7 +92,8 @@ export class ManualPaymentService {
     if (order.paymentStatus === PaymentStatus.REFUNDED) {
       throw new ConflictException('A encomenda já foi reembolsada.');
     }
-    if (order.paymentStatus !== PaymentStatus.PAID) {
+    const newlyPaid = order.paymentStatus !== PaymentStatus.PAID;
+    if (newlyPaid) {
       if (order.status !== OrderStatus.PENDING_PAYMENT) {
         throw new ConflictException(
           'O pagamento só pode ser confirmado quando a encomenda aguarda pagamento.',
@@ -169,6 +172,9 @@ export class ManualPaymentService {
       body.note?.trim(),
     );
     await this.earning.accrueForPaidOrder(orderId);
+    if (newlyPaid) {
+      this.mail.send('PAYMENT_CONFIRMED', order.email, order.number);
+    }
     return this.order(orderId);
   }
 
