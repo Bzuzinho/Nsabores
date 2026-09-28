@@ -2,7 +2,9 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { OrderStatus, PaymentStatus } from '@prisma/client';
 import { LoyaltyEarningService } from '../loyalty/loyalty-earning.service';
 import { PrismaService } from '../prisma.service';
@@ -17,7 +19,12 @@ export class ManualPaymentService {
     private readonly earning: LoyaltyEarningService,
     private readonly receivables: ReceivablesService,
     private readonly mail: CommerceMailProvider,
+    @Optional() private readonly config?: ConfigService,
   ) {}
+
+  private launchScopeEnforced() {
+    return !(this.config?.get<boolean>('DEFERRED_FEATURES_ENABLED') ?? true);
+  }
 
   async setShippingQuote(
     orderId: string,
@@ -94,7 +101,10 @@ export class ManualPaymentService {
     }
     const newlyPaid = order.paymentStatus !== PaymentStatus.PAID;
     if (newlyPaid) {
-      if (order.status !== OrderStatus.PENDING_PAYMENT) {
+      if (
+        this.launchScopeEnforced() &&
+        order.status !== OrderStatus.PENDING_PAYMENT
+      ) {
         throw new ConflictException(
           'O pagamento só pode ser confirmado quando a encomenda aguarda pagamento.',
         );
