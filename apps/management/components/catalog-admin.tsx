@@ -455,7 +455,10 @@ function ProductForm({
             pattern="(/images/.+|/v1/media/.+|https?://.+)"
             defaultValue={product?.imageUrl}
           />
-          <MediaUploadControl targetName="imageUrl" label="Carregar imagem principal" />
+          <MediaUploadControl
+            targetName="imageUrl"
+            label="Carregar imagem principal"
+          />
         </label>
         <label className="wide">
           Galeria, um URL por linha
