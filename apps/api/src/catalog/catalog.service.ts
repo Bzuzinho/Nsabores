@@ -107,6 +107,15 @@ export class CatalogService {
     return product;
   }
 
+  async adminProduct(id: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+      include: { category: { select: categorySummary } },
+    });
+    if (!product) throw new NotFoundException('Produto não encontrado.');
+    return product;
+  }
+
   createCategory(data: CreateCategoryDto) {
     return this.unique(() => this.prisma.category.create({ data }));
   }
