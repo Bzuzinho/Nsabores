@@ -16,6 +16,9 @@ describe('ContentService', () => {
     >();
   const prisma = {
     supportCase: { create: supportCaseCreate },
+    newsletterSubscription: {
+      updateMany: vi.fn(),
+    },
     blogPost: {
       create: vi.fn(),
       findMany: vi.fn(),
@@ -78,6 +81,22 @@ describe('ContentService', () => {
     ).resolves.toEqual({ accepted: true });
 
     expect(deliverTransactionalMail).not.toHaveBeenCalled();
+  });
+
+  it('cancels a newsletter subscription without revealing whether the email exists', async () => {
+    prisma.newsletterSubscription.updateMany.mockResolvedValue({ count: 1 });
+
+    await expect(
+      service.unsubscribeNewsletter(' CLIENTE@EXAMPLE.COM '),
+    ).resolves.toEqual({
+      message:
+        'Se o email estava subscrito, a subscrição foi cancelada com sucesso.',
+    });
+
+    expect(prisma.newsletterSubscription.updateMany).toHaveBeenCalledWith({
+      where: { email: 'cliente@example.com', isActive: true },
+      data: { isActive: false },
+    });
   });
 
   it('publishes an article immediately when no publication date is supplied', async () => {
