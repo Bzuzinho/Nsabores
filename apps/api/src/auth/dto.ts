@@ -113,3 +113,22 @@ export class InviteUserDto {
   @IsString() @IsNotEmpty() @MaxLength(100) lastName!: string;
   @IsIn(['CUSTOMER', 'STAFF', 'ADMIN']) role!: 'CUSTOMER' | 'STAFF' | 'ADMIN';
 }
+
+
+export class CreateCustomerAdminDto {
+  @Transform(email) @IsEmail() @MaxLength(254) email!: string;
+  @Transform(trim) @IsString() @MinLength(1) @MaxLength(80) firstName!: string;
+  @Transform(trim) @IsString() @MinLength(1) @MaxLength(80) lastName!: string;
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(30) phone?: string;
+  @IsOptional() @Transform(trim) @Matches(/^\d{9}$/) taxNumber?: string;
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(2000) notes?: string;
+}
+
+export class UpdateCustomerAdminDto {
+  @IsOptional() @Transform(trim) @IsString() @MinLength(1) @MaxLength(80) firstName?: string;
+  @IsOptional() @Transform(trim) @IsString() @MinLength(1) @MaxLength(80) lastName?: string;
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(30) phone?: string;
+  @IsOptional() @Transform(trim) @Matches(/^\d{9}$/) taxNumber?: string;
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(2000) notes?: string;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+}
