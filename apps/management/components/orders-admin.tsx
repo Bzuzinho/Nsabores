@@ -48,6 +48,7 @@ export function OrdersAdmin() {
     if (search) query.set('search', search);
     if (status) query.set('status', status);
     if (payment) query.set('paymentStatus', payment);
+    query.set('limit', '100');
     void managementApi
       .get<Paginated<CommerceOrder>>(`/v1/admin/orders?${query}`)
       .then(({ data }) => setOrders(data));
