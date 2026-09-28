@@ -88,7 +88,9 @@ export function MediaUploadControl({
           onChange={(event) => void upload(event)}
         />
       </label>
-      <small>{busy ? 'A carregar…' : message || 'JPG, PNG ou WebP · máximo 8 MB'}</small>
+      <small>
+        {busy ? 'A carregar…' : message || 'JPG, PNG ou WebP · máximo 8 MB'}
+      </small>
     </div>
   );
 }
