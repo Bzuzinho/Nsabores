@@ -667,10 +667,7 @@ export class CommerceService {
           where: { email: normalizedEmail },
           select: { id: true, email: true, role: true },
         });
-    if (
-      body.userId &&
-      (!customer || customer.role !== UserRole.CUSTOMER)
-    ) {
+    if (body.userId && (!customer || customer.role !== UserRole.CUSTOMER)) {
       throw new BadRequestException('Cliente selecionado não encontrado.');
     }
     if (customer && customer.email !== normalizedEmail) {
@@ -680,8 +677,7 @@ export class CommerceService {
     }
 
     const data = {
-      userId:
-        customer?.role === UserRole.CUSTOMER ? customer.id : null,
+      userId: customer?.role === UserRole.CUSTOMER ? customer.id : null,
       email: normalizedEmail,
       customerName: body.customerName.trim(),
       phone: body.phone.trim(),
