@@ -44,8 +44,10 @@ export function UsersAdmin({ selectedId }: { selectedId?: string }) {
     }
   };
 
-  const invite = async () => {
-    const email = window.prompt('Email do novo utilizador:');
+  const invite = async (role: 'CUSTOMER' | 'STAFF') => {
+    const email = window.prompt(
+      role === 'CUSTOMER' ? 'Email do novo cliente:' : 'Email do novo utilizador:',
+    );
     if (!email) return;
     const firstName = window.prompt('Nome:');
     if (!firstName) return;
@@ -56,7 +58,7 @@ export function UsersAdmin({ selectedId }: { selectedId?: string }) {
         email,
         firstName,
         lastName,
-        role: 'STAFF',
+        role,
       });
       await load();
     } catch (reason) {
@@ -117,9 +119,15 @@ export function UsersAdmin({ selectedId }: { selectedId?: string }) {
           <h1>Utilizadores</h1>
           <p>Contas de clientes e equipa.</p>
         </div>
-        <button className="admin-primary" onClick={() => void invite()}>
-          + Convidar utilizador
-        </button>
+        <div className="admin-actions">
+          <button
+            className="admin-primary"
+            onClick={() => void invite('CUSTOMER')}
+          >
+            + Novo cliente
+          </button>
+          <button onClick={() => void invite('STAFF')}>+ Convidar equipa</button>
+        </div>
       </header>
       <input
         className="user-search"
