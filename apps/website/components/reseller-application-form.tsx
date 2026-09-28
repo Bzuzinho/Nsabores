@@ -42,22 +42,30 @@ export function ResellerApplicationForm() {
   return (
     <form onSubmit={submit} className="grid gap-4">
       {[
-        'tradeName',
-        'legalName',
-        'taxNumber',
-        'contactName',
-        'email',
-        'phone',
-        'activity',
-        'line1',
-        'postalCode',
-        'city',
-      ].map((name) => (
-        <label key={name} className="grid gap-1 capitalize">
-          {name}
+        ['tradeName', 'Nome comercial', 'text'],
+        ['legalName', 'Denominação legal', 'text'],
+        ['taxNumber', 'NIF/NIPC', 'text'],
+        ['contactName', 'Pessoa de contacto', 'text'],
+        ['email', 'Email', 'email'],
+        ['phone', 'Telefone', 'tel'],
+        ['activity', 'Atividade', 'text'],
+        ['line1', 'Morada', 'text'],
+        ['postalCode', 'Código postal', 'text'],
+        ['city', 'Localidade', 'text'],
+      ].map(([name, label, type]) => (
+        <label key={name} className="grid gap-1">
+          {label}
           <input
             required
             name={name}
+            type={type}
+            pattern={
+              name === 'taxNumber'
+                ? '\\d{9}'
+                : name === 'postalCode'
+                  ? '\\d{4}-\\d{3}'
+                  : undefined
+            }
             className="rounded border border-stone-300 p-3"
           />
         </label>
