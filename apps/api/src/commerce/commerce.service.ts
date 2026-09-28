@@ -19,6 +19,7 @@ import type {
 import { CommerceMailProvider } from './mail.provider';
 import { PaymentProvider } from './payment.provider';
 import { OperationsService } from '../operations/operations.service';
+import { ReceivablesService } from '../receivables/receivables.service';
 
 const orderInclude = {
   items: true,
@@ -95,6 +96,7 @@ export class CommerceService {
     private readonly payments: PaymentProvider,
     private readonly mail: CommerceMailProvider,
     private readonly operations: OperationsService,
+    private readonly receivables: ReceivablesService,
   ) {}
 
   async cart(identity: { userId?: string; sessionId?: string }) {
@@ -572,7 +574,16 @@ export class CommerceService {
       ? OrderStatus.PENDING_APPROVAL
       : OrderStatus.PENDING_PAYMENT;
     if (!order.requiresApproval) await this.operations.reserveOrder(id);
-    return this.changeStatus(id, target, authorId, 'Rascunho submetido.');
+    const updated = await this.changeStatus(
+      id,
+      target,
+      authorId,
+      'Rascunho submetido.',
+    );
+    if (target === OrderStatus.PENDING_PAYMENT) {
+      await this.receivables.ensureAgreement(id);
+    }
+    return updated;
   }
 
   async approveOrder(id: string, authorId: string, note?: string) {
@@ -585,12 +596,14 @@ export class CommerceService {
       where: { id },
       data: { approvedBy: authorId, approvedAt: new Date() },
     });
-    return this.changeStatus(
+    const updated = await this.changeStatus(
       id,
       OrderStatus.PENDING_PAYMENT,
       authorId,
       note ?? 'Encomenda aprovada.',
     );
+    await this.receivables.ensureAgreement(id);
+    return updated;
   }
 
   async rejectOrder(id: string, authorId: string, note?: string) {
