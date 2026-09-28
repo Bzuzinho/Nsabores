@@ -88,7 +88,11 @@ export function NewsletterForm() {
             aria-describedby="newsletter-message"
             onChange={(event) => setEmail(event.target.value)}
           />
-          <button className="button button-primary" type="submit" disabled={busy}>
+          <button
+            className="button button-primary"
+            type="submit"
+            disabled={busy}
+          >
             {busy ? 'A processar…' : 'Subscrever'}
           </button>
         </div>
