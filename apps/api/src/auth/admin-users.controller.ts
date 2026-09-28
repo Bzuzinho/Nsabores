@@ -36,10 +36,7 @@ export class AdminUsersController {
   }
 
   @Get()
-  list(
-    @CurrentUser() actor: AuthPrincipal,
-    @Query() query: UsersQueryDto,
-  ) {
+  list(@CurrentUser() actor: AuthPrincipal, @Query() query: UsersQueryDto) {
     return this.users.list(
       actor.role === UserRole.STAFF
         ? { ...query, role: UserRole.CUSTOMER }
