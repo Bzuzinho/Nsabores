@@ -32,7 +32,9 @@ async function main() {
     },
   });
 
-  console.log('Cabaz Portugal demo configurado para adicionar, remover e alterar quantidades.');
+  console.log(
+    'Cabaz Portugal demo configurado para adicionar, remover e alterar quantidades.',
+  );
 }
 
 main()
