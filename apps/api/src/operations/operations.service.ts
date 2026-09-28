@@ -541,6 +541,10 @@ export class OperationsService {
   }
 
   async reserveOrder(orderId: string) {
+    const stockEnabled =
+      this.config?.get<boolean>('DEFERRED_FEATURES_ENABLED') ?? true;
+    if (!stockEnabled) return [];
+
     return this.prisma.$transaction(async (tx) => {
       const existing = await tx.stockReservation.findMany({
         where: { orderId, status: StockReservationStatus.ACTIVE },
