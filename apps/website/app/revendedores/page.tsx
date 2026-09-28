@@ -4,7 +4,7 @@ export default function Page() {
     <main className="mx-auto max-w-4xl px-6 py-20">
       <h1 className="text-5xl font-semibold">Sabores para revender</h1>
       <p className="mt-6 text-lg text-stone-600">
-        Condições comerciais, preços profissionais e acompanhamento para lojas,
+        Candidaturas, condições comerciais e acompanhamento próximo para lojas,
         garrafeiras e espaços gastronómicos.
       </p>
       <Link
