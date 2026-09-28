@@ -46,7 +46,9 @@ export function UsersAdmin({ selectedId }: { selectedId?: string }) {
 
   const invite = async (role: 'CUSTOMER' | 'STAFF') => {
     const email = window.prompt(
-      role === 'CUSTOMER' ? 'Email do novo cliente:' : 'Email do novo utilizador:',
+      role === 'CUSTOMER'
+        ? 'Email do novo cliente:'
+        : 'Email do novo utilizador:',
     );
     if (!email) return;
     const firstName = window.prompt('Nome:');
