@@ -14,8 +14,10 @@ describe('ContentService', () => {
     vi.fn<
       (input: { data: { status: string } }) => Promise<{ number: string }>
     >();
+  const newsletterUpdateMany = vi.fn();
   const prisma = {
     supportCase: { create: supportCaseCreate },
+    newsletterSubscription: { updateMany: newsletterUpdateMany },
     blogPost: {
       create: vi.fn(),
       findMany: vi.fn(),
@@ -78,6 +80,19 @@ describe('ContentService', () => {
     ).resolves.toEqual({ accepted: true });
 
     expect(deliverTransactionalMail).not.toHaveBeenCalled();
+  });
+
+  it('cancels newsletter subscriptions idempotently by normalized email', async () => {
+    newsletterUpdateMany.mockResolvedValue({ count: 1 });
+
+    await expect(
+      service.unsubscribeNewsletter(' Cliente@Example.COM '),
+    ).resolves.toEqual({ accepted: true });
+
+    expect(newsletterUpdateMany).toHaveBeenCalledWith({
+      where: { email: 'cliente@example.com' },
+      data: { isActive: false },
+    });
   });
 
   it('publishes an article immediately when no publication date is supplied', async () => {
