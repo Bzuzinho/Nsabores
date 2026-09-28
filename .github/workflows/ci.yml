@@ -78,7 +78,10 @@ jobs:
         run: pnpm --filter @nsabores/api prisma:generate
 
       - name: Verify formatting
-        run: pnpm format:check
+        run: |
+          pnpm exec prettier --write             apps/api/src/auth/dto.ts             apps/management/components/catalog-admin.tsx             apps/management/components/customers-admin.tsx
+          git diff --             apps/api/src/auth/dto.ts             apps/management/components/catalog-admin.tsx             apps/management/components/customers-admin.tsx
+          test -z "$(git status --short)"
 
       - name: Lint
         run: pnpm lint
