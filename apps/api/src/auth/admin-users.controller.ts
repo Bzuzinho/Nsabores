@@ -36,8 +36,15 @@ export class AdminUsersController {
   }
 
   @Get()
-  list(@Query() query: UsersQueryDto) {
-    return this.users.list(query);
+  list(
+    @CurrentUser() actor: AuthPrincipal,
+    @Query() query: UsersQueryDto,
+  ) {
+    return this.users.list(
+      actor.role === UserRole.STAFF
+        ? { ...query, role: UserRole.CUSTOMER }
+        : query,
+    );
   }
 
   @Post('customers')
@@ -57,8 +64,10 @@ export class AdminUsersController {
   }
 
   @Get(':id')
-  detail(@Param('id') id: string) {
-    return this.users.detail(id);
+  detail(@CurrentUser() actor: AuthPrincipal, @Param('id') id: string) {
+    return actor.role === UserRole.STAFF
+      ? this.users.customerDetail(id)
+      : this.users.detail(id);
   }
 
   @Patch(':id')
