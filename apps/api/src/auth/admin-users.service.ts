@@ -139,6 +139,18 @@ export class AdminUsersService {
     };
   }
 
+  async customerDetail(id: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { id, role: 'CUSTOMER' },
+      select: {
+        ...adminUser,
+        addresses: true,
+      },
+    });
+    if (!user) throw new NotFoundException('Cliente não encontrado.');
+    return user;
+  }
+
   async detail(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
