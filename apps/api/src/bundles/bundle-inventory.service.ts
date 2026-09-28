@@ -2,7 +2,9 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { StockMovementType } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 
@@ -23,9 +25,16 @@ const serializable = { isolationLevel: 'Serializable' as const };
 
 @Injectable()
 export class BundleInventoryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly config?: ConfigService,
+  ) {}
 
   reserveOrder(orderId: string) {
+    const stockEnabled =
+      this.config?.get<boolean>('DEFERRED_FEATURES_ENABLED') ?? true;
+    if (!stockEnabled) return [];
+
     return this.prisma.$transaction(async (tx) => {
       const existing = await tx.stockReservation.findMany({
         where: { orderId, status: 'ACTIVE' },
