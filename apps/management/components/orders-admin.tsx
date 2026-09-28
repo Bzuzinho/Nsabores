@@ -469,12 +469,12 @@ export function OrderAdmin({ id }: { id: string }) {
         {order.status === 'PENDING_PAYMENT' &&
           order.paymentStatus === 'PENDING' &&
           !shippingPending && (
-          <p>
-            <button className="admin-primary" onClick={() => void markPaid()}>
-              Marcar pagamento como recebido
-            </button>
-          </p>
-        )}
+            <p>
+              <button className="admin-primary" onClick={() => void markPaid()}>
+                Marcar pagamento como recebido
+              </button>
+            </p>
+          )}
         {order.items.map((item) => (
           <p key={item.id}>
             {item.quantity} × {item.productName} ({item.sku}) —{' '}
