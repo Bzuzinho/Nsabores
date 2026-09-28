@@ -3,9 +3,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
-import type { InviteUserDto, UpdateUserAdminDto, UsersQueryDto } from './dto';
+import type {
+  CreateCustomerAdminDto,
+  InviteUserDto,
+  UpdateCustomerAdminDto,
+  UpdateUserAdminDto,
+  UsersQueryDto,
+} from './dto';
 import { MailProvider } from './mail.provider';
 import argon2 from 'argon2';
 import { createHash, randomBytes } from 'node:crypto';
@@ -149,6 +155,93 @@ export class AdminUsersService {
                 upsert: {
                   create: { notes: data.notes },
                   update: { notes: data.notes },
+                },
+              },
+      },
+      select: adminUser,
+    });
+  }
+
+  listCustomers(query: UsersQueryDto) {
+    return this.list({ ...query, role: UserRole.CUSTOMER });
+  }
+
+  async customerDetail(id: string) {
+    const customer = await this.prisma.user.findFirst({
+      where: { id, role: UserRole.CUSTOMER },
+      select: {
+        ...adminUser,
+        addresses: {
+          orderBy: [{ isDefaultShipping: 'desc' }, { createdAt: 'desc' }],
+        },
+        orders: {
+          select: {
+            id: true,
+            number: true,
+            status: true,
+            paymentStatus: true,
+            totalCents: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 50,
+        },
+      },
+    });
+    if (!customer) throw new NotFoundException('Cliente não encontrado.');
+    return customer;
+  }
+
+  async createCustomer(body: CreateCustomerAdminDto) {
+    const created = await this.invite({
+      email: body.email,
+      firstName: body.firstName,
+      lastName: body.lastName,
+      role: UserRole.CUSTOMER,
+    });
+    return this.prisma.user.update({
+      where: { id: created.id },
+      data: {
+        phone: body.phone,
+        customerProfile: {
+          upsert: {
+            create: {
+              taxNumber: body.taxNumber,
+              notes: body.notes,
+            },
+            update: {
+              taxNumber: body.taxNumber,
+              notes: body.notes,
+            },
+          },
+        },
+      },
+      select: adminUser,
+    });
+  }
+
+  async updateCustomer(id: string, body: UpdateCustomerAdminDto) {
+    await this.customerDetail(id);
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        firstName: body.firstName,
+        lastName: body.lastName,
+        phone: body.phone,
+        isActive: body.isActive,
+        customerProfile:
+          body.taxNumber === undefined && body.notes === undefined
+            ? undefined
+            : {
+                upsert: {
+                  create: {
+                    taxNumber: body.taxNumber,
+                    notes: body.notes,
+                  },
+                  update: {
+                    taxNumber: body.taxNumber,
+                    notes: body.notes,
+                  },
                 },
               },
       },

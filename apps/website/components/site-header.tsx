@@ -1,12 +1,19 @@
 'use client';
 
+import { ApiClient } from '@nsabores/api-client';
+import type { Paginated } from '@nsabores/types';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
-import { formatPrice, products } from '@/data/site';
+import { useEffect, useState } from 'react';
+import { formatPrice, type Product } from '@/data/site';
 import { BagIcon, CloseIcon, MenuIcon, SearchIcon, UserIcon } from './icons';
 import { MobileNavigation, navigation } from './mobile-navigation';
 import { useShop } from './shop-context';
+
+const api = new ApiClient(
+  process.env.NEXT_PUBLIC_API_URL ??
+    (process.env.NODE_ENV === 'development' ? 'http://localhost:4000' : ''),
+);
 
 export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -21,14 +28,23 @@ export function SiteHeader() {
     removeFromCart,
   } = useShop();
 
-  const results = useMemo(() => {
-    const normalized = query.trim().toLocaleLowerCase('pt-PT');
-    if (!normalized) return [];
-    return products.filter((product) =>
-      `${product.name} ${product.description}`
-        .toLocaleLowerCase('pt-PT')
-        .includes(normalized),
-    );
+  const [results, setResults] = useState<Product[]>([]);
+
+  useEffect(() => {
+    const normalized = query.trim();
+    if (!normalized) {
+      setResults([]);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      void api
+        .get<Paginated<Product>>(
+          `/v1/products?limit=8&search=${encodeURIComponent(normalized)}`,
+        )
+        .then((value) => setResults(value.data))
+        .catch(() => setResults([]));
+    }, 180);
+    return () => window.clearTimeout(timer);
   }, [query]);
 
   const total = cartItems.reduce((sum, item) => sum + item.totalCents, 0);
@@ -128,7 +144,7 @@ export function SiteHeader() {
               (results.length ? (
                 results.map((product) => (
                   <Link
-                    href="/loja"
+                    href={`/loja/${product.slug}`}
                     key={product.id}
                     onClick={() => setSearchOpen(false)}
                   >

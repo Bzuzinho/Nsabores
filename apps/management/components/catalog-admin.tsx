@@ -41,6 +41,7 @@ export function CatalogAdmin({
   productId?: string;
 }) {
   const [products, setProducts] = useState<CatalogProduct[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<CatalogProduct>();
   const [categories, setCategories] = useState<CatalogCategory[]>([]);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -54,18 +55,22 @@ export function CatalogAdmin({
     setLoading(true);
     setError('');
     try {
-      const [productResult, categoryResult] = await Promise.all([
+      const [productResult, categoryResult, currentProduct] = await Promise.all([
         api<Paginated<CatalogProduct>>('products?limit=100'),
         api<CatalogCategory[]>('categories'),
+        productId
+          ? api<CatalogProduct>(`products/${productId}`)
+          : Promise.resolve(undefined),
       ]);
       setProducts(productResult.data);
       setCategories(categoryResult);
+      setSelectedProduct(currentProduct);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Erro inesperado.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [productId]);
 
   useEffect(() => {
     void Promise.resolve().then(load);
@@ -140,7 +145,9 @@ export function CatalogAdmin({
       {mode === 'product-form' && (
         <ProductForm
           categories={categories}
-          product={products.find((item) => item.id === productId)}
+          product={
+            selectedProduct ?? products.find((item) => item.id === productId)
+          }
           mutate={mutate}
         />
       )}

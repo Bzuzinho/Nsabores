@@ -53,6 +53,11 @@ export class AdminCatalogController {
     return this.catalog.listProducts(query, true);
   }
 
+  @Get('products/:id')
+  product(@Param('id') id: string) {
+    return this.catalog.adminProduct(id);
+  }
+
   @Post('products')
   createProduct(@Body() body: CreateProductDto) {
     return this.catalog.createProduct(body);

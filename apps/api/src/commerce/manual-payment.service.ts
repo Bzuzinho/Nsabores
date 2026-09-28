@@ -2,10 +2,13 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { OrderStatus, PaymentStatus } from '@prisma/client';
 import { LoyaltyEarningService } from '../loyalty/loyalty-earning.service';
 import { PrismaService } from '../prisma.service';
+import { CommerceMailProvider } from './mail.provider';
 import { ReceivablesService } from '../receivables/receivables.service';
 import type { ManualPaymentDto, ShippingQuoteDto } from './dto';
 
@@ -15,7 +18,13 @@ export class ManualPaymentService {
     private readonly prisma: PrismaService,
     private readonly earning: LoyaltyEarningService,
     private readonly receivables: ReceivablesService,
+    private readonly mail: CommerceMailProvider,
+    @Optional() private readonly config?: ConfigService,
   ) {}
+
+  private launchScopeEnforced() {
+    return !(this.config?.get<boolean>('DEFERRED_FEATURES_ENABLED') ?? true);
+  }
 
   async setShippingQuote(
     orderId: string,
@@ -90,7 +99,27 @@ export class ManualPaymentService {
     if (order.paymentStatus === PaymentStatus.REFUNDED) {
       throw new ConflictException('A encomenda já foi reembolsada.');
     }
-    if (order.paymentStatus !== PaymentStatus.PAID) {
+    const newlyPaid = order.paymentStatus !== PaymentStatus.PAID;
+    if (newlyPaid) {
+      if (
+        this.launchScopeEnforced() &&
+        order.status !== OrderStatus.PENDING_PAYMENT
+      ) {
+        throw new ConflictException(
+          'O pagamento só pode ser confirmado quando a encomenda aguarda pagamento.',
+        );
+      }
+      const terms =
+        order.paymentTermsSnapshot &&
+        typeof order.paymentTermsSnapshot === 'object' &&
+        !Array.isArray(order.paymentTermsSnapshot)
+          ? order.paymentTermsSnapshot
+          : {};
+      if (terms.shippingQuoteStatus === 'PENDING') {
+        throw new ConflictException(
+          'Confirme primeiro o custo de transporte da encomenda.',
+        );
+      }
       await this.prisma.$transaction(async (tx) => {
         await tx.payment.upsert({
           where: { idempotencyKey: `manual-payment:${orderId}` },
@@ -153,6 +182,9 @@ export class ManualPaymentService {
       body.note?.trim(),
     );
     await this.earning.accrueForPaidOrder(orderId);
+    if (newlyPaid) {
+      this.mail.send('PAYMENT_CONFIRMED', order.email, order.number);
+    }
     return this.order(orderId);
   }
 

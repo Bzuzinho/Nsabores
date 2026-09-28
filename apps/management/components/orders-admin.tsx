@@ -48,6 +48,7 @@ export function OrdersAdmin() {
     if (search) query.set('search', search);
     if (status) query.set('status', status);
     if (payment) query.set('paymentStatus', payment);
+    query.set('limit', '100');
     void managementApi
       .get<Paginated<CommerceOrder>>(`/v1/admin/orders?${query}`)
       .then(({ data }) => setOrders(data));
@@ -465,13 +466,15 @@ export function OrderAdmin({ id }: { id: string }) {
             </button>
           </p>
         )}
-        {order.paymentStatus === 'PENDING' && (
-          <p>
-            <button className="admin-primary" onClick={() => void markPaid()}>
-              Marcar pagamento como recebido
-            </button>
-          </p>
-        )}
+        {order.status === 'PENDING_PAYMENT' &&
+          order.paymentStatus === 'PENDING' &&
+          !shippingPending && (
+            <p>
+              <button className="admin-primary" onClick={() => void markPaid()}>
+                Marcar pagamento como recebido
+              </button>
+            </p>
+          )}
         {order.items.map((item) => (
           <p key={item.id}>
             {item.quantity} × {item.productName} ({item.sku}) —{' '}

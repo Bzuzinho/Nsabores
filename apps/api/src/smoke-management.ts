@@ -9,6 +9,7 @@ const endpoints = [
   '/v1/admin/products?limit=100',
   '/v1/admin/categories',
   '/v1/admin/orders',
+  '/v1/admin/customers?limit=100',
   '/v1/admin/operations/dashboard',
   '/v1/admin/operations/preparation',
   '/v1/admin/production',
