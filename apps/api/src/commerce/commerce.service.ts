@@ -582,6 +582,7 @@ export class CommerceService {
     );
     if (target === OrderStatus.PENDING_PAYMENT) {
       await this.receivables.ensureAgreement(id);
+      this.mail.send('ORDER_RECEIVED', updated.email, updated.number);
     }
     return updated;
   }
@@ -603,6 +604,7 @@ export class CommerceService {
       note ?? 'Encomenda aprovada.',
     );
     await this.receivables.ensureAgreement(id);
+    this.mail.send('ORDER_RECEIVED', updated.email, updated.number);
     return updated;
   }
 
