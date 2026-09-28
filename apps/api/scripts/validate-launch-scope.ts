@@ -96,7 +96,10 @@ async function main() {
     const delivery = deliveryMethods.find(
       (method) => method.isActive && method.code !== 'case-by-case',
     );
-    assert.ok(productId, 'Produto público necessário para o smoke de arranque.');
+    assert.ok(
+      productId,
+      'Produto público necessário para o smoke de arranque.',
+    );
     assert.ok(delivery, 'Método de entrega fixo necessário para o smoke.');
 
     const auditCustomerEmail = `launch-audit-${Date.now()}@example.invalid`;
