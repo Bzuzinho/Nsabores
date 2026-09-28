@@ -89,9 +89,7 @@ export function BundleCustomizer({ slug }: { slug: string }) {
         setBundle(value);
         const initial: Record<string, number> = {};
         for (const item of value.items) {
-          if (value.mode === 'FIXED' || item.isRequired) {
-            initial[item.id] = Math.max(item.quantity, item.minimumQuantity, 1);
-          }
+          initial[item.id] = Math.max(item.quantity, item.minimumQuantity, 0);
         }
         setSelections(initial);
       })
@@ -139,7 +137,7 @@ export function BundleCustomizer({ slug }: { slug: string }) {
 
   if (!bundle) {
     return (
-      <main className="section">
+      <main className="section bundle-customizer-page">
         <p>{error || 'A carregar cabaz…'}</p>
       </main>
     );
@@ -175,15 +173,23 @@ export function BundleCustomizer({ slug }: { slug: string }) {
   }
 
   return (
-    <main id="conteudo" className="section">
-      <p className="eyebrow">Cabaz personalizado</p>
-      <h1>{bundle.productName}</h1>
-      <p>
-        <Link href={`/loja/${bundle.productSlug}`}>Voltar ao produto</Link>
-      </p>
+    <main id="conteudo" className="section bundle-customizer-page">
+      <header className="bundle-customizer-heading">
+        <div>
+          <p className="eyebrow">Cabaz personalizado</p>
+          <h1>{bundle.productName}</h1>
+          <p>Adicione, retire ou altere as quantidades dos produtos.</p>
+        </div>
+        <Link
+          className="button button-outline-dark bundle-back-button"
+          href={`/loja/${bundle.productSlug}`}
+        >
+          ← Voltar ao produto
+        </Link>
+      </header>
 
       {bundle.groups.map((group) => (
-        <section key={group.id} className="account-card">
+        <section key={group.id} className="account-card bundle-section-card">
           <h2>{group.name}</h2>
           <p>
             Escolha entre {group.minimumSelections} e{' '}
@@ -206,8 +212,11 @@ export function BundleCustomizer({ slug }: { slug: string }) {
       ))}
 
       {bundle.items.some((item) => !item.groupId) && (
-        <section className="account-card">
+        <section className="account-card bundle-section-card">
           <h2>Composição</h2>
+          <p className="bundle-composition-help">
+            Use os botões − e + para remover ou acrescentar unidades.
+          </p>
           {bundle.items
             .filter((item) => !item.groupId)
             .map((item) => (
@@ -225,7 +234,7 @@ export function BundleCustomizer({ slug }: { slug: string }) {
       )}
 
       {bundle.personalization && (
-        <section className="account-card">
+        <section className="account-card bundle-section-card bundle-personalization">
           <h2>Personalização da oferta</h2>
           {bundle.personalization.allowRecipientName && (
             <label>
@@ -291,17 +300,17 @@ export function BundleCustomizer({ slug }: { slug: string }) {
         </section>
       )}
 
-      <section className="account-card">
+      <section className="account-card bundle-section-card bundle-summary-card">
         <h2>Resumo</h2>
         {price ? (
-          <p>
+          <p className="bundle-live-price">
             <strong>{formatPrice(price.priceCents)}</strong> por cabaz
           </p>
         ) : (
           <p>Complete a composição para calcular o preço.</p>
         )}
         <label>
-          Quantidade
+          Quantidade de cabazes
           <input
             type="number"
             min={1}
@@ -336,28 +345,53 @@ function BundleOption({
   disabled: boolean;
   onChange: (value: number) => void;
 }) {
+  const maximum = item.maximumQuantity ?? 99;
+  const unavailable = disabled || item.stockStatus === 'OUT_OF_STOCK';
+  const setValue = (next: number) =>
+    onChange(Math.max(item.minimumQuantity, Math.min(maximum, next)));
+
   return (
-    <article className="cart-item">
+    <article className="bundle-option-row">
       <Image src={item.productImageUrl} alt="" width={72} height={72} />
-      <div>
+      <div className="bundle-option-copy">
         <strong>{item.productName}</strong>
         <small>
           {item.stockStatus === 'OUT_OF_STOCK'
             ? 'Esgotado'
             : item.isRequired
               ? 'Obrigatório'
-              : 'Opcional'}
+              : value > 0
+                ? 'Incluído'
+                : 'Não incluído'}
         </small>
       </div>
-      <input
-        aria-label={`Quantidade de ${item.productName}`}
-        type="number"
-        min={item.minimumQuantity}
-        max={item.maximumQuantity ?? 99}
-        value={value}
-        disabled={disabled || item.stockStatus === 'OUT_OF_STOCK'}
-        onChange={(event) => onChange(Math.max(0, Number(event.target.value)))}
-      />
+      <div className="bundle-quantity-control">
+        <button
+          type="button"
+          aria-label={`Retirar uma unidade de ${item.productName}`}
+          disabled={unavailable || value <= item.minimumQuantity}
+          onClick={() => setValue(value - 1)}
+        >
+          −
+        </button>
+        <input
+          aria-label={`Quantidade de ${item.productName}`}
+          type="number"
+          min={item.minimumQuantity}
+          max={maximum}
+          value={value}
+          disabled={unavailable}
+          onChange={(event) => setValue(Number(event.target.value))}
+        />
+        <button
+          type="button"
+          aria-label={`Adicionar uma unidade de ${item.productName}`}
+          disabled={unavailable || value >= maximum}
+          onClick={() => setValue(value + 1)}
+        >
+          +
+        </button>
+      </div>
     </article>
   );
 }
