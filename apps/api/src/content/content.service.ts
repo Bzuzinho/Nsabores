@@ -201,6 +201,17 @@ export class ContentService {
     });
   }
 
+  async unsubscribeNewsletter(email: string) {
+    await this.prisma.newsletterSubscription.updateMany({
+      where: { email: email.trim().toLowerCase(), isActive: true },
+      data: { isActive: false },
+    });
+    return {
+      message:
+        'Se o email estava subscrito, a subscrição foi cancelada com sucesso.',
+    };
+  }
+
   newsletterSubscriptions(search?: string) {
     return this.prisma.newsletterSubscription.findMany({
       where: search
