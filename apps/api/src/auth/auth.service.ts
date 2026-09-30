@@ -47,36 +47,67 @@ export class AuthService {
   ) {
     const token = this.randomToken();
     try {
-      const user = await this.prisma.user.create({
-        data: {
-          email: dto.email,
-          passwordHash: await this.hashPassword(dto.password),
-          firstName: dto.firstName,
-          lastName: dto.lastName,
-          phone: dto.phone,
-          emailVerificationTokenHash: this.hashToken(token),
-          emailVerificationExpiresAt: this.expiry(
-            'EMAIL_VERIFICATION_TOKEN_TTL',
-            '24h',
-          ),
-          customerProfile: {
-            create: {
-              marketingConsent: dto.marketingConsent ?? false,
-              marketingConsentAt: dto.marketingConsent ? new Date() : null,
+      const user = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.user.create({
+          data: {
+            email: dto.email,
+            passwordHash: await this.hashPassword(dto.password),
+            firstName: dto.firstName,
+            lastName: dto.lastName,
+            phone: dto.phone,
+            emailVerificationTokenHash: this.hashToken(token),
+            emailVerificationExpiresAt: this.expiry(
+              'EMAIL_VERIFICATION_TOKEN_TTL',
+              '24h',
+            ),
+            customerProfile: {
+              create: {
+                marketingConsent: dto.marketingConsent ?? false,
+                marketingConsentAt: dto.marketingConsent ? new Date() : null,
+              },
             },
           },
-          customer: {
-            create: {
+          select: publicUser,
+        });
+
+        const existingCustomer = await tx.customer.findUnique({
+          where: { email: dto.email },
+        });
+        if (existingCustomer) {
+          await tx.customer.update({
+            where: { id: existingCustomer.id },
+            data: {
+              userId: created.id,
+              name: `${dto.firstName} ${dto.lastName}`.trim(),
+              phone: dto.phone,
+              marketingConsent:
+                dto.marketingConsent === true
+                  ? true
+                  : existingCustomer.marketingConsent,
+              marketingConsentAt:
+                dto.marketingConsent === true &&
+                !existingCustomer.marketingConsent
+                  ? new Date()
+                  : undefined,
+              isActive: true,
+              deletedAt: null,
+            },
+          });
+        } else {
+          await tx.customer.create({
+            data: {
+              userId: created.id,
               name: `${dto.firstName} ${dto.lastName}`.trim(),
               email: dto.email,
               phone: dto.phone,
               marketingConsent: dto.marketingConsent ?? false,
               marketingConsentAt: dto.marketingConsent ? new Date() : null,
             },
-          },
-        },
-        select: publicUser,
+          });
+        }
+        return created;
       });
+
       this.mail.sendEmailVerification(user.email, token);
       await this.createSession(user, request, response);
       return { user };
@@ -259,66 +290,83 @@ export class AuthService {
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
-    const [previous, customer, account] = await Promise.all([
-      this.prisma.customerProfile.findUnique({ where: { userId } }),
-      this.prisma.customer.findUnique({ where: { userId } }),
-      this.prisma.user.findUniqueOrThrow({
+    return this.prisma.$transaction(async (tx) => {
+      const [previous, account] = await Promise.all([
+        tx.customerProfile.findUnique({ where: { userId } }),
+        tx.user.findUniqueOrThrow({
+          where: { id: userId },
+          select: { email: true },
+        }),
+      ]);
+      const consentAt =
+        dto.marketingConsent === true && !previous?.marketingConsent
+          ? new Date()
+          : dto.marketingConsent === false
+            ? null
+            : undefined;
+
+      const updated = await tx.user.update({
         where: { id: userId },
-        select: { email: true },
-      }),
-    ]);
-    const consentAt =
-      dto.marketingConsent === true && !previous?.marketingConsent
-        ? new Date()
-        : dto.marketingConsent === false
-          ? null
-          : undefined;
-    return this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        firstName: dto.firstName,
-        lastName: dto.lastName,
-        phone: dto.phone,
-        customerProfile: {
-          upsert: {
-            create: {
-              taxNumber: dto.taxNumber,
-              marketingConsent: dto.marketingConsent ?? false,
-              marketingConsentAt: consentAt,
-            },
-            update: {
-              taxNumber: dto.taxNumber,
-              marketingConsent: dto.marketingConsent,
-              marketingConsentAt: consentAt,
+        data: {
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          phone: dto.phone,
+          customerProfile: {
+            upsert: {
+              create: {
+                taxNumber: dto.taxNumber,
+                marketingConsent: dto.marketingConsent ?? false,
+                marketingConsentAt: consentAt,
+              },
+              update: {
+                taxNumber: dto.taxNumber,
+                marketingConsent: dto.marketingConsent,
+                marketingConsentAt: consentAt,
+              },
             },
           },
         },
-        customer: {
-          upsert: {
-            create: {
-              name: `${dto.firstName} ${dto.lastName}`.trim(),
-              email: customer?.email ?? account.email,
-              phone: dto.phone,
-              taxNumber: dto.taxNumber,
-              marketingConsent: dto.marketingConsent ?? false,
-              marketingConsentAt: consentAt,
-            },
-            update: {
-              name: `${dto.firstName} ${dto.lastName}`.trim(),
-              phone: dto.phone,
-              taxNumber: dto.taxNumber,
-              marketingConsent: dto.marketingConsent,
-              marketingConsentAt: consentAt,
-            },
+        select: {
+          ...publicUser,
+          customerProfile: {
+            select: { taxNumber: true, marketingConsent: true },
           },
         },
-      },
-      select: {
-        ...publicUser,
-        customerProfile: {
-          select: { taxNumber: true, marketingConsent: true },
-        },
-      },
+      });
+
+      const linked = await tx.customer.findUnique({ where: { userId } });
+      const byEmail = linked
+        ? null
+        : await tx.customer.findUnique({ where: { email: account.email } });
+      const customer = linked ?? byEmail;
+      if (customer) {
+        await tx.customer.update({
+          where: { id: customer.id },
+          data: {
+            userId: customer.userId ?? userId,
+            name: `${dto.firstName} ${dto.lastName}`.trim(),
+            phone: dto.phone,
+            taxNumber: dto.taxNumber,
+            marketingConsent: dto.marketingConsent,
+            marketingConsentAt: consentAt,
+            isActive: true,
+            deletedAt: null,
+          },
+        });
+      } else {
+        await tx.customer.create({
+          data: {
+            userId,
+            name: `${dto.firstName} ${dto.lastName}`.trim(),
+            email: account.email,
+            phone: dto.phone,
+            taxNumber: dto.taxNumber,
+            marketingConsent: dto.marketingConsent ?? false,
+            marketingConsentAt: consentAt,
+          },
+        });
+      }
+      return updated;
     });
   }
 
