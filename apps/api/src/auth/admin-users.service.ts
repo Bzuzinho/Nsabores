@@ -175,50 +175,45 @@ export class AdminUsersService {
     });
     if (!user) throw new NotFoundException('Utilizador não encontrado.');
 
-    const [
-      orderCount,
-      orderValue,
-      recentOrders,
-      supportCases,
-      newsletter,
-    ] = await Promise.all([
-      this.prisma.order.count({ where: { userId: id } }),
-      this.prisma.order.aggregate({
-        where: {
-          userId: id,
-          status: {
-            notIn: [
-              OrderStatus.CANCELLED,
-              OrderStatus.REJECTED,
-              OrderStatus.REFUNDED,
-            ],
+    const [orderCount, orderValue, recentOrders, supportCases, newsletter] =
+      await Promise.all([
+        this.prisma.order.count({ where: { userId: id } }),
+        this.prisma.order.aggregate({
+          where: {
+            userId: id,
+            status: {
+              notIn: [
+                OrderStatus.CANCELLED,
+                OrderStatus.REJECTED,
+                OrderStatus.REFUNDED,
+              ],
+            },
           },
-        },
-        _sum: { totalCents: true },
-      }),
-      this.prisma.order.findMany({
-        where: { userId: id },
-        orderBy: { createdAt: 'desc' },
-        take: 8,
-        select: {
-          id: true,
-          number: true,
-          status: true,
-          paymentStatus: true,
-          totalCents: true,
-          createdAt: true,
-        },
-      }),
-      this.prisma.supportCase.count({
-        where: {
-          OR: [{ userId: id }, { assignedToId: id }],
-        },
-      }),
-      this.prisma.newsletterSubscription.findUnique({
-        where: { email: user.email },
-        select: { isActive: true, consentedAt: true },
-      }),
-    ]);
+          _sum: { totalCents: true },
+        }),
+        this.prisma.order.findMany({
+          where: { userId: id },
+          orderBy: { createdAt: 'desc' },
+          take: 8,
+          select: {
+            id: true,
+            number: true,
+            status: true,
+            paymentStatus: true,
+            totalCents: true,
+            createdAt: true,
+          },
+        }),
+        this.prisma.supportCase.count({
+          where: {
+            OR: [{ userId: id }, { assignedToId: id }],
+          },
+        }),
+        this.prisma.newsletterSubscription.findUnique({
+          where: { email: user.email },
+          select: { isActive: true, consentedAt: true },
+        }),
+      ]);
 
     return {
       ...user,
@@ -265,9 +260,7 @@ export class AdminUsersService {
           firstName: data.firstName?.trim(),
           lastName: data.lastName?.trim(),
           phone:
-            data.phone === undefined
-              ? undefined
-              : data.phone?.trim() || null,
+            data.phone === undefined ? undefined : data.phone?.trim() || null,
           role: data.role,
           isActive: data.isActive,
           customerProfile: {
@@ -493,8 +486,8 @@ export class AdminUsersService {
     if (
       target.role !== UserRole.ADMIN ||
       !target.isActive ||
-      (nextRole === undefined || nextRole === UserRole.ADMIN) &&
-        nextActive !== false
+      ((nextRole === undefined || nextRole === UserRole.ADMIN) &&
+        nextActive !== false)
     ) {
       return;
     }

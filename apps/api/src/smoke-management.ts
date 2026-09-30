@@ -145,29 +145,25 @@ async function validateUserAdministration(
   assert.equal(user.role, 'CUSTOMER');
   assert.equal(user.isActive, true);
 
-  const detailResponse = await fetch(
-    `${baseUrl}/v1/admin/users/${user.id}`,
-    { headers: { cookie: staffCookie } },
-  );
+  const detailResponse = await fetch(`${baseUrl}/v1/admin/users/${user.id}`, {
+    headers: { cookie: staffCookie },
+  });
   assert.equal(detailResponse.status, 200);
 
-  const updateResponse = await fetch(
-    `${baseUrl}/v1/admin/users/${user.id}`,
-    {
-      method: 'PATCH',
-      headers: {
-        'content-type': 'application/json',
-        cookie: adminCookie,
-      },
-      body: JSON.stringify({
-        firstName: 'Cliente Atualizado',
-        phone: '+351911111111',
-        marketingConsent: true,
-        notes: 'Criado pelo smoke de gestão de utilizadores.',
-        role: 'STAFF',
-      }),
+  const updateResponse = await fetch(`${baseUrl}/v1/admin/users/${user.id}`, {
+    method: 'PATCH',
+    headers: {
+      'content-type': 'application/json',
+      cookie: adminCookie,
     },
-  );
+    body: JSON.stringify({
+      firstName: 'Cliente Atualizado',
+      phone: '+351911111111',
+      marketingConsent: true,
+      notes: 'Criado pelo smoke de gestão de utilizadores.',
+      role: 'STAFF',
+    }),
+  });
   assert.equal(updateResponse.status, 200);
   user = (await updateResponse.json()) as typeof user;
   assert.equal(user.firstName, 'Cliente Atualizado');
@@ -222,16 +218,15 @@ async function validateUserAdministration(
   );
   assert.equal(deleteAddressResponse.status, 200);
 
-  const deleteResponse = await fetch(
-    `${baseUrl}/v1/admin/users/${user.id}`,
-    { method: 'DELETE', headers: { cookie: adminCookie } },
-  );
+  const deleteResponse = await fetch(`${baseUrl}/v1/admin/users/${user.id}`, {
+    method: 'DELETE',
+    headers: { cookie: adminCookie },
+  });
   assert.equal(deleteResponse.status, 200);
 
-  const deletedDetail = await fetch(
-    `${baseUrl}/v1/admin/users/${user.id}`,
-    { headers: { cookie: adminCookie } },
-  );
+  const deletedDetail = await fetch(`${baseUrl}/v1/admin/users/${user.id}`, {
+    headers: { cookie: adminCookie },
+  });
   assert.equal(deletedDetail.status, 404);
 
   const searchResponse = await fetch(

@@ -3,13 +3,7 @@
 import type { AuthUser, Paginated, UserRole } from '@nsabores/types';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import {
-  FormEvent,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { managementApi, useManagementAuth } from './management-auth';
 
 type Address = {
@@ -114,9 +108,7 @@ export function UsersAdmin({ selectedId }: { selectedId?: string }) {
     try {
       if (selectedId) {
         setSelected(
-          await managementApi.get<AdminUser>(
-            `/v1/admin/users/${selectedId}`,
-          ),
+          await managementApi.get<AdminUser>(`/v1/admin/users/${selectedId}`),
         );
         return;
       }
@@ -579,9 +571,7 @@ export function UsersAdmin({ selectedId }: { selectedId?: string }) {
 
           {editingAddress && isAdmin && (
             <AddressForm
-              address={
-                editingAddress === 'new' ? undefined : editingAddress
-              }
+              address={editingAddress === 'new' ? undefined : editingAddress}
               busy={busy}
               onCancel={() => setEditingAddress(null)}
               onSave={saveAddress}
@@ -956,7 +946,11 @@ function AddressForm({
       </label>
       <div className="wide admin-actions">
         <button className="admin-primary" disabled={busy}>
-          {busy ? 'A guardar…' : address ? 'Guardar morada' : 'Adicionar morada'}
+          {busy
+            ? 'A guardar…'
+            : address
+              ? 'Guardar morada'
+              : 'Adicionar morada'}
         </button>
         <button type="button" onClick={onCancel}>
           Cancelar

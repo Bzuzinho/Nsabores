@@ -2427,10 +2427,12 @@ td button,
   }
 }
 
-
 /* Gestão de utilizadores */
 .user-filters {
-  grid-template-columns: minmax(260px, 2fr) minmax(160px, 1fr) minmax(160px, 1fr);
+  grid-template-columns: minmax(260px, 2fr) minmax(160px, 1fr) minmax(
+      160px,
+      1fr
+    );
 }
 
 .admin-card {

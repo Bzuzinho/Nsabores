@@ -56,10 +56,7 @@ export class AdminUsersController {
 
   @Delete(':id')
   @Roles(UserRole.ADMIN)
-  remove(
-    @CurrentUser() actor: AuthPrincipal,
-    @Param('id') id: string,
-  ) {
+  remove(@CurrentUser() actor: AuthPrincipal, @Param('id') id: string) {
     return this.users.remove(actor.sub, id);
   }
 
@@ -71,10 +68,7 @@ export class AdminUsersController {
 
   @Post(':id/addresses')
   @Roles(UserRole.ADMIN)
-  createAddress(
-    @Param('id') id: string,
-    @Body() body: AddressDto,
-  ) {
+  createAddress(@Param('id') id: string, @Body() body: AddressDto) {
     return this.users.createAddress(id, body);
   }
 
