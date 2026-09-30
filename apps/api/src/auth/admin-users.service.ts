@@ -4,17 +4,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { OrderStatus, Prisma, UserRole } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import argon2 from 'argon2';
 import { createHash, randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma.service';
-import type {
-  AddressDto,
-  InviteUserDto,
-  UpdateAddressDto,
-  UpdateUserAdminDto,
-  UsersQueryDto,
-} from './dto';
+import type { InviteUserDto, UpdateUserAdminDto, UsersQueryDto } from './dto';
 import { MailProvider } from './mail.provider';
 
 const adminUser = {
@@ -30,14 +24,6 @@ const adminUser = {
   createdAt: true,
   updatedAt: true,
   deletedAt: true,
-  customerProfile: {
-    select: {
-      taxNumber: true,
-      marketingConsent: true,
-      marketingConsentAt: true,
-      notes: true,
-    },
-  },
 } as const;
 
 @Injectable()
@@ -72,11 +58,6 @@ export class AdminUsersService {
           .digest('hex'),
         passwordResetExpiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000),
         emailVerifiedAt: new Date(),
-        customerProfile: {
-          create: {
-            taxNumber: body.taxNumber?.trim() || null,
-          },
-        },
       },
       select: adminUser,
     });
@@ -89,7 +70,7 @@ export class AdminUsersService {
     const limit = Math.min(100, Math.max(1, query.limit));
     const where: Prisma.UserWhereInput = {
       deletedAt: null,
-      ...(query.role ? { role: query.role } : {}),
+      role: query.role ? query.role : { in: [UserRole.STAFF, UserRole.ADMIN] },
       ...(query.active === undefined ? {} : { isActive: query.active }),
       ...(query.search?.trim()
         ? {
@@ -135,16 +116,13 @@ export class AdminUsersService {
 
   async detail(id: string) {
     const user = await this.prisma.user.findFirst({
-      where: { id, deletedAt: null },
+      where: {
+        id,
+        deletedAt: null,
+        role: { in: [UserRole.STAFF, UserRole.ADMIN] },
+      },
       select: {
         ...adminUser,
-        addresses: {
-          orderBy: [
-            { isDefaultShipping: 'desc' },
-            { isDefaultBilling: 'desc' },
-            { createdAt: 'desc' },
-          ],
-        },
         authSessions: {
           where: { revokedAt: null, expiresAt: { gt: new Date() } },
           select: {
@@ -156,81 +134,17 @@ export class AdminUsersService {
           },
           orderBy: { createdAt: 'desc' },
         },
-        businessMemberships: {
-          where: { isActive: true },
-          select: {
-            id: true,
-            role: true,
-            businessAccount: {
-              select: {
-                id: true,
-                type: true,
-                tradeName: true,
-                status: true,
-              },
-            },
-          },
-        },
       },
     });
     if (!user) throw new NotFoundException('Utilizador não encontrado.');
-
-    const [orderCount, orderValue, recentOrders, supportCases, newsletter] =
-      await Promise.all([
-        this.prisma.order.count({ where: { userId: id } }),
-        this.prisma.order.aggregate({
-          where: {
-            userId: id,
-            status: {
-              notIn: [
-                OrderStatus.CANCELLED,
-                OrderStatus.REJECTED,
-                OrderStatus.REFUNDED,
-              ],
-            },
-          },
-          _sum: { totalCents: true },
-        }),
-        this.prisma.order.findMany({
-          where: { userId: id },
-          orderBy: { createdAt: 'desc' },
-          take: 8,
-          select: {
-            id: true,
-            number: true,
-            status: true,
-            paymentStatus: true,
-            totalCents: true,
-            createdAt: true,
-          },
-        }),
-        this.prisma.supportCase.count({
-          where: {
-            OR: [{ userId: id }, { assignedToId: id }],
-          },
-        }),
-        this.prisma.newsletterSubscription.findUnique({
-          where: { email: user.email },
-          select: { isActive: true, consentedAt: true },
-        }),
-      ]);
-
     return {
       ...user,
-      stats: {
-        orders: orderCount,
-        orderValueCents: orderValue._sum.totalCents ?? 0,
-        addresses: user.addresses.length,
-        activeSessions: user.authSessions.length,
-        supportCases,
-      },
-      recentOrders,
-      newsletter,
+      stats: { activeSessions: user.authSessions.length },
     };
   }
 
   async update(actorId: string, id: string, data: UpdateUserAdminDto) {
-    const target = await this.getActiveUser(id);
+    const target = await this.getInternalUser(id);
 
     if (
       actorId === id &&
@@ -244,14 +158,6 @@ export class AdminUsersService {
 
     await this.assertAdminContinuity(target, data.role, data.isActive);
 
-    const previousConsent = target.customerProfile?.marketingConsent ?? false;
-    const consentAt =
-      data.marketingConsent === true && !previousConsent
-        ? new Date()
-        : data.marketingConsent === false
-          ? null
-          : undefined;
-
     try {
       return await this.prisma.user.update({
         where: { id },
@@ -263,28 +169,6 @@ export class AdminUsersService {
             data.phone === undefined ? undefined : data.phone?.trim() || null,
           role: data.role,
           isActive: data.isActive,
-          customerProfile: {
-            upsert: {
-              create: {
-                taxNumber: data.taxNumber?.trim() || null,
-                marketingConsent: data.marketingConsent ?? false,
-                marketingConsentAt: consentAt,
-                notes: data.notes?.trim() || null,
-              },
-              update: {
-                taxNumber:
-                  data.taxNumber === undefined
-                    ? undefined
-                    : data.taxNumber?.trim() || null,
-                marketingConsent: data.marketingConsent,
-                marketingConsentAt: consentAt,
-                notes:
-                  data.notes === undefined
-                    ? undefined
-                    : data.notes?.trim() || null,
-              },
-            },
-          },
         },
         select: adminUser,
       });
@@ -303,23 +187,14 @@ export class AdminUsersService {
     if (actorId === id) {
       throw new ForbiddenException('Não pode apagar a própria conta.');
     }
-    const target = await this.getActiveUser(id);
-    await this.assertAdminContinuity(target, UserRole.CUSTOMER, false);
+    const target = await this.getInternalUser(id);
+    await this.assertAdminContinuity(target, UserRole.STAFF, false);
 
-    const deletedEmail = `deleted+${id}@deleted.invalid`;
-    const unusablePassword = await argon2.hash(randomBytes(48).toString('hex'));
     const deletedAt = new Date();
-
     await this.prisma.$transaction(async (tx) => {
       await tx.authSession.updateMany({
         where: { userId: id, revokedAt: null },
         data: { revokedAt: deletedAt },
-      });
-      await tx.address.deleteMany({ where: { userId: id } });
-      await tx.cart.deleteMany({ where: { userId: id } });
-      await tx.businessAccountUser.updateMany({
-        where: { userId: id },
-        data: { isActive: false },
       });
       await tx.businessAccount.updateMany({
         where: { managerId: id },
@@ -329,19 +204,15 @@ export class AdminUsersService {
         where: { assignedToId: id },
         data: { assignedToId: null },
       });
-      await tx.newsletterSubscription.updateMany({
-        where: { email: target.email },
-        data: { isActive: false },
-      });
       await tx.user.update({
         where: { id },
         data: {
-          email: deletedEmail,
-          passwordHash: unusablePassword,
+          email: `deleted+${id}@deleted.invalid`,
+          passwordHash: await argon2.hash(randomBytes(48).toString('hex')),
           firstName: 'Utilizador',
           lastName: 'Removido',
           phone: null,
-          role: UserRole.CUSTOMER,
+          role: UserRole.STAFF,
           isActive: false,
           emailVerifiedAt: null,
           lastLoginAt: null,
@@ -350,35 +221,15 @@ export class AdminUsersService {
           emailVerificationTokenHash: null,
           emailVerificationExpiresAt: null,
           deletedAt,
-          customerProfile: {
-            upsert: {
-              create: {
-                taxNumber: null,
-                marketingConsent: false,
-                marketingConsentAt: null,
-                notes: null,
-              },
-              update: {
-                taxNumber: null,
-                marketingConsent: false,
-                marketingConsentAt: null,
-                notes: null,
-              },
-            },
-          },
         },
       });
     });
 
-    return {
-      success: true,
-      message:
-        'Conta removida. O histórico comercial foi preservado sem os dados pessoais da conta.',
-    };
+    return { success: true };
   }
 
   async sendPasswordReset(id: string) {
-    const user = await this.getActiveUser(id);
+    const user = await this.getInternalUser(id);
     if (!user.isActive) {
       throw new ConflictException('A conta está inativa.');
     }
@@ -397,7 +248,7 @@ export class AdminUsersService {
   }
 
   async revokeSessions(userId: string) {
-    await this.getActiveUser(userId);
+    await this.getInternalUser(userId);
     await this.prisma.authSession.updateMany({
       where: { userId, revokedAt: null },
       data: { revokedAt: new Date() },
@@ -405,73 +256,13 @@ export class AdminUsersService {
     return { success: true };
   }
 
-  async createAddress(userId: string, data: AddressDto) {
-    await this.getActiveUser(userId);
-    return this.prisma.$transaction(async (tx) => {
-      if (data.isDefaultShipping) {
-        await tx.address.updateMany({
-          where: { userId, isDefaultShipping: true },
-          data: { isDefaultShipping: false },
-        });
-      }
-      if (data.isDefaultBilling) {
-        await tx.address.updateMany({
-          where: { userId, isDefaultBilling: true },
-          data: { isDefaultBilling: false },
-        });
-      }
-      return tx.address.create({ data: { ...data, userId } });
-    });
-  }
-
-  async updateAddress(
-    userId: string,
-    addressId: string,
-    data: UpdateAddressDto,
-  ) {
-    await this.getActiveUser(userId);
-    const address = await this.prisma.address.findFirst({
-      where: { id: addressId, userId },
-    });
-    if (!address) throw new NotFoundException('Morada não encontrada.');
-
-    return this.prisma.$transaction(async (tx) => {
-      if (data.isDefaultShipping) {
-        await tx.address.updateMany({
-          where: {
-            userId,
-            isDefaultShipping: true,
-            id: { not: addressId },
-          },
-          data: { isDefaultShipping: false },
-        });
-      }
-      if (data.isDefaultBilling) {
-        await tx.address.updateMany({
-          where: {
-            userId,
-            isDefaultBilling: true,
-            id: { not: addressId },
-          },
-          data: { isDefaultBilling: false },
-        });
-      }
-      return tx.address.update({ where: { id: addressId }, data });
-    });
-  }
-
-  async deleteAddress(userId: string, addressId: string) {
-    await this.getActiveUser(userId);
-    const result = await this.prisma.address.deleteMany({
-      where: { id: addressId, userId },
-    });
-    if (!result.count) throw new NotFoundException('Morada não encontrada.');
-    return { success: true };
-  }
-
-  private async getActiveUser(id: string) {
+  private async getInternalUser(id: string) {
     const user = await this.prisma.user.findFirst({
-      where: { id, deletedAt: null },
+      where: {
+        id,
+        deletedAt: null,
+        role: { in: [UserRole.STAFF, UserRole.ADMIN] },
+      },
       select: adminUser,
     });
     if (!user) throw new NotFoundException('Utilizador não encontrado.');
@@ -479,7 +270,7 @@ export class AdminUsersService {
   }
 
   private async assertAdminContinuity(
-    target: Awaited<ReturnType<AdminUsersService['getActiveUser']>>,
+    target: Awaited<ReturnType<AdminUsersService['getInternalUser']>>,
     nextRole: UserRole | undefined,
     nextActive: boolean | undefined,
   ) {

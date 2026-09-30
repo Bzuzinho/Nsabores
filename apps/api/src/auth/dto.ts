@@ -90,8 +90,7 @@ export class UpdateAddressDto extends PartialType(AddressDto) {}
 
 export class UsersQueryDto {
   @IsOptional() @IsString() @MaxLength(100) search?: string;
-  @IsOptional() @IsIn(['CUSTOMER', 'STAFF', 'ADMIN']) role?:
-    'CUSTOMER' | 'STAFF' | 'ADMIN';
+  @IsOptional() @IsIn(['STAFF', 'ADMIN']) role?: 'STAFF' | 'ADMIN';
   @IsOptional()
   @Transform(({ value }) => value === 'true')
   @IsBoolean()
@@ -116,12 +115,8 @@ export class UpdateUserAdminDto {
   lastName?: string;
   @IsOptional() @Transform(trim) @IsString() @MaxLength(30) phone?:
     string | null;
-  @IsOptional() @Transform(trim) @Matches(/^\d{9}$/) taxNumber?: string | null;
-  @IsOptional() @IsBoolean() marketingConsent?: boolean;
-  @IsOptional() @IsIn(['CUSTOMER', 'STAFF', 'ADMIN']) role?:
-    'CUSTOMER' | 'STAFF' | 'ADMIN';
+  @IsOptional() @IsIn(['STAFF', 'ADMIN']) role?: 'STAFF' | 'ADMIN';
   @IsOptional() @IsBoolean() isActive?: boolean;
-  @IsOptional() @IsString() @MaxLength(2000) notes?: string | null;
 }
 
 export class InviteUserDto {
@@ -129,6 +124,5 @@ export class InviteUserDto {
   @IsString() @IsNotEmpty() @MaxLength(100) firstName!: string;
   @IsString() @IsNotEmpty() @MaxLength(100) lastName!: string;
   @IsOptional() @Transform(trim) @IsString() @MaxLength(30) phone?: string;
-  @IsOptional() @Transform(trim) @Matches(/^\d{9}$/) taxNumber?: string;
-  @IsIn(['CUSTOMER', 'STAFF', 'ADMIN']) role!: 'CUSTOMER' | 'STAFF' | 'ADMIN';
+  @IsIn(['STAFF', 'ADMIN']) role!: 'STAFF' | 'ADMIN';
 }

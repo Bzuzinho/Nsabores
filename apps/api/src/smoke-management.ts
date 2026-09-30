@@ -9,7 +9,8 @@ const endpoints = [
   '/v1/admin/products?limit=100',
   '/v1/admin/categories',
   '/v1/admin/orders',
-  '/v1/admin/users?role=CUSTOMER&limit=100',
+  '/v1/admin/users?limit=100',
+  '/v1/admin/customers?limit=100',
   '/v1/admin/operations/dashboard',
   '/v1/admin/operations/preparation',
   '/v1/admin/production',
@@ -60,6 +61,7 @@ type DeliveryMethod = {
 type ManualOrder = {
   id: string;
   userId?: string | null;
+  customerId?: string | null;
   status: string;
   paymentStatus: string;
   shippingCents: number;
@@ -103,7 +105,7 @@ async function validateUserAdministration(
   adminCookie: string,
   staffCookie: string,
 ) {
-  const email = `e2e.user.${Date.now()}@example.invalid`;
+  const email = `e2e.staff.${Date.now()}@example.invalid`;
 
   const staffCreate = await fetch(`${baseUrl}/v1/admin/users`, {
     method: 'POST',
@@ -113,12 +115,27 @@ async function validateUserAdministration(
     },
     body: JSON.stringify({
       email,
-      firstName: 'Cliente',
+      firstName: 'Utilizador',
       lastName: 'Bloqueado',
-      role: 'CUSTOMER',
+      role: 'STAFF',
     }),
   });
   assert.equal(staffCreate.status, 403);
+
+  const invalidCustomerRole = await fetch(`${baseUrl}/v1/admin/users`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      cookie: adminCookie,
+    },
+    body: JSON.stringify({
+      email: `customer-as-user-${Date.now()}@example.invalid`,
+      firstName: 'Cliente',
+      lastName: 'Inválido',
+      role: 'CUSTOMER',
+    }),
+  });
+  assert.equal(invalidCustomerRole.status, 400);
 
   const createResponse = await fetch(`${baseUrl}/v1/admin/users`, {
     method: 'POST',
@@ -128,11 +145,10 @@ async function validateUserAdministration(
     },
     body: JSON.stringify({
       email,
-      firstName: 'Cliente',
+      firstName: 'Equipa',
       lastName: 'E2E',
       phone: '+351912345678',
-      taxNumber: '123456789',
-      role: 'CUSTOMER',
+      role: 'STAFF',
     }),
   });
   assert.equal(createResponse.status, 201);
@@ -142,8 +158,7 @@ async function validateUserAdministration(
     role: string;
     isActive: boolean;
   };
-  assert.equal(user.role, 'CUSTOMER');
-  assert.equal(user.isActive, true);
+  assert.equal(user.role, 'STAFF');
 
   const detailResponse = await fetch(`${baseUrl}/v1/admin/users/${user.id}`, {
     headers: { cookie: staffCookie },
@@ -157,20 +172,107 @@ async function validateUserAdministration(
       cookie: adminCookie,
     },
     body: JSON.stringify({
-      firstName: 'Cliente Atualizado',
+      firstName: 'Equipa Atualizada',
       phone: '+351911111111',
-      marketingConsent: true,
-      notes: 'Criado pelo smoke de gestão de utilizadores.',
       role: 'STAFF',
     }),
   });
   assert.equal(updateResponse.status, 200);
   user = (await updateResponse.json()) as typeof user;
-  assert.equal(user.firstName, 'Cliente Atualizado');
-  assert.equal(user.role, 'STAFF');
+  assert.equal(user.firstName, 'Equipa Atualizada');
+
+  const passwordResetResponse = await fetch(
+    `${baseUrl}/v1/admin/users/${user.id}/password-reset`,
+    { method: 'POST', headers: { cookie: adminCookie } },
+  );
+  assert.equal(passwordResetResponse.status, 201);
+
+  const deleteResponse = await fetch(`${baseUrl}/v1/admin/users/${user.id}`, {
+    method: 'DELETE',
+    headers: { cookie: adminCookie },
+  });
+  assert.equal(deleteResponse.status, 200);
+
+  const deletedDetail = await fetch(`${baseUrl}/v1/admin/users/${user.id}`, {
+    headers: { cookie: adminCookie },
+  });
+  assert.equal(deletedDetail.status, 404);
+}
+
+async function validateCustomerAdministration(
+  baseUrl: string,
+  adminCookie: string,
+  staffCookie: string,
+) {
+  const email = `e2e.customer.${Date.now()}@example.invalid`;
+
+  const staffCreate = await fetch(`${baseUrl}/v1/admin/customers`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      cookie: staffCookie,
+    },
+    body: JSON.stringify({
+      name: 'Cliente Bloqueado',
+      email,
+    }),
+  });
+  assert.equal(staffCreate.status, 403);
+
+  const createResponse = await fetch(`${baseUrl}/v1/admin/customers`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      cookie: adminCookie,
+    },
+    body: JSON.stringify({
+      type: 'INDIVIDUAL',
+      name: 'Cliente Comercial E2E',
+      email,
+      phone: '+351912345678',
+      taxNumber: '123456789',
+      marketingConsent: true,
+      notes: 'Cliente sem conta de acesso.',
+    }),
+  });
+  assert.equal(createResponse.status, 201);
+  let customer = (await createResponse.json()) as {
+    id: string;
+    name: string;
+    email: string;
+    userId?: string | null;
+    isActive: boolean;
+  };
+  assert.equal(customer.userId, null);
+  assert.equal(customer.isActive, true);
+
+  const detailResponse = await fetch(
+    `${baseUrl}/v1/admin/customers/${customer.id}`,
+    { headers: { cookie: staffCookie } },
+  );
+  assert.equal(detailResponse.status, 200);
+
+  const updateResponse = await fetch(
+    `${baseUrl}/v1/admin/customers/${customer.id}`,
+    {
+      method: 'PATCH',
+      headers: {
+        'content-type': 'application/json',
+        cookie: adminCookie,
+      },
+      body: JSON.stringify({
+        name: 'Cliente Comercial Atualizado',
+        company: 'Cliente E2E Lda.',
+        notes: 'Ficha comercial atualizada.',
+      }),
+    },
+  );
+  assert.equal(updateResponse.status, 200);
+  customer = (await updateResponse.json()) as typeof customer;
+  assert.equal(customer.name, 'Cliente Comercial Atualizado');
 
   const addressResponse = await fetch(
-    `${baseUrl}/v1/admin/users/${user.id}/addresses`,
+    `${baseUrl}/v1/admin/customers/${customer.id}/addresses`,
     {
       method: 'POST',
       headers: {
@@ -180,8 +282,8 @@ async function validateUserAdministration(
       body: JSON.stringify({
         label: 'Principal',
         firstName: 'Cliente',
-        lastName: 'E2E',
-        line1: 'Rua do Smoke 10',
+        lastName: 'Comercial',
+        line1: 'Rua do Cliente 10',
         postalCode: '1000-010',
         city: 'Lisboa',
         countryCode: 'PT',
@@ -194,7 +296,7 @@ async function validateUserAdministration(
   const address = (await addressResponse.json()) as { id: string };
 
   const updateAddressResponse = await fetch(
-    `${baseUrl}/v1/admin/users/${user.id}/addresses/${address.id}`,
+    `${baseUrl}/v1/admin/customers/${customer.id}/addresses/${address.id}`,
     {
       method: 'PATCH',
       headers: {
@@ -206,36 +308,23 @@ async function validateUserAdministration(
   );
   assert.equal(updateAddressResponse.status, 200);
 
-  const passwordResetResponse = await fetch(
-    `${baseUrl}/v1/admin/users/${user.id}/password-reset`,
-    { method: 'POST', headers: { cookie: adminCookie } },
-  );
-  assert.equal(passwordResetResponse.status, 201);
-
   const deleteAddressResponse = await fetch(
-    `${baseUrl}/v1/admin/users/${user.id}/addresses/${address.id}`,
+    `${baseUrl}/v1/admin/customers/${customer.id}/addresses/${address.id}`,
     { method: 'DELETE', headers: { cookie: adminCookie } },
   );
   assert.equal(deleteAddressResponse.status, 200);
 
-  const deleteResponse = await fetch(`${baseUrl}/v1/admin/users/${user.id}`, {
-    method: 'DELETE',
-    headers: { cookie: adminCookie },
-  });
+  const deleteResponse = await fetch(
+    `${baseUrl}/v1/admin/customers/${customer.id}`,
+    { method: 'DELETE', headers: { cookie: adminCookie } },
+  );
   assert.equal(deleteResponse.status, 200);
 
-  const deletedDetail = await fetch(`${baseUrl}/v1/admin/users/${user.id}`, {
-    headers: { cookie: adminCookie },
-  });
-  assert.equal(deletedDetail.status, 404);
-
-  const searchResponse = await fetch(
-    `${baseUrl}/v1/admin/users?search=${encodeURIComponent(email)}`,
+  const deletedDetail = await fetch(
+    `${baseUrl}/v1/admin/customers/${customer.id}`,
     { headers: { cookie: adminCookie } },
   );
-  assert.equal(searchResponse.status, 200);
-  const search = (await searchResponse.json()) as { data: unknown[] };
-  assert.equal(search.data.length, 0);
+  assert.equal(deletedDetail.status, 404);
 }
 
 async function validateManualCheckout(
@@ -568,6 +657,7 @@ async function main() {
     assert.equal(forbidden.status, 403);
 
     await validateUserAdministration(baseUrl, adminCookie, staffCookie);
+    await validateCustomerAdministration(baseUrl, adminCookie, staffCookie);
     await validatePersistentMediaUpload(
       baseUrl,
       staffCookie,
@@ -627,7 +717,7 @@ async function main() {
     assert.ok(production.length >= 3);
 
     console.log(
-      `E2E validado: autenticação, permissões, CRUD administrativo de utilizadores e moradas, upload persistente de imagens, associação Cliente ↔ Encomenda manual, ciclo PENDING_PAYMENT → PAID → PROCESSING → READY → DELIVERED, checkout manual, transporte caso a caso, catálogo público, ${endpoints.length} endpoints administrativos, ${productCount} produtos, ${categoryCount} categorias e ${orderCount} encomendas.`,
+      `E2E validado: autenticação, separação Clientes/Utilizadores, CRUD de clientes e utilizadores, upload persistente de imagens, associação Cliente ↔ Encomenda manual, ciclo PENDING_PAYMENT → PAID → PROCESSING → READY → DELIVERED, checkout manual, transporte caso a caso, catálogo público, ${endpoints.length} endpoints administrativos, ${productCount} produtos, ${categoryCount} categorias e ${orderCount} encomendas.`,
     );
   } finally {
     await app.close();

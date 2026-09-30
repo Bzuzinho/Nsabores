@@ -19,6 +19,11 @@ enum UserRole {
   ADMIN
 }
 
+enum CustomerType {
+  INDIVIDUAL
+  COMPANY
+}
+
 enum CartStatus {
   ACTIVE
   CONVERTED
@@ -325,6 +330,7 @@ model User {
   updatedAt                  DateTime              @updatedAt
   deletedAt                  DateTime?
   customerProfile            CustomerProfile?
+  customer                   Customer?
   addresses                  Address[]
   authSessions               AuthSession[]
   carts                      Cart[]
@@ -420,6 +426,7 @@ model Order {
   id                   String               @id @default(uuid()) @db.Uuid
   number               String               @unique
   userId               String?              @db.Uuid
+  customerId           String?              @db.Uuid
   email                String
   customerName         String
   phone                String
@@ -449,6 +456,7 @@ model Order {
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
   user                 User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  customer             Customer?            @relation(fields: [customerId], references: [id], onDelete: SetNull)
   deliveryMethod       DeliveryMethod       @relation(fields: [deliveryMethodId], references: [id], onDelete: Restrict)
   items                OrderItem[]
   payments             Payment[]
@@ -466,6 +474,7 @@ model Order {
   documents            OrderDocument[]
 
   @@index([userId, createdAt])
+  @@index([customerId, createdAt])
   @@index([status, paymentStatus, createdAt])
   @@index([businessAccountId, createdAt])
   @@index([salesChannel, createdAt])
@@ -533,6 +542,30 @@ model ProcessedWebhook {
   @@unique([provider, providerEventId])
 }
 
+model Customer {
+  id                 String       @id @default(uuid()) @db.Uuid
+  userId             String?      @unique @db.Uuid
+  type               CustomerType @default(INDIVIDUAL)
+  name               String
+  email              String       @unique
+  phone              String?
+  company            String?
+  taxNumber          String?
+  marketingConsent   Boolean      @default(false)
+  marketingConsentAt DateTime?
+  notes              String?
+  isActive           Boolean      @default(true)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  deletedAt          DateTime?
+  user               User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  addresses          Address[]
+  orders             Order[]
+
+  @@index([name])
+  @@index([isActive, deletedAt])
+}
+
 model CustomerProfile {
   id                 String    @id @default(uuid()) @db.Uuid
   userId             String    @unique @db.Uuid
@@ -547,7 +580,8 @@ model CustomerProfile {
 
 model Address {
   id                String   @id @default(uuid()) @db.Uuid
-  userId            String   @db.Uuid
+  userId            String?  @db.Uuid
+  customerId        String?  @db.Uuid
   label             String
   firstName         String
   lastName          String
@@ -563,9 +597,11 @@ model Address {
   isDefaultBilling  Boolean  @default(false)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customer          Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([customerId])
 }
 
 model AuthSession {

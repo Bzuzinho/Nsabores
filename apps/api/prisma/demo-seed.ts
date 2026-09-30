@@ -271,6 +271,28 @@ async function seedUsers() {
           notes: 'Conta de demonstração.',
         },
       });
+      await prisma.customer.upsert({
+        where: { email },
+        update: {
+          userId: user.id,
+          name: `${firstName} ${lastName}`,
+          phone: '+351 910 000 000',
+          marketingConsent: true,
+          marketingConsentAt: new Date(),
+          notes: 'Cliente do ambiente de demonstração.',
+          isActive: true,
+          deletedAt: null,
+        },
+        create: {
+          userId: user.id,
+          name: `${firstName} ${lastName}`,
+          email,
+          phone: '+351 910 000 000',
+          marketingConsent: true,
+          marketingConsentAt: new Date(),
+          notes: 'Cliente do ambiente de demonstração.',
+        },
+      });
     }
   }
 }
@@ -294,6 +316,9 @@ async function seedOrders() {
 
   for (const [index, [status, paymentStatus]] of orderStates.entries()) {
     const customer = customers[index % customers.length]!;
+    const commercialCustomer = await prisma.customer.findUniqueOrThrow({
+      where: { userId: customer.id },
+    });
     const first = products[index % products.length]!;
     const second = products[(index + 1) % products.length]!;
     const subtotalCents = first.priceCents + second.priceCents * 2;
@@ -304,6 +329,7 @@ async function seedOrders() {
       where: { number },
       update: {
         userId: customer.id,
+        customerId: commercialCustomer.id,
         email: customer.email,
         customerName: `${customer.firstName} ${customer.lastName}`,
         status,
@@ -320,6 +346,7 @@ async function seedOrders() {
       create: {
         number,
         userId: customer.id,
+        customerId: commercialCustomer.id,
         email: customer.email,
         customerName: `${customer.firstName} ${customer.lastName}`,
         phone: '+351 910 000 000',

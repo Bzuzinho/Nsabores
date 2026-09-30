@@ -60,11 +60,38 @@ async function seedAdditionalUsers() {
           notes: 'Conta B2B do ambiente de demonstração.',
         },
       });
+      const customer = await db.customer.upsert({
+        where: { email },
+        update: {
+          userId: user.id,
+          name: `${firstName} ${lastName}`,
+          phone: '+351 910 000 000',
+          company: 'Mercearia Parceira Demo',
+          taxNumber: '245000001',
+          marketingConsent: true,
+          marketingConsentAt: now,
+          notes: 'Cliente B2B do ambiente de demonstração.',
+          isActive: true,
+          deletedAt: null,
+        },
+        create: {
+          userId: user.id,
+          name: `${firstName} ${lastName}`,
+          email,
+          phone: '+351 910 000 000',
+          company: 'Mercearia Parceira Demo',
+          taxNumber: '245000001',
+          marketingConsent: true,
+          marketingConsentAt: now,
+          notes: 'Cliente B2B do ambiente de demonstração.',
+        },
+      });
       await findOrCreate(
         db.address,
         { userId: user.id, label: 'Morada Demo' },
         {
           userId: user.id,
+          customerId: customer.id,
           label: 'Morada Demo',
           firstName,
           lastName,

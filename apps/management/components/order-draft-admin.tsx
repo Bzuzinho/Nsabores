@@ -17,14 +17,13 @@ type DraftLine = {
 };
 
 type AdminOrder = CommerceOrder & {
-  userId?: string | null;
+  customerId?: string | null;
 };
 
 type CustomerOption = {
   id: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   phone?: string | null;
   addresses?: Array<{
     id: string;
@@ -57,7 +56,7 @@ export function OrderDraftAdmin({ id }: { id?: string }) {
       ),
       managementApi.get<DeliveryMethod[]>('/v1/admin/delivery-methods'),
       managementApi.get<Paginated<CustomerOption>>(
-        '/v1/admin/users?role=CUSTOMER&limit=100',
+        '/v1/admin/customers?active=true&limit=100',
       ),
       id
         ? managementApi.get<AdminOrder>(`/v1/admin/orders/${id}`)
@@ -68,7 +67,7 @@ export function OrderDraftAdmin({ id }: { id?: string }) {
         setDeliveryMethods(methods);
         setCustomers(customerResult.data);
         setOrder(current);
-        setSelectedCustomerId(current?.userId ?? '');
+        setSelectedCustomerId(current?.customerId ?? '');
         if (current)
           setLines(
             current.items.map((item) => ({
@@ -99,7 +98,7 @@ export function OrderDraftAdmin({ id }: { id?: string }) {
       countryCode: 'PT',
     };
     const body = {
-      userId: String(form.get('userId') || '') || undefined,
+      customerId: String(form.get('customerId') || '') || undefined,
       email: String(form.get('email')),
       customerName: `${address.firstName} ${address.lastName}`.trim(),
       phone: String(form.get('phone')),
@@ -145,14 +144,14 @@ export function OrderDraftAdmin({ id }: { id?: string }) {
         <label>
           Cliente existente
           <select
-            name="userId"
+            name="customerId"
             value={selectedCustomerId}
             onChange={(event) => {
               const customerId = event.target.value;
               setSelectedCustomerId(customerId);
               if (!customerId) return;
               void managementApi
-                .get<CustomerOption>(`/v1/admin/users/${customerId}`)
+                .get<CustomerOption>(`/v1/admin/customers/${customerId}`)
                 .then((customer) => {
                   const form = formRef.current;
                   if (!form) return;
@@ -170,8 +169,12 @@ export function OrderDraftAdmin({ id }: { id?: string }) {
                     }
                   };
                   set('email', customer.email);
-                  set('firstName', address?.firstName ?? customer.firstName);
-                  set('lastName', address?.lastName ?? customer.lastName);
+                  const parts = customer.name.trim().split(/\s+/);
+                  set('firstName', address?.firstName ?? parts[0]);
+                  set(
+                    'lastName',
+                    address?.lastName ?? parts.slice(1).join(' '),
+                  );
                   set('phone', customer.phone);
                   set('line1', address?.line1);
                   set('postalCode', address?.postalCode);
@@ -189,13 +192,14 @@ export function OrderDraftAdmin({ id }: { id?: string }) {
             <option value="">Sem conta associada</option>
             {customers.map((customer) => (
               <option key={customer.id} value={customer.id}>
-                {customer.firstName} {customer.lastName} — {customer.email}
+                {customer.name} — {customer.email}
               </option>
             ))}
           </select>
           <small>
-            Ao selecionar um cliente, os dados conhecidos são preenchidos e a
-            encomenda ficará visível na respetiva área de cliente.
+            Ao selecionar um cliente, os dados comerciais conhecidos são
+            preenchidos. Se existir uma conta do website ligada ao cliente, a
+            encomenda ficará também visível nessa conta.
           </small>
         </label>
         <label>

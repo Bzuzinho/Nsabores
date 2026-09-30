@@ -7,14 +7,19 @@ import type { AddressDto, UpdateAddressDto } from './dto';
 export class AccountService {
   constructor(private readonly prisma: PrismaService) {}
 
-  addresses(userId: string) {
+  async addresses(userId: string) {
+    const customer = await this.customerForUser(userId);
     return this.prisma.address.findMany({
-      where: { userId },
+      where: customer ? { customerId: customer.id } : { userId },
       orderBy: [{ isDefaultShipping: 'desc' }, { createdAt: 'desc' }],
     });
   }
 
   async dashboard(userId: string) {
+    const customer = await this.customerForUser(userId);
+    const orderWhere = customer ? { customerId: customer.id } : { userId };
+    const addressWhere = customer ? { customerId: customer.id } : { userId };
+
     const [
       totalOrders,
       activeOrders,
@@ -25,10 +30,10 @@ export class AccountService {
       subscription,
       loyalty,
     ] = await Promise.all([
-      this.prisma.order.count({ where: { userId } }),
+      this.prisma.order.count({ where: orderWhere }),
       this.prisma.order.count({
         where: {
-          userId,
+          ...orderWhere,
           status: {
             notIn: [
               OrderStatus.DELIVERED,
@@ -39,7 +44,7 @@ export class AccountService {
         },
       }),
       this.prisma.order.findMany({
-        where: { userId },
+        where: orderWhere,
         orderBy: { createdAt: 'desc' },
         take: 3,
         select: {
@@ -50,7 +55,7 @@ export class AccountService {
           createdAt: true,
         },
       }),
-      this.prisma.address.count({ where: { userId } }),
+      this.prisma.address.count({ where: addressWhere }),
       this.prisma.fiscalDocument.count({ where: { customerUserId: userId } }),
       this.prisma.businessAccountUser.findFirst({
         where: { userId, isActive: true },
@@ -72,6 +77,7 @@ export class AccountService {
       }),
       this.prisma.loyaltyAccount.findUnique({ where: { userId } }),
     ]);
+
     const business = membership?.businessAccount;
     const planSnapshot = subscription?.planSnapshot;
     const planName =
@@ -82,6 +88,7 @@ export class AccountService {
       typeof planSnapshot.name === 'string'
         ? planSnapshot.name
         : null;
+
     return {
       accountType: !business
         ? 'PARTICULAR'
@@ -121,38 +128,57 @@ export class AccountService {
   }
 
   async createAddress(userId: string, data: AddressDto) {
+    const customer = await this.customerForUser(userId);
     return this.prisma.$transaction(async (tx) => {
+      const where = customer ? { customerId: customer.id } : { userId };
       if (data.isDefaultShipping) {
         await tx.address.updateMany({
-          where: { userId, isDefaultShipping: true },
+          where: { ...where, isDefaultShipping: true },
           data: { isDefaultShipping: false },
         });
       }
       if (data.isDefaultBilling) {
         await tx.address.updateMany({
-          where: { userId, isDefaultBilling: true },
+          where: { ...where, isDefaultBilling: true },
           data: { isDefaultBilling: false },
         });
       }
-      return tx.address.create({ data: { ...data, userId } });
+      return tx.address.create({
+        data: {
+          ...data,
+          userId,
+          customerId: customer?.id,
+        },
+      });
     });
   }
 
   async updateAddress(userId: string, id: string, data: UpdateAddressDto) {
+    const customer = await this.customerForUser(userId);
+    const ownerWhere = customer ? { customerId: customer.id } : { userId };
     const address = await this.prisma.address.findFirst({
-      where: { id, userId },
+      where: { id, ...ownerWhere },
     });
     if (!address) throw new NotFoundException('Morada não encontrada.');
+
     return this.prisma.$transaction(async (tx) => {
       if (data.isDefaultShipping) {
         await tx.address.updateMany({
-          where: { userId, isDefaultShipping: true, id: { not: id } },
+          where: {
+            ...ownerWhere,
+            isDefaultShipping: true,
+            id: { not: id },
+          },
           data: { isDefaultShipping: false },
         });
       }
       if (data.isDefaultBilling) {
         await tx.address.updateMany({
-          where: { userId, isDefaultBilling: true, id: { not: id } },
+          where: {
+            ...ownerWhere,
+            isDefaultBilling: true,
+            id: { not: id },
+          },
           data: { isDefaultBilling: false },
         });
       }
@@ -161,10 +187,18 @@ export class AccountService {
   }
 
   async deleteAddress(userId: string, id: string) {
+    const customer = await this.customerForUser(userId);
     const result = await this.prisma.address.deleteMany({
-      where: { id, userId },
+      where: customer ? { id, customerId: customer.id } : { id, userId },
     });
     if (!result.count) throw new NotFoundException('Morada não encontrada.');
     return { success: true };
+  }
+
+  private customerForUser(userId: string) {
+    return this.prisma.customer.findFirst({
+      where: { userId, deletedAt: null },
+      select: { id: true },
+    });
   }
 }

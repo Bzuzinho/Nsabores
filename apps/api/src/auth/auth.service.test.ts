@@ -49,9 +49,17 @@ function setup() {
       findMany: vi.fn(),
     },
     customerProfile: { findUnique: vi.fn() },
-    $transaction: vi.fn(async (operations: unknown[]) =>
-      Promise.all(operations),
-    ),
+    customer: {
+      findUnique: vi.fn(),
+      create: vi.fn().mockResolvedValue({}),
+      update: vi.fn().mockResolvedValue({}),
+    },
+    $transaction: vi.fn(async (operations: unknown) => {
+      if (typeof operations === 'function') {
+        return (operations as (tx: unknown) => Promise<unknown>)(prisma);
+      }
+      return Promise.all(operations as unknown[]);
+    }),
   };
   const jwt = { signAsync: vi.fn().mockResolvedValue('access-token') };
   const config = {
@@ -89,6 +97,7 @@ describe('AuthService', () => {
   it('registers with a password hash, profile and secure cookies', async () => {
     const { service, prisma, response, mail } = setup();
     prisma.user.create.mockResolvedValue(user);
+    prisma.customer.findUnique.mockResolvedValue(null);
     await service.register(
       {
         email: user.email,
@@ -108,6 +117,15 @@ describe('AuthService', () => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           customerProfile: expect.any(Object),
         }),
+      }),
+    );
+    expect(prisma.customer.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: user.id,
+          email: user.email,
+          name: 'Ana Silva',
+        }) as unknown,
       }),
     );
     expect(mail.sendEmailVerification).toHaveBeenCalled();
