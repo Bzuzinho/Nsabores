@@ -65,6 +65,15 @@ export class AuthService {
               marketingConsentAt: dto.marketingConsent ? new Date() : null,
             },
           },
+          customer: {
+            create: {
+              name: `${dto.firstName} ${dto.lastName}`.trim(),
+              email: dto.email,
+              phone: dto.phone,
+              marketingConsent: dto.marketingConsent ?? false,
+              marketingConsentAt: dto.marketingConsent ? new Date() : null,
+            },
+          },
         },
         select: publicUser,
       });
@@ -250,9 +259,10 @@ export class AuthService {
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
-    const previous = await this.prisma.customerProfile.findUnique({
-      where: { userId },
-    });
+    const [previous, customer] = await Promise.all([
+      this.prisma.customerProfile.findUnique({ where: { userId } }),
+      this.prisma.customer.findUnique({ where: { userId } }),
+    ]);
     const consentAt =
       dto.marketingConsent === true && !previous?.marketingConsent
         ? new Date()
@@ -273,6 +283,25 @@ export class AuthService {
               marketingConsentAt: consentAt,
             },
             update: {
+              taxNumber: dto.taxNumber,
+              marketingConsent: dto.marketingConsent,
+              marketingConsentAt: consentAt,
+            },
+          },
+        },
+        customer: {
+          upsert: {
+            create: {
+              name: `${dto.firstName} ${dto.lastName}`.trim(),
+              email: customer?.email ?? '',
+              phone: dto.phone,
+              taxNumber: dto.taxNumber,
+              marketingConsent: dto.marketingConsent ?? false,
+              marketingConsentAt: consentAt,
+            },
+            update: {
+              name: `${dto.firstName} ${dto.lastName}`.trim(),
+              phone: dto.phone,
               taxNumber: dto.taxNumber,
               marketingConsent: dto.marketingConsent,
               marketingConsentAt: consentAt,
