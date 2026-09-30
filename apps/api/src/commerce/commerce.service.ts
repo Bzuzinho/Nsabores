@@ -299,10 +299,18 @@ export class CommerceService {
           ? 0
           : delivery.priceCents;
       const number = `NS-${new Date().getUTCFullYear()}-${randomBytes(4).toString('hex').toUpperCase()}`;
+      const customer = await this.resolveCustomer(tx, {
+        userId: identity.userId,
+        email: body.email,
+        name: body.customerName,
+        phone: body.phone,
+        marketingConsent: body.marketingConsent,
+      });
       const created = await tx.order.create({
         data: {
           number,
           userId: identity.userId,
+          customerId: customer.id,
           email: body.email.toLowerCase(),
           customerName: body.customerName,
           phone: body.phone,
@@ -435,17 +443,25 @@ export class CommerceService {
     });
   }
 
-  customerOrders(userId: string) {
+  async customerOrders(userId: string) {
+    const customer = await this.prisma.customer.findFirst({
+      where: { userId, deletedAt: null },
+      select: { id: true },
+    });
     return this.prisma.order.findMany({
-      where: { userId },
+      where: customer ? { customerId: customer.id } : { userId },
       include: orderInclude,
       orderBy: { createdAt: 'desc' },
     });
   }
 
   async customerOrder(userId: string, id: string) {
+    const customer = await this.prisma.customer.findFirst({
+      where: { userId, deletedAt: null },
+      select: { id: true },
+    });
     const order = await this.prisma.order.findFirst({
-      where: { id, userId },
+      where: customer ? { id, customerId: customer.id } : { id, userId },
       include: orderInclude,
     });
     if (!order) throw new NotFoundException('Encomenda não encontrada.');
@@ -652,16 +668,15 @@ export class CommerceService {
         ? 0
         : delivery.priceCents;
     const normalizedEmail = body.email.trim().toLowerCase();
-    const matchedUser = body.userId
-      ? await this.prisma.user.findUnique({ where: { id: body.userId } })
-      : await this.prisma.user.findUnique({
-          where: { email: normalizedEmail },
-        });
-    if (body.userId && !matchedUser) {
-      throw new BadRequestException('Cliente selecionado não encontrado.');
-    }
+    const customer = await this.resolveCustomer(this.prisma, {
+      customerId: body.customerId,
+      email: normalizedEmail,
+      name: body.customerName,
+      phone: body.phone,
+    });
     const data = {
-      userId: matchedUser?.id ?? null,
+      customerId: customer.id,
+      userId: customer.userId ?? null,
       email: normalizedEmail,
       customerName: body.customerName.trim(),
       phone: body.phone.trim(),
@@ -901,6 +916,74 @@ export class CommerceService {
         payment.order.number,
       );
     return { processed: true, duplicate: false };
+  }
+
+  protected async resolveCustomer(
+    client: Prisma.TransactionClient | PrismaService,
+    input: {
+      customerId?: string;
+      userId?: string;
+      email: string;
+      name: string;
+      phone?: string;
+      marketingConsent?: boolean;
+    },
+  ) {
+    const normalizedEmail = input.email.trim().toLowerCase();
+
+    if (input.customerId) {
+      const selected = await client.customer.findFirst({
+        where: { id: input.customerId, deletedAt: null, isActive: true },
+        select: { id: true, userId: true },
+      });
+      if (!selected) {
+        throw new BadRequestException('Cliente selecionado não encontrado.');
+      }
+      return selected;
+    }
+
+    const linked = input.userId
+      ? await client.customer.findFirst({
+          where: { userId: input.userId, deletedAt: null },
+        })
+      : null;
+    const existing =
+      linked ??
+      (await client.customer.findFirst({
+        where: { email: normalizedEmail, deletedAt: null },
+      }));
+
+    if (existing) {
+      const consentAt =
+        input.marketingConsent === true && !existing.marketingConsent
+          ? new Date()
+          : undefined;
+      return client.customer.update({
+        where: { id: existing.id },
+        data: {
+          userId:
+            input.userId && !existing.userId ? input.userId : undefined,
+          name: input.name.trim() || existing.name,
+          phone: input.phone?.trim() || existing.phone,
+          marketingConsent:
+            input.marketingConsent === true ? true : undefined,
+          marketingConsentAt: consentAt,
+        },
+        select: { id: true, userId: true },
+      });
+    }
+
+    return client.customer.create({
+      data: {
+        userId: input.userId,
+        name: input.name.trim(),
+        email: normalizedEmail,
+        phone: input.phone?.trim() || null,
+        marketingConsent: input.marketingConsent ?? false,
+        marketingConsentAt: input.marketingConsent ? new Date() : null,
+      },
+      select: { id: true, userId: true },
+    });
   }
 
   private paymentRedirect(orderId: string, paymentId: string) {
