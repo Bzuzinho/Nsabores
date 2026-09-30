@@ -142,7 +142,7 @@ export class AdminOrderItemDto {
 }
 
 export class AdminOrderDraftDto {
-  @IsOptional() @IsUUID() userId?: string;
+  @IsOptional() @IsUUID() customerId?: string;
   @IsEmail() email!: string;
   @IsString() @IsNotEmpty() @MaxLength(150) customerName!: string;
   @IsString() @IsNotEmpty() @MaxLength(40) phone!: string;
