@@ -259,9 +259,13 @@ export class AuthService {
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
-    const [previous, customer] = await Promise.all([
+    const [previous, customer, account] = await Promise.all([
       this.prisma.customerProfile.findUnique({ where: { userId } }),
       this.prisma.customer.findUnique({ where: { userId } }),
+      this.prisma.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: { email: true },
+      }),
     ]);
     const consentAt =
       dto.marketingConsent === true && !previous?.marketingConsent
@@ -293,7 +297,7 @@ export class AuthService {
           upsert: {
             create: {
               name: `${dto.firstName} ${dto.lastName}`.trim(),
-              email: customer?.email ?? '',
+              email: customer?.email ?? account.email,
               phone: dto.phone,
               taxNumber: dto.taxNumber,
               marketingConsent: dto.marketingConsent ?? false,
