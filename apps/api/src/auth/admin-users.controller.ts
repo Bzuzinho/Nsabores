@@ -1,7 +1,7 @@
 import {
   Body,
-  ConflictException,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -9,26 +9,24 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { UserRole } from '@prisma/client';
 import { CurrentUser, Roles } from './auth.decorators';
 import { AuthGuard, RolesGuard } from './auth.guards';
 import type { AuthPrincipal } from './auth.types';
 import { AdminUsersService } from './admin-users.service';
-import { InviteUserDto, UpdateUserAdminDto, UsersQueryDto } from './dto';
+import {
+  AddressDto,
+  InviteUserDto,
+  UpdateAddressDto,
+  UpdateUserAdminDto,
+  UsersQueryDto,
+} from './dto';
 
 @UseGuards(AuthGuard, RolesGuard)
 @Roles(UserRole.STAFF, UserRole.ADMIN)
 @Controller('v1/admin/users')
 export class AdminUsersController {
-  constructor(
-    private readonly users: AdminUsersService,
-    private readonly config: ConfigService,
-  ) {}
-
-  private permissionsDeferred() {
-    return !(this.config.get<boolean>('DEFERRED_FEATURES_ENABLED') ?? true);
-  }
+  constructor(private readonly users: AdminUsersService) {}
 
   @Get()
   list(@Query() query: UsersQueryDto) {
@@ -38,15 +36,6 @@ export class AdminUsersController {
   @Post()
   @Roles(UserRole.ADMIN)
   invite(@Body() body: InviteUserDto) {
-    if (
-      this.permissionsDeferred() &&
-      body.role !== UserRole.STAFF &&
-      body.role !== UserRole.CUSTOMER
-    ) {
-      throw new ConflictException(
-        'A atribuição de perfis avançados está prevista para uma fase posterior.',
-      );
-    }
     return this.users.invite(body);
   }
 
@@ -62,12 +51,50 @@ export class AdminUsersController {
     @Param('id') id: string,
     @Body() body: UpdateUserAdminDto,
   ) {
-    if (this.permissionsDeferred() && body.role !== undefined) {
-      throw new ConflictException(
-        'A alteração de perfis e permissões está prevista para uma fase posterior.',
-      );
-    }
     return this.users.update(actor.sub, id, body);
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.ADMIN)
+  remove(
+    @CurrentUser() actor: AuthPrincipal,
+    @Param('id') id: string,
+  ) {
+    return this.users.remove(actor.sub, id);
+  }
+
+  @Post(':id/password-reset')
+  @Roles(UserRole.ADMIN)
+  passwordReset(@Param('id') id: string) {
+    return this.users.sendPasswordReset(id);
+  }
+
+  @Post(':id/addresses')
+  @Roles(UserRole.ADMIN)
+  createAddress(
+    @Param('id') id: string,
+    @Body() body: AddressDto,
+  ) {
+    return this.users.createAddress(id, body);
+  }
+
+  @Patch(':id/addresses/:addressId')
+  @Roles(UserRole.ADMIN)
+  updateAddress(
+    @Param('id') id: string,
+    @Param('addressId') addressId: string,
+    @Body() body: UpdateAddressDto,
+  ) {
+    return this.users.updateAddress(id, addressId, body);
+  }
+
+  @Delete(':id/addresses/:addressId')
+  @Roles(UserRole.ADMIN)
+  deleteAddress(
+    @Param('id') id: string,
+    @Param('addressId') addressId: string,
+  ) {
+    return this.users.deleteAddress(id, addressId);
   }
 
   @Post(':id/revoke-sessions')
