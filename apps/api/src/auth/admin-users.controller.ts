@@ -15,9 +15,7 @@ import { AuthGuard, RolesGuard } from './auth.guards';
 import type { AuthPrincipal } from './auth.types';
 import { AdminUsersService } from './admin-users.service';
 import {
-  AddressDto,
   InviteUserDto,
-  UpdateAddressDto,
   UpdateUserAdminDto,
   UsersQueryDto,
 } from './dto';
@@ -64,31 +62,6 @@ export class AdminUsersController {
   @Roles(UserRole.ADMIN)
   passwordReset(@Param('id') id: string) {
     return this.users.sendPasswordReset(id);
-  }
-
-  @Post(':id/addresses')
-  @Roles(UserRole.ADMIN)
-  createAddress(@Param('id') id: string, @Body() body: AddressDto) {
-    return this.users.createAddress(id, body);
-  }
-
-  @Patch(':id/addresses/:addressId')
-  @Roles(UserRole.ADMIN)
-  updateAddress(
-    @Param('id') id: string,
-    @Param('addressId') addressId: string,
-    @Body() body: UpdateAddressDto,
-  ) {
-    return this.users.updateAddress(id, addressId, body);
-  }
-
-  @Delete(':id/addresses/:addressId')
-  @Roles(UserRole.ADMIN)
-  deleteAddress(
-    @Param('id') id: string,
-    @Param('addressId') addressId: string,
-  ) {
-    return this.users.deleteAddress(id, addressId);
   }
 
   @Post(':id/revoke-sessions')
