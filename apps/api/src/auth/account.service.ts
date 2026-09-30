@@ -10,21 +10,15 @@ export class AccountService {
   async addresses(userId: string) {
     const customer = await this.customerForUser(userId);
     return this.prisma.address.findMany({
-      where: customer
-        ? { customerId: customer.id }
-        : { userId },
+      where: customer ? { customerId: customer.id } : { userId },
       orderBy: [{ isDefaultShipping: 'desc' }, { createdAt: 'desc' }],
     });
   }
 
   async dashboard(userId: string) {
     const customer = await this.customerForUser(userId);
-    const orderWhere = customer
-      ? { customerId: customer.id }
-      : { userId };
-    const addressWhere = customer
-      ? { customerId: customer.id }
-      : { userId };
+    const orderWhere = customer ? { customerId: customer.id } : { userId };
+    const addressWhere = customer ? { customerId: customer.id } : { userId };
 
     const [
       totalOrders,
@@ -136,9 +130,7 @@ export class AccountService {
   async createAddress(userId: string, data: AddressDto) {
     const customer = await this.customerForUser(userId);
     return this.prisma.$transaction(async (tx) => {
-      const where = customer
-        ? { customerId: customer.id }
-        : { userId };
+      const where = customer ? { customerId: customer.id } : { userId };
       if (data.isDefaultShipping) {
         await tx.address.updateMany({
           where: { ...where, isDefaultShipping: true },
@@ -163,9 +155,7 @@ export class AccountService {
 
   async updateAddress(userId: string, id: string, data: UpdateAddressDto) {
     const customer = await this.customerForUser(userId);
-    const ownerWhere = customer
-      ? { customerId: customer.id }
-      : { userId };
+    const ownerWhere = customer ? { customerId: customer.id } : { userId };
     const address = await this.prisma.address.findFirst({
       where: { id, ...ownerWhere },
     });

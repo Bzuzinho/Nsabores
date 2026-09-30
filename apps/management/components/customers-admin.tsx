@@ -287,7 +287,8 @@ export function CustomersAdmin({ selectedId }: { selectedId?: string }) {
   }
 
   if (selectedId) {
-    if (!selected) return <div className="admin-state">A carregar cliente...</div>;
+    if (!selected)
+      return <div className="admin-state">A carregar cliente...</div>;
 
     return (
       <>
@@ -624,9 +625,7 @@ export function CustomersAdmin({ selectedId }: { selectedId?: string }) {
           <div className="section-heading">
             <div>
               <h2>Novo cliente</h2>
-              <p>
-                O cliente não precisa de ter conta no website para existir.
-              </p>
+              <p>O cliente não precisa de ter conta no website para existir.</p>
             </div>
           </div>
           <form
@@ -856,7 +855,11 @@ function AddressForm({
       </label>
       <div className="wide admin-actions">
         <button className="admin-primary" disabled={busy}>
-          {busy ? 'A guardar…' : address ? 'Guardar morada' : 'Adicionar morada'}
+          {busy
+            ? 'A guardar…'
+            : address
+              ? 'Guardar morada'
+              : 'Adicionar morada'}
         </button>
         <button type="button" onClick={onCancel}>
           Cancelar

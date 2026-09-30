@@ -8,11 +8,7 @@ import { Prisma, UserRole } from '@prisma/client';
 import argon2 from 'argon2';
 import { createHash, randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma.service';
-import type {
-  InviteUserDto,
-  UpdateUserAdminDto,
-  UsersQueryDto,
-} from './dto';
+import type { InviteUserDto, UpdateUserAdminDto, UsersQueryDto } from './dto';
 import { MailProvider } from './mail.provider';
 
 const adminUser = {
@@ -74,9 +70,7 @@ export class AdminUsersService {
     const limit = Math.min(100, Math.max(1, query.limit));
     const where: Prisma.UserWhereInput = {
       deletedAt: null,
-      role: query.role
-        ? query.role
-        : { in: [UserRole.STAFF, UserRole.ADMIN] },
+      role: query.role ? query.role : { in: [UserRole.STAFF, UserRole.ADMIN] },
       ...(query.active === undefined ? {} : { isActive: query.active }),
       ...(query.search?.trim()
         ? {

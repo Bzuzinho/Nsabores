@@ -961,12 +961,10 @@ export class CommerceService {
       return client.customer.update({
         where: { id: existing.id },
         data: {
-          userId:
-            input.userId && !existing.userId ? input.userId : undefined,
+          userId: input.userId && !existing.userId ? input.userId : undefined,
           name: input.name.trim() || existing.name,
           phone: input.phone?.trim() || existing.phone,
-          marketingConsent:
-            input.marketingConsent === true ? true : undefined,
+          marketingConsent: input.marketingConsent === true ? true : undefined,
           marketingConsentAt: consentAt,
         },
         select: { id: true, userId: true },

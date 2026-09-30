@@ -57,7 +57,9 @@ export class CustomersService {
               { name: { contains: query.search.trim(), mode: 'insensitive' } },
               { email: { contains: query.search.trim(), mode: 'insensitive' } },
               { phone: { contains: query.search.trim(), mode: 'insensitive' } },
-              { company: { contains: query.search.trim(), mode: 'insensitive' } },
+              {
+                company: { contains: query.search.trim(), mode: 'insensitive' },
+              },
               {
                 taxNumber: {
                   contains: query.search.trim(),
@@ -157,7 +159,9 @@ export class CustomersService {
 
   async create(body: CreateCustomerDto) {
     const email = body.email.trim().toLowerCase();
-    const existing = await this.prisma.customer.findUnique({ where: { email } });
+    const existing = await this.prisma.customer.findUnique({
+      where: { email },
+    });
     if (existing && !existing.deletedAt) {
       throw new ConflictException('Já existe um cliente com este email.');
     }

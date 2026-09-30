@@ -14,11 +14,7 @@ import { Roles } from '../auth/auth.decorators';
 import { AuthGuard, RolesGuard } from '../auth/auth.guards';
 import { AddressDto, UpdateAddressDto } from '../auth/dto';
 import { CustomersService } from './customers.service';
-import {
-  CreateCustomerDto,
-  CustomerQueryDto,
-  UpdateCustomerDto,
-} from './dto';
+import { CreateCustomerDto, CustomerQueryDto, UpdateCustomerDto } from './dto';
 
 @UseGuards(AuthGuard, RolesGuard)
 @Roles(UserRole.STAFF, UserRole.ADMIN)
