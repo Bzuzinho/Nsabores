@@ -98,6 +98,146 @@ async function login(baseUrl: string, email: string, password: string) {
   return cookie;
 }
 
+async function validateUserAdministration(
+  baseUrl: string,
+  adminCookie: string,
+  staffCookie: string,
+) {
+  const email = `e2e.user.${Date.now()}@example.invalid`;
+
+  const staffCreate = await fetch(`${baseUrl}/v1/admin/users`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      cookie: staffCookie,
+    },
+    body: JSON.stringify({
+      email,
+      firstName: 'Cliente',
+      lastName: 'Bloqueado',
+      role: 'CUSTOMER',
+    }),
+  });
+  assert.equal(staffCreate.status, 403);
+
+  const createResponse = await fetch(`${baseUrl}/v1/admin/users`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      cookie: adminCookie,
+    },
+    body: JSON.stringify({
+      email,
+      firstName: 'Cliente',
+      lastName: 'E2E',
+      phone: '+351912345678',
+      taxNumber: '123456789',
+      role: 'CUSTOMER',
+    }),
+  });
+  assert.equal(createResponse.status, 201);
+  let user = (await createResponse.json()) as AuthMe & {
+    firstName: string;
+    lastName: string;
+    role: string;
+    isActive: boolean;
+  };
+  assert.equal(user.role, 'CUSTOMER');
+  assert.equal(user.isActive, true);
+
+  const detailResponse = await fetch(`${baseUrl}/v1/admin/users/${user.id}`, {
+    headers: { cookie: staffCookie },
+  });
+  assert.equal(detailResponse.status, 200);
+
+  const updateResponse = await fetch(`${baseUrl}/v1/admin/users/${user.id}`, {
+    method: 'PATCH',
+    headers: {
+      'content-type': 'application/json',
+      cookie: adminCookie,
+    },
+    body: JSON.stringify({
+      firstName: 'Cliente Atualizado',
+      phone: '+351911111111',
+      marketingConsent: true,
+      notes: 'Criado pelo smoke de gestão de utilizadores.',
+      role: 'STAFF',
+    }),
+  });
+  assert.equal(updateResponse.status, 200);
+  user = (await updateResponse.json()) as typeof user;
+  assert.equal(user.firstName, 'Cliente Atualizado');
+  assert.equal(user.role, 'STAFF');
+
+  const addressResponse = await fetch(
+    `${baseUrl}/v1/admin/users/${user.id}/addresses`,
+    {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        cookie: adminCookie,
+      },
+      body: JSON.stringify({
+        label: 'Principal',
+        firstName: 'Cliente',
+        lastName: 'E2E',
+        line1: 'Rua do Smoke 10',
+        postalCode: '1000-010',
+        city: 'Lisboa',
+        countryCode: 'PT',
+        isDefaultShipping: true,
+        isDefaultBilling: true,
+      }),
+    },
+  );
+  assert.equal(addressResponse.status, 201);
+  const address = (await addressResponse.json()) as { id: string };
+
+  const updateAddressResponse = await fetch(
+    `${baseUrl}/v1/admin/users/${user.id}/addresses/${address.id}`,
+    {
+      method: 'PATCH',
+      headers: {
+        'content-type': 'application/json',
+        cookie: adminCookie,
+      },
+      body: JSON.stringify({ city: 'Sintra' }),
+    },
+  );
+  assert.equal(updateAddressResponse.status, 200);
+
+  const passwordResetResponse = await fetch(
+    `${baseUrl}/v1/admin/users/${user.id}/password-reset`,
+    { method: 'POST', headers: { cookie: adminCookie } },
+  );
+  assert.equal(passwordResetResponse.status, 201);
+
+  const deleteAddressResponse = await fetch(
+    `${baseUrl}/v1/admin/users/${user.id}/addresses/${address.id}`,
+    { method: 'DELETE', headers: { cookie: adminCookie } },
+  );
+  assert.equal(deleteAddressResponse.status, 200);
+
+  const deleteResponse = await fetch(`${baseUrl}/v1/admin/users/${user.id}`, {
+    method: 'DELETE',
+    headers: { cookie: adminCookie },
+  });
+  assert.equal(deleteResponse.status, 200);
+
+  const deletedDetail = await fetch(`${baseUrl}/v1/admin/users/${user.id}`, {
+    headers: { cookie: adminCookie },
+  });
+  assert.equal(deletedDetail.status, 404);
+
+  const searchResponse = await fetch(
+    `${baseUrl}/v1/admin/users?search=${encodeURIComponent(email)}`,
+    { headers: { cookie: adminCookie } },
+  );
+  assert.equal(searchResponse.status, 200);
+  const search = (await searchResponse.json()) as { data: unknown[] };
+  assert.equal(search.data.length, 0);
+}
+
 async function validateManualCheckout(
   baseUrl: string,
   staffCookie: string,
@@ -394,6 +534,11 @@ async function main() {
     };
     assert.ok((publicProducts.data?.length ?? 0) >= 12);
 
+    const adminCookie = await login(
+      baseUrl,
+      'demo.admin@nsabores.pt',
+      password,
+    );
     const staffCookie = await login(
       baseUrl,
       'demo.staff@nsabores.pt',
@@ -422,6 +567,7 @@ async function main() {
     });
     assert.equal(forbidden.status, 403);
 
+    await validateUserAdministration(baseUrl, adminCookie, staffCookie);
     await validatePersistentMediaUpload(
       baseUrl,
       staffCookie,
@@ -481,7 +627,7 @@ async function main() {
     assert.ok(production.length >= 3);
 
     console.log(
-      `E2E validado: autenticação, permissões, upload persistente de imagens, associação Cliente ↔ Encomenda manual, ciclo PENDING_PAYMENT → PAID → PROCESSING → READY → DELIVERED, checkout manual, transporte caso a caso, catálogo público, ${endpoints.length} endpoints administrativos, ${productCount} produtos, ${categoryCount} categorias e ${orderCount} encomendas.`,
+      `E2E validado: autenticação, permissões, CRUD administrativo de utilizadores e moradas, upload persistente de imagens, associação Cliente ↔ Encomenda manual, ciclo PENDING_PAYMENT → PAID → PROCESSING → READY → DELIVERED, checkout manual, transporte caso a caso, catálogo público, ${endpoints.length} endpoints administrativos, ${productCount} produtos, ${categoryCount} categorias e ${orderCount} encomendas.`,
     );
   } finally {
     await app.close();

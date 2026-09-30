@@ -101,10 +101,27 @@ export class UsersQueryDto {
 }
 
 export class UpdateUserAdminDto {
+  @IsOptional() @Transform(email) @IsEmail() @MaxLength(254) email?: string;
+  @IsOptional()
+  @Transform(trim)
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
+  firstName?: string;
+  @IsOptional()
+  @Transform(trim)
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
+  lastName?: string;
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(30) phone?:
+    string | null;
+  @IsOptional() @Transform(trim) @Matches(/^\d{9}$/) taxNumber?: string | null;
+  @IsOptional() @IsBoolean() marketingConsent?: boolean;
   @IsOptional() @IsIn(['CUSTOMER', 'STAFF', 'ADMIN']) role?:
     'CUSTOMER' | 'STAFF' | 'ADMIN';
   @IsOptional() @IsBoolean() isActive?: boolean;
-  @IsOptional() @IsString() @MaxLength(2000) notes?: string;
+  @IsOptional() @IsString() @MaxLength(2000) notes?: string | null;
 }
 
 export class InviteUserDto {
