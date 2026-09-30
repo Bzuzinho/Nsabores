@@ -1,5 +1,5 @@
-import { SectionDashboard } from '@/components/section-dashboard';
+import { CustomersAdmin } from '@/components/customers-admin';
 
-export default function CustomersDashboardPage() {
-  return <SectionDashboard section="customers" />;
+export default function CustomersPage() {
+  return <CustomersAdmin />;
 }
