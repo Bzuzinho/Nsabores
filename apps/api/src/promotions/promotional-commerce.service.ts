@@ -364,10 +364,18 @@ export class PromotionalCommerceService extends CommerceService {
       const number = `NS-${new Date().getUTCFullYear()}-${randomBytes(4)
         .toString('hex')
         .toUpperCase()}`;
+      const customer = await this.resolveCustomer(tx, {
+        userId: identity.userId,
+        email: body.email,
+        name: body.customerName,
+        phone: body.phone,
+        marketingConsent: body.marketingConsent,
+      });
       const created = await tx.order.create({
         data: {
           number,
           userId: identity.userId,
+          customerId: customer.id,
           email: body.email.toLowerCase(),
           customerName: body.customerName,
           phone: body.phone,
