@@ -431,8 +431,9 @@ export class FulfillmentService {
   }
 
   async trackingForUser(orderId: string, userId: string) {
+    const ownership = await this.orderOwnership(userId);
     const order = await this.prisma.order.findFirst({
-      where: { id: orderId, userId },
+      where: { id: orderId, ...ownership },
     });
     if (!order) throw new NotFoundException('Encomenda não encontrada.');
     return this.shipments(orderId);
@@ -449,8 +450,9 @@ export class FulfillmentService {
   }
 
   async createReturn(userId: string, body: CreateReturnDto) {
+    const ownership = await this.orderOwnership(userId);
     const order = await this.prisma.order.findFirst({
-      where: { id: body.orderId, userId },
+      where: { id: body.orderId, ...ownership },
       include: { items: true },
     });
     if (!order) throw new NotFoundException('Encomenda não encontrada.');
@@ -672,8 +674,9 @@ export class FulfillmentService {
 
   async createSupportCase(userId: string, body: CreateSupportCaseDto) {
     if (body.orderId) {
+      const ownership = await this.orderOwnership(userId);
       const order = await this.prisma.order.findFirst({
-        where: { id: body.orderId, userId },
+        where: { id: body.orderId, ...ownership },
       });
       if (!order)
         throw new ForbiddenException('Sem acesso à encomenda indicada.');
@@ -755,6 +758,14 @@ export class FulfillmentService {
         ${body.body}, ${body.isInternal ?? true}, CURRENT_TIMESTAMP)
     `;
     return this.supportCase(id);
+  }
+
+  private async orderOwnership(userId: string) {
+    const customer = await this.prisma.customer.findFirst({
+      where: { userId, deletedAt: null },
+      select: { id: true },
+    });
+    return customer ? { customerId: customer.id } : { userId };
   }
 
   async addCustomerSupportComment(id: string, body: string, userId: string) {
