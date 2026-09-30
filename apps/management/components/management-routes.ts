@@ -214,10 +214,10 @@ export const managementRoutes: ManagementRoute[] = [
   },
   {
     href: '/clientes',
-    label: 'Painel de clientes',
-    description: 'Indicadores de clientes particulares, revendedores e B2B.',
+    label: 'Clientes',
+    description: 'Fichas comerciais, contactos, moradas e histórico.',
     group: 'Clientes',
-    keywords: ['dashboard', 'crm', 'gráficos'],
+    keywords: ['clientes', 'crm', 'contactos', 'moradas', 'nif'],
     pageFile: 'app/clientes/page.tsx',
   },
   {
