@@ -165,10 +165,18 @@ export class BundleAwareCommerceService extends PromotionalCommerceService {
         tx,
       );
 
+      const customer = await this.resolveCustomer(tx, {
+        userId: identity.userId,
+        email: body.email,
+        name: body.customerName,
+        phone: body.phone,
+        marketingConsent: body.marketingConsent,
+      });
       const header = await tx.order.create({
         data: {
           number: `NS-${new Date().getUTCFullYear()}-${randomBytes(4).toString('hex').toUpperCase()}`,
           userId: identity.userId,
+          customerId: customer.id,
           email: body.email.toLowerCase(),
           customerName: body.customerName,
           phone: body.phone,
