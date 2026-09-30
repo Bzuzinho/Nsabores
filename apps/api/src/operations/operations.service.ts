@@ -79,6 +79,7 @@ export class OperationsService {
         purchasesByStatus,
         supportByStatus,
         usersByRole,
+        customerCount,
         blogByStatus,
         productCount,
         activeProductCount,
@@ -126,7 +127,15 @@ export class OperationsService {
           ? tx.purchaseOrder.groupBy({ by: ['status'], _count: true })
           : Promise.resolve([]),
         tx.supportCase.groupBy({ by: ['status'], _count: true }),
-        tx.user.groupBy({ by: ['role'], _count: true }),
+        tx.user.groupBy({
+          by: ['role'],
+          where: {
+            role: { in: ['STAFF', 'ADMIN'] },
+            deletedAt: null,
+          },
+          _count: true,
+        }),
+        tx.customer.count({ where: { deletedAt: null } }),
         tx.blogPost.groupBy({ by: ['status'], _count: true }),
         tx.product.count(),
         tx.product.count({ where: { isActive: true } }),
@@ -158,6 +167,7 @@ export class OperationsService {
         purchasesByStatus,
         supportByStatus,
         usersByRole,
+        customerCount,
         blogByStatus,
         catalog: {
           products: productCount,
