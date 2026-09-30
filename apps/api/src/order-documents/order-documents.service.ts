@@ -38,8 +38,9 @@ export class OrderDocumentsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async listForUser(userId: string) {
+    const ownership = await this.orderOwnership(userId);
     const orders = await this.prisma.order.findMany({
-      where: { userId },
+      where: ownership,
       select: { id: true, number: true, createdAt: true },
       orderBy: { createdAt: 'desc' },
     });
@@ -65,8 +66,9 @@ export class OrderDocumentsService {
     });
     if (!document) throw new NotFoundException('Documento não encontrado.');
 
+    const ownership = await this.orderOwnership(userId);
     const order = await this.prisma.order.findFirst({
-      where: { id: document.orderId, userId },
+      where: { id: document.orderId, ...ownership },
       select: { id: true, number: true, createdAt: true },
     });
     if (!order) throw new NotFoundException('Documento não encontrado.');
@@ -80,8 +82,9 @@ export class OrderDocumentsService {
     });
     if (!document) throw new NotFoundException('Documento não encontrado.');
 
+    const ownership = await this.orderOwnership(userId);
     const order = await this.prisma.order.findFirst({
-      where: { id: document.orderId, userId },
+      where: { id: document.orderId, ...ownership },
       select: { id: true },
     });
     if (!order) throw new NotFoundException('Documento não encontrado.');
@@ -156,6 +159,14 @@ export class OrderDocumentsService {
     if (!deleted.count)
       throw new NotFoundException('Documento não encontrado.');
     return { success: true };
+  }
+
+  private async orderOwnership(userId: string) {
+    const customer = await this.prisma.customer.findFirst({
+      where: { userId, deletedAt: null },
+      select: { id: true },
+    });
+    return customer ? { customerId: customer.id } : { userId };
   }
 
   private async ensureOrder(orderId: string) {
