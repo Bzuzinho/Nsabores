@@ -466,8 +466,8 @@ export function CustomersAdmin({ selectedId }: { selectedId?: string }) {
             </dl>
             <p className="admin-state">
               Este acesso serve apenas a área de cliente no website/aplicação.
-              Nunca concede acesso à Gestão ou à Administração. A ficha de cliente
-              existe independentemente das credenciais de acesso.
+              Nunca concede acesso à Gestão ou à Administração. A ficha de
+              cliente existe independentemente das credenciais de acesso.
             </p>
             {isAdmin && (
               <button
@@ -606,8 +606,8 @@ export function CustomersAdmin({ selectedId }: { selectedId?: string }) {
           <h1>Clientes</h1>
           <p>
             Gestão completa das fichas de cliente. O acesso à área de cliente é
-            opcional e separado dos utilizadores internos da Administração. {total}{' '}
-            cliente{total === 1 ? '' : 's'}.
+            opcional e separado dos utilizadores internos da Administração.{' '}
+            {total} cliente{total === 1 ? '' : 's'}.
           </p>
         </div>
         {isAdmin && (
