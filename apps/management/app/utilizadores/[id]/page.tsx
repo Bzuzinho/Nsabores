@@ -1,9 +1,10 @@
-import { UsersAdmin } from '@/components/users-admin';
-export default async function UserPage({
+import { redirect } from 'next/navigation';
+
+export default async function UserLegacyPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return <UsersAdmin selectedId={id} />;
+  redirect(`/administracao/utilizadores/${id}`);
 }
