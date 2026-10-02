@@ -20,7 +20,8 @@ O catálogo administrativo aceita STAFF e ADMIN. `ADMIN_API_KEY` foi removida.
 
 ## Roles
 
-- `CUSTOMER`: credencial de acesso à área de cliente; não é um utilizador da Administração;
+- `CUSTOMER`: credencial de acesso à área de cliente; não é um utilizador da
+  Administração;
 - `STAFF`: gestão do catálogo;
 - `ADMIN`: catálogo e utilizadores.
 
@@ -42,11 +43,11 @@ Sessões expiradas podem ser removidas por manutenção periódica futura.
 Metadados limitam-se a user-agent e IP. Não existem ainda MFA, login social,
 eliminação RGPD completa nem email real de produção.
 
-
 ## Separação entre clientes e utilizadores internos
 
-`Customer` é a entidade comercial: ficha, contactos, moradas e histórico. Pode existir sem login.
-Quando existe acesso à área de cliente, a ficha pode estar associada a um `User` com role `CUSTOMER`.
-Essa credencial nunca aparece na gestão de utilizadores internos.
+`Customer` é a entidade comercial: ficha, contactos, moradas e histórico. Pode
+existir sem login. Quando existe acesso à área de cliente, a ficha pode estar
+associada a um `User` com role `CUSTOMER`. Essa credencial nunca aparece na
+gestão de utilizadores internos.
 
 A Administração gere apenas `STAFF` e `ADMIN` em `/administracao/utilizadores`.
