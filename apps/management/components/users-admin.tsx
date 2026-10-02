@@ -454,7 +454,9 @@ export function UsersAdmin({ selectedId }: { selectedId?: string }) {
                     : 'Nunca'}
                 </td>
                 <td>
-                  <Link href={`/administracao/utilizadores/${user.id}`}>Gerir</Link>
+                  <Link href={`/administracao/utilizadores/${user.id}`}>
+                    Gerir
+                  </Link>
                 </td>
               </tr>
             ))}
