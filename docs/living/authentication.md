@@ -20,7 +20,7 @@ O catálogo administrativo aceita STAFF e ADMIN. `ADMIN_API_KEY` foi removida.
 
 ## Roles
 
-- `CUSTOMER`: conta, perfil, moradas e futura compra;
+- `CUSTOMER`: credencial de acesso à área de cliente; não é um utilizador da Administração;
 - `STAFF`: gestão do catálogo;
 - `ADMIN`: catálogo e utilizadores.
 
@@ -28,7 +28,7 @@ O catálogo administrativo aceita STAFF e ADMIN. `ADMIN_API_KEY` foi removida.
 
 O website expõe `/conta`, autenticação, recuperação/verificação, perfil,
 moradas e segurança. A gestão expõe `/login`, `/sem-acesso`, protege o catálogo
-e oferece `/utilizadores` apenas a ADMIN.
+e oferece `/administracao/utilizadores` apenas a ADMIN.
 
 ## Bootstrap
 
@@ -41,3 +41,12 @@ role ou dados existentes. Remover as variáveis do Railway após sucesso.
 Sessões expiradas podem ser removidas por manutenção periódica futura.
 Metadados limitam-se a user-agent e IP. Não existem ainda MFA, login social,
 eliminação RGPD completa nem email real de produção.
+
+
+## Separação entre clientes e utilizadores internos
+
+`Customer` é a entidade comercial: ficha, contactos, moradas e histórico. Pode existir sem login.
+Quando existe acesso à área de cliente, a ficha pode estar associada a um `User` com role `CUSTOMER`.
+Essa credencial nunca aparece na gestão de utilizadores internos.
+
+A Administração gere apenas `STAFF` e `ADMIN` em `/administracao/utilizadores`.
