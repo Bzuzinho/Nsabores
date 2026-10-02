@@ -323,13 +323,13 @@ export const managementRoutes: ManagementRoute[] = [
     pageFile: 'app/administracao/page.tsx',
   },
   {
-    href: '/utilizadores',
+    href: '/administracao/utilizadores',
     label: 'Utilizadores',
     description: 'Acessos, funções e estado das contas.',
     group: 'Administração',
     keywords: ['permissões', 'staff', 'admin'],
     adminOnly: true,
-    pageFile: 'app/utilizadores/page.tsx',
+    pageFile: 'app/administracao/utilizadores/page.tsx',
   },
   {
     href: '/administracao/entregas',
