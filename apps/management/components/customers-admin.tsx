@@ -431,7 +431,7 @@ export function CustomersAdmin({ selectedId }: { selectedId?: string }) {
           </section>
 
           <aside className="admin-card user-account-summary">
-            <h2>Conta do website</h2>
+            <h2>Acesso à área de cliente</h2>
             <dl>
               <div>
                 <dt>Ligada</dt>
@@ -465,8 +465,9 @@ export function CustomersAdmin({ selectedId }: { selectedId?: string }) {
               </div>
             </dl>
             <p className="admin-state">
-              A conta do website é uma credencial opcional. O cliente comercial
-              existe independentemente dela.
+              Este acesso serve apenas a área de cliente no website/aplicação.
+              Nunca concede acesso à Gestão ou à Administração. A ficha de
+              cliente existe independentemente das credenciais de acesso.
             </p>
             {isAdmin && (
               <button
@@ -604,8 +605,9 @@ export function CustomersAdmin({ selectedId }: { selectedId?: string }) {
           <p className="eyebrow">Clientes</p>
           <h1>Clientes</h1>
           <p>
-            Fichas comerciais independentes das contas de acesso. {total}{' '}
-            cliente{total === 1 ? '' : 's'}.
+            Gestão completa das fichas de cliente. O acesso à área de cliente é
+            opcional e separado dos utilizadores internos da Administração.{' '}
+            {total} cliente{total === 1 ? '' : 's'}.
           </p>
         </div>
         {isAdmin && (
@@ -706,7 +708,7 @@ export function CustomersAdmin({ selectedId }: { selectedId?: string }) {
             <tr>
               <th>Cliente</th>
               <th>Tipo</th>
-              <th>Conta website</th>
+              <th>Acesso cliente</th>
               <th>Encomendas</th>
               <th>Estado</th>
               <th />

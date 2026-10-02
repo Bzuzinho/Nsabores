@@ -73,7 +73,7 @@ const sectionCopy = {
     eyebrow: 'Administração',
     title: 'Controlo da plataforma',
     description: 'Utilizadores, conteúdos e elementos estruturais do sistema.',
-    action: ['/utilizadores', 'Gerir utilizadores'],
+    action: ['/administracao/utilizadores', 'Gerir utilizadores'],
   },
 } as const;
 
@@ -305,9 +305,9 @@ function buildView(section: Section, data?: DashboardData) {
     administration: {
       metrics: [
         [
-          'Utilizadores',
-          String(data.usersByRole.reduce((s, i) => s + i._count, 0)),
-          'Todos os perfis',
+          'Utilizadores internos',
+          String(userCount('STAFF') + userCount('ADMIN')),
+          'Equipa e administradores',
         ],
         ['Equipa', String(userCount('STAFF')), 'Utilizadores STAFF'],
         ['Administradores', String(userCount('ADMIN')), 'Acesso total'],
@@ -320,7 +320,7 @@ function buildView(section: Section, data?: DashboardData) {
       chartTitle: 'Artigos por estado',
       source: data.blogByStatus,
       links: [
-        ['/utilizadores', 'Utilizadores', 'Contas e estado'],
+        ['/administracao/utilizadores', 'Utilizadores', 'Contas e estado'],
         ['/blog', 'Blog', 'Conteúdo editorial'],
         ['/catalogo/categorias', 'Categorias', 'Estrutura do catálogo'],
       ],

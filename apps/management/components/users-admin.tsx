@@ -152,7 +152,7 @@ export function UsersAdmin({ selectedId }: { selectedId?: string }) {
     setError('');
     try {
       await managementApi.delete(`/v1/admin/users/${selected.id}`);
-      router.replace('/utilizadores');
+      router.replace('/administracao/utilizadores');
       router.refresh();
     } catch (reason) {
       setError(
@@ -180,7 +180,7 @@ export function UsersAdmin({ selectedId }: { selectedId?: string }) {
             </h1>
             <p>{selected.email}</p>
           </div>
-          <Link href="/utilizadores">Voltar</Link>
+          <Link href="/administracao/utilizadores">Voltar</Link>
         </header>
         {error && <p className="admin-error">{error}</p>}
 
@@ -439,7 +439,7 @@ export function UsersAdmin({ selectedId }: { selectedId?: string }) {
             {users.map((user) => (
               <tr key={user.id}>
                 <td>
-                  <Link href={`/utilizadores/${user.id}`}>
+                  <Link href={`/administracao/utilizadores/${user.id}`}>
                     <strong>
                       {user.firstName} {user.lastName}
                     </strong>
@@ -454,7 +454,9 @@ export function UsersAdmin({ selectedId }: { selectedId?: string }) {
                     : 'Nunca'}
                 </td>
                 <td>
-                  <Link href={`/utilizadores/${user.id}`}>Gerir</Link>
+                  <Link href={`/administracao/utilizadores/${user.id}`}>
+                    Gerir
+                  </Link>
                 </td>
               </tr>
             ))}
