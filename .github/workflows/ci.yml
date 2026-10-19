@@ -60,7 +60,7 @@ jobs:
           test -z "$(git status --short)"
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6.0.9
         with:
           version: 11.9.0
           run_install: false
@@ -135,7 +135,7 @@ jobs:
         run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6.0.9
         with:
           version: 11.9.0
           run_install: false
