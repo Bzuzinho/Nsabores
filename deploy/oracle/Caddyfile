@@ -1,0 +1,14 @@
+{$PREVIEW_HOST} {
+    tls internal
+    @api path /v1 /v1/*
+    handle @api {
+        reverse_proxy api:4000
+    }
+    @management path /gestao /gestao/*
+    handle @management {
+        reverse_proxy management:3001
+    }
+    handle {
+        reverse_proxy website:3000
+    }
+}
