@@ -1,0 +1,72 @@
+name: nsabores-preview
+x-app: &app
+  image: nsabores:${APP_TAG:?}
+  init: true
+  restart: unless-stopped
+services:
+  db:
+    image: postgres:18-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nsabores
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_ADMIN_PASSWORD:?}
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "nsabores"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  api:
+    <<: *app
+    build:
+      context: ../..
+      dockerfile: deploy/oracle/Dockerfile
+      args:
+        PREVIEW_HOST: ${PREVIEW_HOST:?}
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      RAILWAY_SERVICE_NAME: api
+      PORT: 4000
+      DATABASE_URL: postgresql://nsabores_app:${APP_DB_PASSWORD:?}@db:5432/nsabores
+      AUTH_ACCESS_TOKEN_SECRET: ${AUTH_SECRET:?}
+      AUTH_COOKIE_SECURE: "true"
+      CORS_ORIGINS: https://${PREVIEW_HOST}
+      WEBSITE_URL: https://${PREVIEW_HOST}
+      MANAGEMENT_URL: https://${PREVIEW_HOST}/gestao
+      DEFERRED_FEATURES_ENABLED: "false"
+      MAIL_PROVIDER: log
+      PAYMENT_FLOW_MODE: manual
+      PAYMENT_PROVIDER: mock
+      SHIPPING_PROVIDER: mock
+      PAYMENT_WEBHOOK_SECRET: ${PAYMENT_HOOK:?}
+      SHIPPING_WEBHOOK_SECRET: ${SHIPPING_HOOK:?}
+      CLUB_BILLING_WEBHOOK_SECRET: ${CLUB_HOOK:?}
+  website:
+    <<: *app
+    environment:
+      PORT: 3000
+      API_URL: http://api:4000
+      RAILWAY_SERVICE_NAME: website
+  management:
+    <<: *app
+    environment:
+      PORT: 3001
+      API_URL: http://api:4000
+      RAILWAY_SERVICE_NAME: management
+  proxy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:443:443"
+    environment:
+      PREVIEW_HOST: ${PREVIEW_HOST:?}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - tls:/data
+volumes:
+  pgdata:
+  tls:
