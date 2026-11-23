@@ -1,5 +1,5 @@
 # Nsabores · migração Oracle
-## Registo de 23 de novembro de 2026
+## Registo inicial de 23 de novembro de 2026
 Preparação numa branch isolada. Nenhuma alteração efetuada na Oracle, no Railway, no DNS ou na branch main. A consola Oracle apresentou “Site Unavailable” antes da autenticação. A quota Always Free disponível, o acesso à VM e o estado efetivo dos dados ainda não foram verificados.
 
 O Railway reportou Offline em production para website, management, api, Postgres e postgres-audit-readonly. Em staging reportou Offline para website, management, api e Postgres. Ambos os serviços de base de dados conservavam um volume associado. A configuração de produção indica PostgreSQL 18. O último registo de deployment consultado das aplicações refere 2a9f095e462f743c529f0719992114b3464ad135. Isto não certifica que tenha sido a última versão funcional. O serviço de auditoria usa uma função Bun com DATABASE_URL. A sua lógica e necessidade operacional têm de ser verificadas antes da aceitação. Os ficheiros de media enviados pela API são guardados na base de dados.
@@ -30,5 +30,12 @@ Inicializar um repositório restic privado fora da VM dentro da quota disponíve
 
 Antes da mudança pedir aprovação explícita para DNS e acordar janela de escrita. Garantir uma única origem de escrita, aguardar transações, fazer cópia final e reconciliação, preparar HTTPS público e verificar o domínio com resolução local antes de encaminhar tráfego. Registar entradas DNS originais e TTL. Manter Railway disponível para reversão. Se a Oracle já tiver recebido escritas, reconciliá-las antes de reabrir a origem antiga. A eliminação de qualquer serviço exige autorização independente.
 
-## Validação realizada
+## Validação inicial
 Análise sintática dos scripts Bash e leitura da configuração YAML com resolução das âncoras. Sem Docker disponível neste executor. Build de imagens, lint, tipos, testes das aplicações, ensaio funcional, restauro e backup remoto continuam pendentes. Nenhum dado de cliente foi exportado.
+
+## Atualização do ensaio de 23 de novembro de 2026
+VM dedicada no compartimento nsabores em Frankfurt, AMD64, E2.1.Micro. Ubuntu 24.04, Docker e Compose operacionais. Swap ativa de 1,8 GiB. A produção Railway voltou a reportar website, gestão, API e PostgreSQL online.
+
+Exportação PostgreSQL 18 em formato custom na VM, verificação SHA-256 e restauro numa base de ensaio isolada. O operador confirmou a igualdade das contagens das seis tabelas selecionadas e dos dumps de estrutura, excluindo proprietários, privilégios e a linha informativa da versão de origem. Os dados foram identificados como dados de teste. O dump reside na VM, fora do repositório.
+
+Build AMD64 concluído com sucesso no [GitHub Actions](https://github.com/Bzuzinho/Nsabores/actions/runs/45167415425), commit 78d699f7f892517592761875b74e97cb02ca692b. Continuam por validar o arranque da aplicação na VM, a role aplicacional, os fluxos funcionais e os backups externos com recuperação. O DNS de produção permanece no destino anterior.
