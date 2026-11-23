@@ -1,0 +1,12 @@
+[Unit]
+Description=Backup PostgreSQL Nsabores para restic
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/nsabores/deploy/oracle
+EnvironmentFile=/etc/nsabores/backup.env
+ExecStart=/bin/bash /opt/nsabores/deploy/oracle/backup.sh
+UMask=0077
