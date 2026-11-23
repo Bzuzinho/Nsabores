@@ -1,0 +1,37 @@
+name: Build Oracle preview image
+on:
+  push:
+    branches: [infra/oracle-preview-20261123]
+    paths:
+      - '.github/workflows/oracle-preview-image.yml'
+      - 'deploy/oracle/Dockerfile*'
+      - 'apps/**'
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'package.json'
+      - 'scripts/**'
+      - 'turbo.json'
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build for Oracle Micro
+        run: docker build --platform linux/amd64 -f deploy/oracle/Dockerfile --build-arg PREVIEW_HOST=nsabores.test -t "nsabores:$GITHUB_SHA" .
+      - name: Export image
+        run: |
+          set -o pipefail
+          docker save "nsabores:$GITHUB_SHA" | gzip -1 > nsabores-amd64.tar.gz
+          sha256sum nsabores-amd64.tar.gz > nsabores-amd64.tar.gz.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nsabores-amd64-${{ github.sha }}
+          path: nsabores-amd64.tar.gz*
+          retention-days: 2
+          compression-level: 0
