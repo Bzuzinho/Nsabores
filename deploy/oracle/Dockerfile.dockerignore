@@ -1,0 +1,9 @@
+.git
+**/.env*
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/*.dump
+**/*.pem
+**/*.key
