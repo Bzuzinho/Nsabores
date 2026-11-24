@@ -7,6 +7,7 @@ import type {
   StockStatus,
 } from '@nsabores/types';
 import Link from 'next/link';
+import Image from 'next/image';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { managementApi } from './management-auth';
 import { MediaUploadControl } from './media-upload-control';
@@ -269,8 +270,24 @@ function ProductList({
               {products.map((product: CatalogProduct) => (
                 <tr key={product.id}>
                   <td>
-                    <strong>{product.name}</strong>
-                    <small>{product.sku}</small>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      {product.imageUrl ? (
+                        <Image
+                          unoptimized
+                          src={product.imageUrl}
+                          alt={`Fotografia de ${product.name}`}
+                          width={60}
+                          height={60}
+                          style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8 }}
+                        />
+                      ) : (
+                        <span aria-label="Sem fotografia">Sem imagem</span>
+                      )}
+                      <span>
+                        <strong>{product.name}</strong>
+                        <small style={{ display: 'block' }}>{product.sku}</small>
+                      </span>
+                    </div>
                   </td>
                   <td>{product.category.name}</td>
                   <td>
@@ -334,6 +351,7 @@ function ProductForm({
   product?: CatalogProduct;
   mutate: Mutate;
 }) {
+  const [imagePreview, setImagePreview] = useState(product?.imageUrl ?? '');
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -454,11 +472,30 @@ function ProductForm({
             name="imageUrl"
             pattern="(/images/.+|/v1/media/.+|https?://.+)"
             defaultValue={product?.imageUrl}
+            onChange={(event) => setImagePreview(event.currentTarget.value)}
           />
           <MediaUploadControl
             targetName="imageUrl"
             label="Carregar imagem principal"
+            onUploaded={(urls) => setImagePreview(urls[0] ?? '')}
           />
+          {imagePreview ? (
+            <div style={{ marginTop: 12 }}>
+              <Image
+                unoptimized
+                src={imagePreview}
+                alt="Pré-visualização da fotografia principal"
+                width={240}
+                height={180}
+                style={{ width: 240, height: 180, maxWidth: '100%', objectFit: 'cover', borderRadius: 8 }}
+              />
+              <small style={{ display: 'block' }}>
+                Pré-visualização. Guarda o produto para associar esta fotografia.
+              </small>
+            </div>
+          ) : (
+            <small style={{ display: 'block' }}>Nenhuma fotografia selecionada.</small>
+          )}
         </label>
         <label className="wide">
           Galeria, um URL por linha
