@@ -40,6 +40,7 @@ export function ProductDetail({ product }: { product: Product }) {
       <div className="product-gallery">
         {images.map((image, index) => (
           <Image
+            unoptimized
             key={image}
             src={image}
             alt={`${product.name}${index ? `, imagem ${index + 1}` : ''}`}
