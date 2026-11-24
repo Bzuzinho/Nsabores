@@ -71,6 +71,7 @@ export default function CartPage() {
               {cartItems.map((item) => (
                 <article className="cart-item" key={item.id}>
                   <Image
+                    unoptimized
                     src={item.product.imageUrl}
                     alt=""
                     width={88}
