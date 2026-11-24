@@ -12,6 +12,7 @@ export function ProductCard({ product }: { product: Product }) {
   return (
     <article className="product-card">
       <Image
+        unoptimized
         src={product.imageUrl}
         alt={`${product.name}, produto português selecionado pela Nsabores`}
         width={640}
