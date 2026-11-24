@@ -9,7 +9,7 @@ import { FormEvent, useEffect, useState } from 'react';
 export default function LoginPage() {
   const websiteUrl =
     process.env.NEXT_PUBLIC_APP_URL?.trim() || 'http://localhost:3000';
-  const logoUrl = `${websiteUrl.replace(/\/$/, '')}/images/logo-nsabores-white.png`;
+  const logoUrl = '/images/logo-nsabores-white.png';
   const auth = useManagementAuth();
   const router = useRouter();
   const [error, setError] = useState('');

@@ -75,7 +75,7 @@ function NavMark({ group }: { group: string }) {
 export function ManagementShell({ children }: { children: ReactNode }) {
   const websiteUrl =
     process.env.NEXT_PUBLIC_APP_URL?.trim() || 'http://localhost:3000';
-  const logoUrl = `${websiteUrl.replace(/\/$/, '')}/images/logo-nsabores-white.png`;
+  const logoUrl = '/images/logo-nsabores-white.png';
   const auth = useManagementAuth();
   const pathname = usePathname();
   const router = useRouter();

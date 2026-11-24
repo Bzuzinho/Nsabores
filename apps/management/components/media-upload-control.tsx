@@ -15,10 +15,12 @@ export function MediaUploadControl({
   targetName,
   multiple = false,
   label = 'Carregar imagem',
+  onUploaded,
 }: {
   targetName: string;
   multiple?: boolean;
   label?: string;
+  onUploaded?: (urls: string[]) => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -61,6 +63,7 @@ export function MediaUploadControl({
         target.value = urls[0] ?? '';
       }
 
+      onUploaded?.(urls);
       setMessage(
         files.length === 1
           ? 'Imagem carregada.'
