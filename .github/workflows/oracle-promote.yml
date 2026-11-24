@@ -1,0 +1,94 @@
+name: Promote verified Oracle image
+
+on:
+  workflow_run:
+    workflows: [Oracle production image]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+  packages: write
+
+concurrency:
+  group: oracle-production-promotion
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Wait for required quality checks for the exact commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ github.event.workflow_run.head_sha }}
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 40); do
+            MAIN_SHA="$(gh api "repos/$REPOSITORY/branches/main" --jq .commit.sha)"
+            if [ "$MAIN_SHA" != "$TARGET_SHA" ]; then
+              echo "An older build is not promoted; main has moved."
+              exit 0
+            fi
+            RUNS="$(gh api "repos/$REPOSITORY/actions/runs?head_sha=$TARGET_SHA&per_page=100")"
+            CI="$(echo "$RUNS" | jq -r '[.workflow_runs[] | select(.name=="CI" and .event=="push")] | sort_by(.created_at) | last | .conclusion // empty')"
+            SMOKE="$(echo "$RUNS" | jq -r '[.workflow_runs[] | select(.name=="Management smoke" and .event=="push")] | sort_by(.created_at) | last | .conclusion // empty')"
+            echo "Attempt $attempt: CI=$CI; Management smoke=$SMOKE"
+            if [ "$CI" = success ] && [ "$SMOKE" = success ]; then
+              exit 0
+            fi
+            if [[ "$CI" == failure || "$CI" == cancelled || "$CI" == timed_out || "$SMOKE" == failure || "$SMOKE" == cancelled || "$SMOKE" == timed_out ]]; then
+              echo "At least one required check failed."
+              exit 1
+            fi
+            sleep 20
+          done
+          echo "Required checks did not complete in time."
+          exit 1
+
+      - name: Verify main still points at this commit
+        id: latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ github.event.workflow_run.head_sha }}
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          CURRENT="$(gh api "repos/$REPOSITORY/branches/main" --jq .commit.sha)"
+          if [ "$CURRENT" = "$TARGET_SHA" ]; then
+            echo "promote=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "promote=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping superseded version."
+          fi
+
+      - name: Log in to GHCR
+        if: steps.latest.outputs.promote == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Buildx for registry-only promotion
+        if: steps.latest.outputs.promote == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Promote immutable tested image to production tag
+        if: steps.latest.outputs.promote == 'true'
+        env:
+          TARGET_SHA: ${{ github.event.workflow_run.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker buildx imagetools create \
+            --tag ghcr.io/bzuzinho/nsabores:production \
+            "ghcr.io/bzuzinho/nsabores:sha-$TARGET_SHA"
+          docker buildx imagetools inspect ghcr.io/bzuzinho/nsabores:production
