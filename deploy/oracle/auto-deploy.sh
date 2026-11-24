@@ -46,6 +46,7 @@ cp -p "$ENV_FILE" "$backup"
 chmod 600 "$backup"
 
 rollback() {
+  trap - ERR
   echo "Health checks failed; reverting to $previous_tag"
   cp -p "$backup" "$ENV_FILE"
   docker compose --env-file "$ENV_FILE" up -d --no-deps --pull never api website management || true
