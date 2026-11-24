@@ -278,7 +278,12 @@ function ProductList({
                           alt={`Fotografia de ${product.name}`}
                           width={60}
                           height={60}
-                          style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8 }}
+                          style={{
+                            width: 60,
+                            height: 60,
+                            objectFit: 'cover',
+                            borderRadius: 8,
+                          }}
                         />
                       ) : (
                         <span aria-label="Sem fotografia">Sem imagem</span>
@@ -487,14 +492,22 @@ function ProductForm({
                 alt="Pré-visualização da fotografia principal"
                 width={240}
                 height={180}
-                style={{ width: 240, height: 180, maxWidth: '100%', objectFit: 'cover', borderRadius: 8 }}
+                style={{
+                  width: 240,
+                  height: 180,
+                  maxWidth: '100%',
+                  objectFit: 'cover',
+                  borderRadius: 8,
+                }}
               />
               <small style={{ display: 'block' }}>
                 Pré-visualização. Guarda o produto para associar esta fotografia.
               </small>
             </div>
           ) : (
-            <small style={{ display: 'block' }}>Nenhuma fotografia selecionada.</small>
+            <small style={{ display: 'block' }}>
+              Nenhuma fotografia selecionada.
+            </small>
           )}
         </label>
         <label className="wide">
