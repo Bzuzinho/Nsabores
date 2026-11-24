@@ -270,7 +270,9 @@ function ProductList({
               {products.map((product: CatalogProduct) => (
                 <tr key={product.id}>
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div
+                      style={{ display: 'flex', alignItems: 'center', gap: 12 }}
+                    >
                       {product.imageUrl ? (
                         <Image
                           unoptimized
@@ -290,7 +292,9 @@ function ProductList({
                       )}
                       <span>
                         <strong>{product.name}</strong>
-                        <small style={{ display: 'block' }}>{product.sku}</small>
+                        <small style={{ display: 'block' }}>
+                          {product.sku}
+                        </small>
                       </span>
                     </div>
                   </td>
@@ -501,7 +505,8 @@ function ProductForm({
                 }}
               />
               <small style={{ display: 'block' }}>
-                Pré-visualização. Guarda o produto para associar esta fotografia.
+                Pré-visualização. Guarda o produto para associar esta
+                fotografia.
               </small>
             </div>
           ) : (
