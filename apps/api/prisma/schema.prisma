@@ -312,6 +312,9 @@ model Product {
 }
 
 model User {
+  identity Party? @relation("IdentityUser")
+  partyMemberships PartyMembership[]
+  assignedInternalRoles InternalRoleAssignment[]
   id                         String                @id @default(uuid()) @db.Uuid
   email                      String                @unique
   passwordHash               String
@@ -543,6 +546,7 @@ model ProcessedWebhook {
 }
 
 model Customer {
+  identity Party? @relation("LegacyCustomerIdentity")
   id                 String       @id @default(uuid()) @db.Uuid
   userId             String?      @unique @db.Uuid
   type               CustomerType @default(INDIVIDUAL)
@@ -830,6 +834,7 @@ model InventoryCountItem {
 }
 
 model PriceList {
+  partyTerms PartyCommercialTerms[]
   id               String            @id @default(uuid()) @db.Uuid
   name             String
   code             String            @unique
@@ -870,6 +875,7 @@ model PriceListItem {
 }
 
 model BusinessAccount {
+  identity Party? @relation("LegacyBusinessIdentity")
   id                    String                @id @default(uuid()) @db.Uuid
   type                  BusinessAccountType   @default(RESELLER)
   tradeName             String
@@ -1359,4 +1365,96 @@ model OrderItemPersonalization {
   extraPriceCents Int       @default(0)
   createdAt       DateTime  @default(now())
   orderItem       OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+}
+
+
+// V2 identity foundation. Legacy references are transitional; no live readers yet.
+enum PartyKind {
+  PERSON
+  ORGANIZATION
+}
+
+enum PartyProfileKind {
+  CLIENT
+  RESELLER
+}
+
+enum PartyResellerStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum InternalRoleKind {
+  STAFF
+  ADMIN
+}
+
+model Party {
+  id String @id @default(uuid()) @db.Uuid
+  kind PartyKind
+  displayName String
+  taxNumber String?
+  contactEmail String?
+  phone String?
+  isActive Boolean @default(true)
+  userId String? @unique @db.Uuid
+  legacyCustomerId String? @unique @db.Uuid
+  legacyBusinessId String? @unique @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User? @relation("IdentityUser", fields: [userId], references: [id], onDelete: Restrict)
+  legacyCustomer Customer? @relation("LegacyCustomerIdentity", fields: [legacyCustomerId], references: [id], onDelete: Restrict)
+  legacyBusiness BusinessAccount? @relation("LegacyBusinessIdentity", fields: [legacyBusinessId], references: [id], onDelete: Restrict)
+  profiles PartyProfile[]
+  memberships PartyMembership[]
+  commercialTerms PartyCommercialTerms?
+
+  @@index([kind, isActive])
+  @@index([taxNumber])
+}
+
+model PartyProfile {
+  partyId String @db.Uuid
+  kind PartyProfileKind
+  resellerStatus PartyResellerStatus?
+  createdAt DateTime @default(now())
+  party Party @relation(fields: [partyId], references: [id], onDelete: Restrict)
+
+  @@id([partyId, kind])
+}
+
+model PartyMembership {
+  partyId String @db.Uuid
+  userId String @db.Uuid
+  isActive Boolean @default(false)
+  permissions String[] @default([])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  party Party @relation(fields: [partyId], references: [id], onDelete: Restrict)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@id([partyId, userId])
+  @@index([userId, isActive])
+}
+
+model InternalRoleAssignment {
+  userId String @db.Uuid
+  role InternalRoleKind
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@id([userId, role])
+}
+
+model PartyCommercialTerms {
+  partyId String @id @db.Uuid
+  priceListId String? @db.Uuid
+  resellerLevel Int?
+  paymentDays Int @default(0)
+  creditLimitCents Int?
+  updatedAt DateTime @updatedAt
+  party Party @relation(fields: [partyId], references: [id], onDelete: Restrict)
+  priceList PriceList? @relation(fields: [priceListId], references: [id], onDelete: Restrict)
 }
