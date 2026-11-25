@@ -24,6 +24,16 @@ export function AccountScreen({ mode }: { mode: Mode }) {
   const search = useSearchParams();
   const [message, setMessage] = useState('');
   const [localError, setLocalError] = useState('');
+  const [registrationPassword, setRegistrationPassword] = useState('');
+  const [registrationConfirmation, setRegistrationConfirmation] = useState('');
+  const [showRegistrationPassword, setShowRegistrationPassword] = useState(false);
+  const registrationRules = [
+    { label: 'Entre 10 e 128 caracteres', valid: registrationPassword.length >= 10 && registrationPassword.length <= 128 },
+    { label: 'Uma letra maiúscula (A–Z)', valid: /[A-Z]/.test(registrationPassword) },
+    { label: 'Uma letra minúscula (a–z)', valid: /[a-z]/.test(registrationPassword) },
+    { label: 'Um número (0–9)', valid: /[0-9]/.test(registrationPassword) },
+  ];
+
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [sessions, setSessions] = useState<AuthSessionView[]>([]);
 
@@ -79,12 +89,19 @@ export function AccountScreen({ mode }: { mode: Mode }) {
   const submitAuth = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const data = Object.fromEntries(new FormData(event.currentTarget));
+    if (mode === 'register' && (!registrationRules.every((rule) => rule.valid) || registrationPassword !== registrationConfirmation)) {
+      setLocalError('Cumpra os requisitos da password e confirme-a corretamente.');
+      return;
+    }
     const ok = await run(
       () =>
         mode === 'login'
           ? auth.login(String(data.email), String(data.password))
           : auth.register({
-              ...data,
+              email: String(data.email),
+              firstName: String(data.firstName),
+              lastName: String(data.lastName),
+              password: String(data.password),
               marketingConsent: data.marketingConsent === 'on',
             }),
       'Sessão iniciada.',
@@ -117,10 +134,32 @@ export function AccountScreen({ mode }: { mode: Mode }) {
             Email
             <input required type="email" name="email" />
           </label>
-          <label>
-            Password
-            <input required type="password" name="password" minLength={10} />
-          </label>
+          {mode === 'register' ? (
+            <>
+              <label>
+                Password
+                <input required type={showRegistrationPassword ? 'text' : 'password'} name="password" autoComplete="new-password" minLength={10} maxLength={128} value={registrationPassword} onChange={(event) => setRegistrationPassword(event.target.value)} aria-describedby="registration-password-rules" />
+              </label>
+              <ul id="registration-password-rules" aria-live="polite">
+                {registrationRules.map((rule) => (
+                  <li key={rule.label}>{rule.valid ? '✓' : '○'} {rule.label}</li>
+                ))}
+              </ul>
+              <label>
+                Confirmar password
+                <input required type={showRegistrationPassword ? 'text' : 'password'} autoComplete="new-password" value={registrationConfirmation} onChange={(event) => setRegistrationConfirmation(event.target.value)} maxLength={128} />
+              </label>
+              {registrationConfirmation && registrationPassword !== registrationConfirmation && <p className="form-error">As passwords não coincidem.</p>}
+              <button type="button" className="text-button" aria-pressed={showRegistrationPassword} onClick={() => setShowRegistrationPassword((value) => !value)}>
+                {showRegistrationPassword ? 'Ocultar passwords' : 'Mostrar passwords'}
+              </button>
+            </>
+          ) : (
+            <label>
+              Password
+              <input required type="password" name="password" autoComplete="current-password" />
+            </label>
+          )}
           {mode === 'register' && (
             <label className="account-check">
               <input type="checkbox" name="marketingConsent" /> Quero receber
