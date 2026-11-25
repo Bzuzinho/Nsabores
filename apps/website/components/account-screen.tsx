@@ -177,7 +177,10 @@ export function AccountScreen({ mode }: { mode: Mode }) {
                 · <Link href="/conta/registar">Criar conta</Link>
               </>
             ) : (
-              <Link href="/conta/entrar">Já tenho conta</Link>
+              <>
+                <Link href="/conta/entrar">Já tenho conta</Link>{' '}
+                · <Link href="/conta/recuperar-password">Recuperar password</Link>
+              </>
             )}
           </p>
         </form>
@@ -197,10 +200,14 @@ export function AccountScreen({ mode }: { mode: Mode }) {
             : '/v1/auth/verify-email';
       await run(
         () =>
-          accountApi.post(path, {
-            ...data,
-            token: data.token || search.get('token'),
-          }),
+          accountApi.post(
+            path,
+            mode === 'forgot'
+              ? { email: String(data.email) }
+              : mode === 'reset'
+                ? { token: data.token || search.get('token'), password: data.password }
+                : { token: data.token || search.get('token') },
+          ),
         mode === 'forgot'
           ? 'Se a conta existir, receberá instruções.'
           : 'Operação concluída.',
