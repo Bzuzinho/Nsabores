@@ -1,9 +1,0 @@
-[Unit]
-Description=Automatically deploy verified NSabores image from GHCR
-Wants=network-online.target docker.service
-After=network-online.target docker.service
-
-[Service]
-Type=oneshot
-ExecStart=/usr/local/sbin/nsabores-auto-deploy
-TimeoutStartSec=8min

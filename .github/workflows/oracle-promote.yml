@@ -92,3 +92,37 @@ jobs:
             --tag ghcr.io/bzuzinho/nsabores:production \
             "ghcr.io/bzuzinho/nsabores:sha-$TARGET_SHA"
           docker buildx imagetools inspect ghcr.io/bzuzinho/nsabores:production
+
+      - name: Verify SSH deployment configuration
+        if: steps.latest.outputs.promote == 'true'
+        env:
+          ORACLE_DEPLOY_SSH_KEY: ${{ secrets.ORACLE_DEPLOY_SSH_KEY }}
+          ORACLE_SSH_KNOWN_HOSTS: ${{ secrets.ORACLE_SSH_KNOWN_HOSTS }}
+          ORACLE_SSH_HOST: ${{ secrets.ORACLE_SSH_HOST }}
+          ORACLE_SSH_USER: ${{ secrets.ORACLE_SSH_USER }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in ORACLE_DEPLOY_SSH_KEY ORACLE_SSH_KNOWN_HOSTS ORACLE_SSH_HOST ORACLE_SSH_USER; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing GitHub Actions secret: $name"
+              exit 1
+            fi
+          done
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$ORACLE_DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$ORACLE_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy on Oracle using SSH trigger (no polling)
+        if: steps.latest.outputs.promote == 'true'
+        env:
+          ORACLE_SSH_HOST: ${{ secrets.ORACLE_SSH_HOST }}
+          ORACLE_SSH_USER: ${{ secrets.ORACLE_SSH_USER }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          SSH_OPTS=(-i "$HOME/.ssh/id_ed25519" -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15)
+          ssh "${SSH_OPTS[@]}" "$ORACLE_SSH_USER@$ORACLE_SSH_HOST" \
+            "sudo -n /usr/local/sbin/nsabores-auto-deploy"
