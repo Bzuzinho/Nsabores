@@ -125,6 +125,7 @@ export interface AuthUser {
   isActive: boolean;
   emailVerifiedAt: string | null;
   createdAt: string;
+  hasCustomer?: boolean;
   customerProfile?: {
     taxNumber: string | null;
     marketingConsent: boolean;
