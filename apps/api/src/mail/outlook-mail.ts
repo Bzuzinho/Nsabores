@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
+import nodemailer from 'nodemailer';
 
 export type TransactionalMailMessage = {
   to: string;
@@ -16,7 +17,7 @@ type TokenResponse = {
   error_description?: string;
 };
 
-const logger = new Logger('OutlookMail');
+const logger = new Logger('TransactionalMail');
 
 export function sendTransactionalMail(
   config: ConfigService,
@@ -25,7 +26,7 @@ export function sendTransactionalMail(
   void deliverTransactionalMail(config, message).catch((error: unknown) => {
     logger.error(
       `Falha no envio de email para ${recipientDomain(message.to)}: ${
-        error instanceof Error ? error.message : String(error)
+        error instanceof Error ? error.name : 'UnknownError'
       }`,
     );
   });
@@ -41,9 +42,64 @@ export async function deliverTransactionalMail(
   const replyTo =
     message.replyTo?.trim() ||
     config.get<string>('MAIL_REPLY_TO')?.trim() ||
-    'nsabores@outlook.pt';
+    from;
 
-  if (provider !== 'outlook-graph') {
+  if (provider === 'smtp') {
+    const host = config.get<string>('SMTP_HOST')?.trim();
+    const user = config.get<string>('SMTP_USER')?.trim();
+    const pass = config.get<string>('SMTP_PASSWORD');
+    const port = Number(config.get('SMTP_PORT') ?? 465);
+    const secureSetting = String(config.get('SMTP_SECURE') ?? 'true');
+    const secure = secureSetting === 'true';
+    const sender = config.get<string>('MAIL_FROM_ADDRESS')?.trim();
+    if (
+      !host ||
+      !user ||
+      !pass ||
+      !sender ||
+      ![465, 587].includes(port) ||
+      !['true', 'false'].includes(secureSetting) ||
+      secure !== (port === 465)
+    ) {
+      throw new Error('Configuração SMTP inválida ou incompleta.');
+    }
+    const transport = nodemailer.createTransport({
+      host,
+      port,
+      secure,
+      requireTLS: !secure,
+      auth: { user, pass },
+      tls: { minVersion: 'TLSv1.2', rejectUnauthorized: true },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 20000,
+    });
+    const result = await transport.sendMail({
+      from: {
+        name: config.get<string>('MAIL_FROM_NAME')?.trim() || 'Nsabores',
+        address: sender,
+      },
+      to: message.to,
+      replyTo,
+      subject: message.subject,
+      text: message.text,
+      html: message.html,
+    });
+    if (!result.accepted.length || result.rejected.length) {
+      throw new Error('SMTP não aceitou a mensagem.');
+    }
+    logger.log(
+      JSON.stringify({
+        event: 'transactional_email',
+        provider: 'smtp',
+        recipientDomain: recipientDomain(message.to),
+        status: 'accepted',
+      }),
+    );
+    return true;
+  }
+
+  if (provider === 'log') {
     logger.log(
       JSON.stringify({
         event: 'transactional_email',
@@ -53,7 +109,11 @@ export async function deliverTransactionalMail(
         subject: message.subject,
       }),
     );
-    return;
+    return false;
+  }
+
+  if (provider !== 'outlook-graph') {
+    throw new Error('Fornecedor de email não suportado.');
   }
 
   const clientId = config.get<string>('OUTLOOK_CLIENT_ID')?.trim();
@@ -62,19 +122,7 @@ export async function deliverTransactionalMail(
   const tenant = config.get<string>('OUTLOOK_TENANT')?.trim() || 'consumers';
 
   if (!clientId || !refreshToken) {
-    logger.warn(
-      'MAIL_PROVIDER=outlook-graph sem OUTLOOK_CLIENT_ID e OUTLOOK_REFRESH_TOKEN; email mantido em modo log.',
-    );
-    logger.log(
-      JSON.stringify({
-        event: 'transactional_email',
-        provider: 'log-fallback',
-        from,
-        recipientDomain: recipientDomain(message.to),
-        subject: message.subject,
-      }),
-    );
-    return;
+    throw new Error('Credenciais Microsoft Graph em falta.');
   }
 
   const tokenBody = new URLSearchParams({
@@ -96,9 +144,7 @@ export async function deliverTransactionalMail(
   const token = (await tokenResponse.json()) as TokenResponse;
   if (!tokenResponse.ok || !token.access_token) {
     throw new Error(
-      token.error_description ||
-        token.error ||
-        `OAuth HTTP ${tokenResponse.status}`,
+      `OAuth HTTP ${tokenResponse.status}`,
     );
   }
 
@@ -144,10 +190,7 @@ export async function deliverTransactionalMail(
   );
 
   if (!sendResponse.ok) {
-    const detail = await sendResponse.text();
-    throw new Error(
-      `Microsoft Graph HTTP ${sendResponse.status}: ${detail.slice(0, 300)}`,
-    );
+    throw new Error(`Microsoft Graph HTTP ${sendResponse.status}`);
   }
 
   logger.log(
@@ -159,6 +202,7 @@ export async function deliverTransactionalMail(
       subject: message.subject,
     }),
   );
+  return true;
 }
 
 function recipientDomain(email: string) {
