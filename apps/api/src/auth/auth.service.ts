@@ -73,7 +73,7 @@ export class AuthService {
           );
           throw new ConflictException(conflictMessage);
         }
-  
+
         stage = 'create-user';
         const created = await tx.user.create({
           data: {
@@ -96,7 +96,7 @@ export class AuthService {
           },
           select: publicUser,
         });
-  
+
         stage = 'create-customer';
         await tx.customer.create({
           data: {
