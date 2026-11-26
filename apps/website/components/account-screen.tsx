@@ -306,6 +306,9 @@ export function AccountScreen({ mode }: { mode: Mode }) {
           )}
           <Feedback message={message} error={localError} />
           <button className="button button-primary">Continuar</button>
+          {message && mode !== 'forgot' && (
+            <Link href="/conta/entrar">Entrar na minha conta</Link>
+          )}
         </form>
       </AccountFrame>
     );
@@ -334,17 +337,20 @@ export function AccountScreen({ mode }: { mode: Mode }) {
           </section>
         )}
         {!user.emailVerifiedAt && (
-          <button
-            className="text-button"
-            onClick={() =>
-              void run(
-                () => accountApi.post('/v1/auth/resend-verification'),
-                'Email de verificação enviado.',
-              )
-            }
-          >
-            Reenviar verificação de email
-          </button>
+          <section>
+            <p>Confirme o seu email para ativar o perfil de cliente.</p>
+            <button
+              className="text-button"
+              onClick={() =>
+                void run(
+                  () => accountApi.post('/v1/auth/resend-verification'),
+                  'Email de verificação enviado.',
+                )
+              }
+            >
+              Reenviar verificação de email
+            </button>
+          </section>
         )}
         <button
           className="button button-outline-dark"
