@@ -145,8 +145,9 @@ describe('AuthService', () => {
   it('does not change existing accounts or create a duplicate commercial record', async () => {
     const { service, prisma, response, mail } = setup();
     prisma.user.findFirst.mockResolvedValue({ id: 'existing-user' });
-    await expect(service.register(registration, { headers: {} }, response as never))
-      .rejects.toBeInstanceOf(ConflictException);
+    await expect(
+      service.register(registration, { headers: {} }, response as never),
+    ).rejects.toBeInstanceOf(ConflictException);
     expect(prisma.user.create).not.toHaveBeenCalled();
     expect(prisma.customer.create).not.toHaveBeenCalled();
     expect(prisma.customer.update).not.toHaveBeenCalled();
@@ -158,8 +159,9 @@ describe('AuthService', () => {
     const { service, prisma, response } = setup();
     prisma.user.findFirst.mockResolvedValue(null);
     prisma.customer.findFirst.mockResolvedValue({ id: 'existing-customer' });
-    await expect(service.register(registration, { headers: {} }, response as never))
-      .rejects.toBeInstanceOf(ConflictException);
+    await expect(
+      service.register(registration, { headers: {} }, response as never),
+    ).rejects.toBeInstanceOf(ConflictException);
     expect(prisma.user.create).not.toHaveBeenCalled();
     expect(prisma.customer.update).not.toHaveBeenCalled();
     expect(response.cookie).not.toHaveBeenCalled();
@@ -173,8 +175,9 @@ describe('AuthService', () => {
         clientVersion: 'test',
       }),
     );
-    await expect(service.register(registration, { headers: {} }, response as never))
-      .rejects.toMatchObject({ status: 409 });
+    await expect(
+      service.register(registration, { headers: {} }, response as never),
+    ).rejects.toMatchObject({ status: 409 });
     expect(prisma.customer.create).not.toHaveBeenCalled();
     expect(mail.sendEmailVerification).not.toHaveBeenCalled();
     expect(response.cookie).not.toHaveBeenCalled();
