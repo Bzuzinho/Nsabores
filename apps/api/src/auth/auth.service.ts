@@ -325,17 +325,31 @@ export class AuthService {
       if (existing) {
         throw new ConflictException('Contacte o apoio para associar a ficha.');
       }
-      await tx.customer.create({
-        data: {
-          userId,
-          name: `${user.firstName} ${user.lastName}`.trim(),
-          email: user.email,
-          phone: user.phone,
-          taxNumber: user.customerProfile?.taxNumber,
-          marketingConsent: user.customerProfile?.marketingConsent ?? false,
-          marketingConsentAt: user.customerProfile?.marketingConsentAt,
-        },
-      });
+      try {
+        await tx.customer.create({
+          data: {
+            userId,
+            name: `${user.firstName} ${user.lastName}`.trim(),
+            email: user.email,
+            phone: user.phone,
+            taxNumber: user.customerProfile?.taxNumber,
+            marketingConsent: user.customerProfile?.marketingConsent ?? false,
+            marketingConsentAt: user.customerProfile?.marketingConsent
+              ? user.customerProfile.marketingConsentAt
+              : null,
+          },
+        });
+      } catch (error) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          throw new ConflictException(
+            'Não foi possível ativar a ficha. Atualize a página ou contacte o apoio.',
+          );
+        }
+        throw error;
+      }
       return { success: true };
     });
   }
@@ -354,6 +368,25 @@ export class AuthService {
           },
         }),
       ]);
+      const linked = await tx.customer.findUnique({ where: { userId } });
+      if (!account.isActive || account.deletedAt) {
+        throw new UnauthorizedException('Conta indisponível.');
+      }
+      if (!linked) {
+        if (!account.emailVerifiedAt) {
+          throw new UnauthorizedException('Confirme primeiro o seu email.');
+        }
+        const byEmail = await tx.customer.findFirst({
+          where: { email: { equals: account.email, mode: 'insensitive' } },
+        });
+        if (byEmail) {
+          throw new ConflictException('Contacte o apoio para associar a ficha.');
+        }
+      }
+      if (linked && (!linked.isActive || linked.deletedAt)) {
+        throw new ConflictException('Contacte o apoio para ativar a ficha.');
+      }
+
       const consentAt =
         dto.marketingConsent === true && !previous?.marketingConsent
           ? new Date()
@@ -390,24 +423,6 @@ export class AuthService {
         },
       });
 
-      const linked = await tx.customer.findUnique({ where: { userId } });
-      if (!account.isActive || account.deletedAt) {
-        throw new UnauthorizedException('Conta indisponível.');
-      }
-      if (!linked) {
-        if (!account.emailVerifiedAt) {
-          throw new UnauthorizedException('Confirme primeiro o seu email.');
-        }
-        const byEmail = await tx.customer.findFirst({
-          where: { email: { equals: account.email, mode: 'insensitive' } },
-        });
-        if (byEmail) {
-          throw new ConflictException('Contacte o apoio para associar a ficha.');
-        }
-      }
-      if (linked && (!linked.isActive || linked.deletedAt)) {
-        throw new ConflictException('Contacte o apoio para ativar a ficha.');
-      }
       const customer = linked;
       if (customer) {
         await tx.customer.update({
