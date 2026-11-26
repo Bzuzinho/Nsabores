@@ -74,9 +74,14 @@
   flex-direction: row;
   align-items: center;
 }
-.account-check input {
+.account-form .account-check input[type='checkbox'] {
+  flex: 0 0 18px;
   width: 18px;
-  min-height: 18px;
+  height: 18px;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  accent-color: #b48b47;
 }
 .account-form .button,
 .account-form .form-error,

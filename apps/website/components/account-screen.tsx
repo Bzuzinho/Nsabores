@@ -306,6 +306,9 @@ export function AccountScreen({ mode }: { mode: Mode }) {
           )}
           <Feedback message={message} error={localError} />
           <button className="button button-primary">Continuar</button>
+          {message && mode !== 'forgot' && (
+            <Link href="/conta/entrar">Entrar na minha conta</Link>
+          )}
         </form>
       </AccountFrame>
     );
@@ -316,18 +319,40 @@ export function AccountScreen({ mode }: { mode: Mode }) {
     return (
       <AccountFrame title={`Olá, ${user.firstName}`} wide>
         <CustomerDashboard user={user} />
+        {user.emailVerifiedAt && user.hasCustomer === false && (
+          <section>
+            <h2>Ativar perfil de cliente</h2>
+            <p>Complete a sua ficha comercial sem criar uma nova conta.</p>
+            <button
+              className="button button-primary"
+              onClick={() =>
+                void run(
+                  () => accountApi.post('/v1/auth/activate-customer'),
+                  'Perfil de cliente ativado.',
+                ).then(async (ok) => {
+                  if (ok) await auth.reload();
+                })
+              }
+            >
+              Ativar perfil de cliente
+            </button>
+          </section>
+        )}
         {!user.emailVerifiedAt && (
-          <button
-            className="text-button"
-            onClick={() =>
-              void run(
-                () => accountApi.post('/v1/auth/resend-verification'),
-                'Email de verificação enviado.',
-              )
-            }
-          >
-            Reenviar verificação de email
-          </button>
+          <section>
+            <p>Confirme o seu email para ativar o perfil de cliente.</p>
+            <button
+              className="text-button"
+              onClick={() =>
+                void run(
+                  () => accountApi.post('/v1/auth/resend-verification'),
+                  'Email de verificação enviado.',
+                )
+              }
+            >
+              Reenviar verificação de email
+            </button>
+          </section>
         )}
         <button
           className="button button-outline-dark"

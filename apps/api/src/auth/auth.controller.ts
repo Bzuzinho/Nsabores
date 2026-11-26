@@ -107,6 +107,13 @@ export class AuthController {
   }
 
   @UseGuards(AuthGuard)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post('activate-customer')
+  activateCustomer(@CurrentUser() user: AuthPrincipal) {
+    return this.auth.activateCustomer(user.sub);
+  }
+
+  @UseGuards(AuthGuard)
   @Post('change-password')
   changePassword(
     @CurrentUser() user: AuthPrincipal,
