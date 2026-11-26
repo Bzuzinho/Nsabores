@@ -49,7 +49,12 @@ export class ApiClient {
         (typeof rawMessage === 'string'
           ? rawMessage.trim()
           : Array.isArray(rawMessage)
-            ? rawMessage.filter((item): item is string => typeof item === 'string' && item.trim().length > 0).join(' ')
+            ? rawMessage
+                .filter(
+                  (item): item is string =>
+                    typeof item === 'string' && item.trim().length > 0,
+                )
+                .join(' ')
             : '') || 'Não foi possível concluir o pedido.';
       throw new ApiError(message, response.status, details);
     }
