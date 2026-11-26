@@ -380,7 +380,9 @@ export class AuthService {
           where: { email: { equals: account.email, mode: 'insensitive' } },
         });
         if (byEmail) {
-          throw new ConflictException('Contacte o apoio para associar a ficha.');
+          throw new ConflictException(
+            'Contacte o apoio para associar a ficha.',
+          );
         }
       }
       if (linked && (!linked.isActive || linked.deletedAt)) {

@@ -329,7 +329,9 @@ export function AccountScreen({ mode }: { mode: Mode }) {
                 void run(
                   () => accountApi.post('/v1/auth/activate-customer'),
                   'Perfil de cliente ativado.',
-                ).then((ok) => ok && auth.reload())
+                ).then(async (ok) => {
+                  if (ok) await auth.reload();
+                })
               }
             >
               Ativar perfil de cliente
