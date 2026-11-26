@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -33,6 +34,8 @@ const publicUser = {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
@@ -46,8 +49,32 @@ export class AuthService {
     response: Response,
   ) {
     const token = this.randomToken();
-    try {
-      const user = await this.prisma.$transaction(async (tx) => {
+    let stage = 'check-existing';
+    const conflictMessage =
+      'Não foi possível criar a conta. Se já tiver conta, entre ou recupere a password. Se já for cliente sem acesso online, contacte o apoio para ativar o acesso.';
+
+    const user = await this.prisma
+      .$transaction(async (tx) => {
+        // A public registration must not take ownership of an existing commercial
+        // record or reactivate a disabled account merely by supplying an email.
+        const [existingUser, existingCustomer] = await Promise.all([
+          tx.user.findFirst({
+            where: { email: { equals: dto.email, mode: 'insensitive' } },
+            select: { id: true },
+          }),
+          tx.customer.findFirst({
+            where: { email: { equals: dto.email, mode: 'insensitive' } },
+            select: { id: true },
+          }),
+        ]);
+        if (existingUser || existingCustomer) {
+          this.logger.warn(
+            'Registration conflict: existing identity; manual activation or recovery required.',
+          );
+          throw new ConflictException(conflictMessage);
+        }
+
+        stage = 'create-user';
         const created = await tx.user.create({
           data: {
             email: dto.email,
@@ -70,58 +97,36 @@ export class AuthService {
           select: publicUser,
         });
 
-        const existingCustomer = await tx.customer.findUnique({
-          where: { email: dto.email },
+        stage = 'create-customer';
+        await tx.customer.create({
+          data: {
+            userId: created.id,
+            name: `${dto.firstName} ${dto.lastName}`.trim(),
+            email: dto.email,
+            phone: dto.phone,
+            marketingConsent: dto.marketingConsent ?? false,
+            marketingConsentAt: dto.marketingConsent ? new Date() : null,
+          },
         });
-        if (existingCustomer) {
-          await tx.customer.update({
-            where: { id: existingCustomer.id },
-            data: {
-              userId: created.id,
-              name: `${dto.firstName} ${dto.lastName}`.trim(),
-              phone: dto.phone,
-              marketingConsent:
-                dto.marketingConsent === true
-                  ? true
-                  : existingCustomer.marketingConsent,
-              marketingConsentAt:
-                dto.marketingConsent === true &&
-                !existingCustomer.marketingConsent
-                  ? new Date()
-                  : undefined,
-              isActive: true,
-              deletedAt: null,
-            },
-          });
-        } else {
-          await tx.customer.create({
-            data: {
-              userId: created.id,
-              name: `${dto.firstName} ${dto.lastName}`.trim(),
-              email: dto.email,
-              phone: dto.phone,
-              marketingConsent: dto.marketingConsent ?? false,
-              marketingConsentAt: dto.marketingConsent ? new Date() : null,
-            },
-          });
-        }
         return created;
+      })
+      .catch((error: unknown) => {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          // Log only a controlled stage label, never user data or database values.
+          this.logger.warn(
+            `Registration uniqueness conflict (P2002), stage: ${stage}`,
+          );
+          throw new ConflictException(conflictMessage);
+        }
+        throw error;
       });
 
-      this.mail.sendEmailVerification(user.email, token);
-      await this.createSession(user, request, response);
-      return { user };
-    } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        throw new ConflictException(
-          'Não foi possível criar a conta com estes dados.',
-        );
-      }
-      throw error;
-    }
+    this.mail.sendEmailVerification(user.email, token);
+    await this.createSession(user, request, response);
+    return { user };
   }
 
   async login(dto: LoginDto, request: RequestWithAuth, response: Response) {

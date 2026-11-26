@@ -1,4 +1,5 @@
-import { UnauthorizedException } from '@nestjs/common';
+import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import argon2 from 'argon2';
 import { AuthService } from './auth.service';
@@ -50,6 +51,7 @@ function setup() {
     },
     customerProfile: { findUnique: vi.fn() },
     customer: {
+      findFirst: vi.fn().mockResolvedValue(null),
       findUnique: vi.fn(),
       create: vi.fn().mockResolvedValue({}),
       update: vi.fn().mockResolvedValue({}),
@@ -97,7 +99,7 @@ describe('AuthService', () => {
   it('registers with a password hash, profile and secure cookies', async () => {
     const { service, prisma, response, mail } = setup();
     prisma.user.create.mockResolvedValue(user);
-    prisma.customer.findUnique.mockResolvedValue(null);
+    prisma.customer.findFirst.mockResolvedValue(null);
     await service.register(
       {
         email: user.email,
@@ -133,26 +135,52 @@ describe('AuthService', () => {
     expect(response.cookie).toHaveBeenCalledTimes(2);
   });
 
-  it('does not reveal the duplicated email', async () => {
+  const registration = {
+    email: user.email,
+    password: 'Password123',
+    firstName: 'Ana',
+    lastName: 'Silva',
+  };
+
+  it('does not change existing accounts or create a duplicate commercial record', async () => {
+    const { service, prisma, response, mail } = setup();
+    prisma.user.findFirst.mockResolvedValue({ id: 'existing-user' });
+    await expect(
+      service.register(registration, { headers: {} }, response as never),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(prisma.customer.create).not.toHaveBeenCalled();
+    expect(prisma.customer.update).not.toHaveBeenCalled();
+    expect(mail.sendEmailVerification).not.toHaveBeenCalled();
+    expect(response.cookie).not.toHaveBeenCalled();
+  });
+
+  it('does not attach an existing customer by email before verified activation', async () => {
     const { service, prisma, response } = setup();
+    prisma.user.findFirst.mockResolvedValue(null);
+    prisma.customer.findFirst.mockResolvedValue({ id: 'existing-customer' });
+    await expect(
+      service.register(registration, { headers: {} }, response as never),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(prisma.customer.update).not.toHaveBeenCalled();
+    expect(response.cookie).not.toHaveBeenCalled();
+  });
+
+  it('handles a real Prisma uniqueness error from concurrent registration', async () => {
+    const { service, prisma, response, mail } = setup();
     prisma.user.create.mockRejectedValue(
-      Object.assign(new Error(), {
+      new Prisma.PrismaClientKnownRequestError('duplicate', {
         code: 'P2002',
-        name: 'PrismaClientKnownRequestError',
+        clientVersion: 'test',
       }),
     );
     await expect(
-      service.register(
-        {
-          email: user.email,
-          password: 'Password123',
-          firstName: 'Ana',
-          lastName: 'Silva',
-        },
-        { headers: {} },
-        response as never,
-      ),
-    ).rejects.toBeInstanceOf(Error);
+      service.register(registration, { headers: {} }, response as never),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(prisma.customer.create).not.toHaveBeenCalled();
+    expect(mail.sendEmailVerification).not.toHaveBeenCalled();
+    expect(response.cookie).not.toHaveBeenCalled();
   });
 
   it('associa a conta empresarial apenas depois de verificar o email', async () => {

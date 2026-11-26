@@ -41,13 +41,21 @@ export class ApiClient {
     }
     if (!response.ok) {
       const details: unknown = await response.json().catch(() => null);
-      const message =
-        typeof details === 'object' &&
-        details !== null &&
-        'message' in details &&
-        typeof details.message === 'string'
+      const rawMessage =
+        typeof details === 'object' && details !== null && 'message' in details
           ? details.message
-          : 'Não foi possível concluir o pedido.';
+          : undefined;
+      const message =
+        (typeof rawMessage === 'string'
+          ? rawMessage.trim()
+          : Array.isArray(rawMessage)
+            ? rawMessage
+                .filter(
+                  (item): item is string =>
+                    typeof item === 'string' && item.trim().length > 0,
+                )
+                .join(' ')
+            : '') || 'Não foi possível concluir o pedido.';
       throw new ApiError(message, response.status, details);
     }
     if (response.status === 204) return undefined as T;

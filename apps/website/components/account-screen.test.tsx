@@ -52,6 +52,7 @@ describe('account authentication screens', () => {
     await user.type(screen.getByLabelText('Apelido'), 'Silva');
     await user.type(screen.getByLabelText('Email'), 'ana@example.com');
     await user.type(screen.getByLabelText('Password'), 'Password123');
+    await user.type(screen.getByLabelText('Confirmar password'), 'Password123');
     await user.click(screen.getByLabelText('Quero receber novidades Nsabores'));
     await user.click(screen.getByRole('button', { name: 'Registar' }));
     expect(register).toHaveBeenCalledWith(
