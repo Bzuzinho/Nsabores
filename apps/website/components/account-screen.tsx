@@ -26,7 +26,8 @@ export function AccountScreen({ mode }: { mode: Mode }) {
   const [localError, setLocalError] = useState('');
   const [registrationPassword, setRegistrationPassword] = useState('');
   const [registrationConfirmation, setRegistrationConfirmation] = useState('');
-  const [showRegistrationPassword, setShowRegistrationPassword] = useState(false);
+  const [showRegistrationPassword, setShowRegistrationPassword] =
+    useState(false);
   const registrationRules = [
     {
       label: 'Entre 10 e 128 caracteres',
@@ -232,8 +233,8 @@ export function AccountScreen({ mode }: { mode: Mode }) {
               </>
             ) : (
               <>
-                <Link href="/conta/entrar">Já tenho conta</Link>{' '}
-                · <Link href="/conta/recuperar-password">Recuperar password</Link>
+                <Link href="/conta/entrar">Já tenho conta</Link> ·{' '}
+                <Link href="/conta/recuperar-password">Recuperar password</Link>
               </>
             )}
           </p>
