@@ -294,13 +294,55 @@ export class AuthService {
     return { success: true };
   }
 
+  async activateCustomer(userId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUniqueOrThrow({
+        where: { id: userId },
+        include: { customerProfile: true },
+      });
+      if (!user.isActive || user.deletedAt || !user.emailVerifiedAt) {
+        throw new UnauthorizedException('Confirme primeiro o seu email.');
+      }
+      const linked = await tx.customer.findUnique({ where: { userId } });
+      if (linked) {
+        if (!linked.isActive || linked.deletedAt) {
+          throw new ConflictException('Contacte o apoio para ativar a ficha.');
+        }
+        return { success: true };
+      }
+      const existing = await tx.customer.findFirst({
+        where: { email: { equals: user.email, mode: 'insensitive' } },
+      });
+      if (existing) {
+        throw new ConflictException('Contacte o apoio para associar a ficha.');
+      }
+      await tx.customer.create({
+        data: {
+          userId,
+          name: `${user.firstName} ${user.lastName}`.trim(),
+          email: user.email,
+          phone: user.phone,
+          taxNumber: user.customerProfile?.taxNumber,
+          marketingConsent: user.customerProfile?.marketingConsent ?? false,
+          marketingConsentAt: user.customerProfile?.marketingConsentAt,
+        },
+      });
+      return { success: true };
+    });
+  }
+
   async updateProfile(userId: string, dto: UpdateProfileDto) {
     return this.prisma.$transaction(async (tx) => {
       const [previous, account] = await Promise.all([
         tx.customerProfile.findUnique({ where: { userId } }),
         tx.user.findUniqueOrThrow({
           where: { id: userId },
-          select: { email: true },
+          select: {
+            email: true,
+            isActive: true,
+            deletedAt: true,
+            emailVerifiedAt: true,
+          },
         }),
       ]);
       const consentAt =
@@ -340,22 +382,33 @@ export class AuthService {
       });
 
       const linked = await tx.customer.findUnique({ where: { userId } });
-      const byEmail = linked
-        ? null
-        : await tx.customer.findUnique({ where: { email: account.email } });
-      const customer = linked ?? byEmail;
+      if (!account.isActive || account.deletedAt) {
+        throw new UnauthorizedException('Conta indisponível.');
+      }
+      if (!linked) {
+        if (!account.emailVerifiedAt) {
+          throw new UnauthorizedException('Confirme primeiro o seu email.');
+        }
+        const byEmail = await tx.customer.findFirst({
+          where: { email: { equals: account.email, mode: 'insensitive' } },
+        });
+        if (byEmail) {
+          throw new ConflictException('Contacte o apoio para associar a ficha.');
+        }
+      }
+      if (linked && (!linked.isActive || linked.deletedAt)) {
+        throw new ConflictException('Contacte o apoio para ativar a ficha.');
+      }
+      const customer = linked;
       if (customer) {
         await tx.customer.update({
           where: { id: customer.id },
           data: {
-            userId: customer.userId ?? userId,
             name: `${dto.firstName} ${dto.lastName}`.trim(),
             phone: dto.phone,
             taxNumber: dto.taxNumber,
             marketingConsent: dto.marketingConsent,
             marketingConsentAt: consentAt,
-            isActive: true,
-            deletedAt: null,
           },
         });
       } else {
