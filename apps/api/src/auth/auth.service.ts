@@ -2,6 +2,7 @@ import {
   ConflictException,
   Injectable,
   Logger,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -124,9 +125,12 @@ export class AuthService {
         throw error;
       });
 
-    this.mail.sendEmailVerification(user.email, token);
+    const verificationEmailAccepted = await this.mail.sendEmailVerification(
+      user.email,
+      token,
+    );
     await this.createSession(user, request, response);
-    return { user: { ...user, hasCustomer: true } };
+    return { user: { ...user, hasCustomer: true }, verificationEmailAccepted };
   }
 
   async login(dto: LoginDto, request: RequestWithAuth, response: Response) {
@@ -229,7 +233,7 @@ export class AuthService {
           passwordResetExpiresAt: this.expiry('PASSWORD_RESET_TOKEN_TTL', '1h'),
         },
       });
-      this.mail.sendPasswordReset(user.email, token);
+      await this.mail.sendPasswordReset(user.email, token);
     }
     return {
       message: 'Se a conta existir, receberá instruções de recuperação.',
@@ -298,7 +302,12 @@ export class AuthService {
           ),
         },
       });
-      this.mail.sendEmailVerification(user.email, token);
+      const accepted = await this.mail.sendEmailVerification(user.email, token);
+      if (!accepted) {
+        throw new ServiceUnavailableException(
+          'Não foi possível enviar o email de verificação. Tente mais tarde.',
+        );
+      }
     }
     return { success: true };
   }
