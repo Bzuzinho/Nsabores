@@ -198,7 +198,9 @@ export function AccountScreen({ mode }: { mode: Mode }) {
                 aria-pressed={showRegistrationPassword}
                 onClick={() => setShowRegistrationPassword((value) => !value)}
               >
-                {showRegistrationPassword ? 'Ocultar passwords' : 'Mostrar passwords'}
+                {showRegistrationPassword
+                  ? 'Ocultar passwords'
+                  : 'Mostrar passwords'}
               </button>
             </>
           ) : (
