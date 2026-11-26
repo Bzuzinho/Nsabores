@@ -39,11 +39,16 @@ export class MailProvider {
       return true;
     }
 
-    sendTransactionalMail(this.config, {
-      to: email,
-      subject,
-      text: `${introduction}\n\n${link}\n\nContacto: ${contact}`,
-      html: `<p>${introduction}</p><p><a href="${link}">Continuar na Nsabores</a></p><p>Contacto: <a href="mailto:${contact}">${contact}</a></p>`,
+    const contact =
+      this.config.get<string>('MAIL_REPLY_TO')?.trim() ||
+      this.config.get<string>('MAIL_FROM_ADDRESS')?.trim() ||
+      'geral@nsabores.pt';
+    try {
+      return await deliverTransactionalMail(this.config, {
+        to: email,
+        subject,
+        text: `${introduction}\n\n${link}\n\nContacto: ${contact}`,
+        html: `<p>${introduction}</p><p><a href="${link}">Continuar na Nsabores</a></p><p>Contacto: <a href="mailto:${contact}">${contact}</a></p>`,
       });
     } catch {
       this.logger.error('Falha no envio de email de autenticação.');
