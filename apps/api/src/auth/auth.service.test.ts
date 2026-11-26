@@ -239,6 +239,43 @@ describe('AuthService', () => {
     expect(prisma.customer.update).not.toHaveBeenCalled();
   });
 
+  it('returns a conflict if another request creates the customer first', async () => {
+    const { service, prisma } = setup();
+    prisma.user.findUniqueOrThrow.mockResolvedValue({
+      ...user,
+      emailVerifiedAt: new Date(),
+    });
+    prisma.customer.findUnique.mockResolvedValue(null);
+    prisma.customer.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('duplicate', {
+        code: 'P2002',
+        clientVersion: 'test',
+      }),
+    );
+    await expect(service.activateCustomer(user.id)).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('does not attach an unlinked commercial record via profile editing', async () => {
+    const { service, prisma } = setup();
+    prisma.user.findUniqueOrThrow.mockResolvedValue({
+      ...user,
+      emailVerifiedAt: new Date(),
+    });
+    prisma.customer.findUnique.mockResolvedValue(null);
+    prisma.customer.findFirst.mockResolvedValue({ id: 'existing' });
+    await expect(
+      service.updateProfile(user.id, {
+        firstName: 'Ana',
+        lastName: 'Silva',
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(prisma.customer.update).not.toHaveBeenCalled();
+  });
+
   it('is idempotent for a linked active customer', async () => {
     const { service, prisma } = setup();
     prisma.user.findUniqueOrThrow.mockResolvedValue({
