@@ -61,8 +61,8 @@ export class AdminUsersService {
       },
       select: adminUser,
     });
-    this.mail.sendPasswordReset(email, token);
-    return user;
+    const emailAccepted = await this.mail.sendPasswordReset(email, token);
+    return { ...user, emailAccepted };
   }
 
   async list(query: UsersQueryDto) {
@@ -243,8 +243,8 @@ export class AdminUsersService {
         passwordResetExpiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000),
       },
     });
-    this.mail.sendPasswordReset(user.email, token);
-    return { success: true };
+    const emailAccepted = await this.mail.sendPasswordReset(user.email, token);
+    return { success: emailAccepted };
   }
 
   async revokeSessions(userId: string) {

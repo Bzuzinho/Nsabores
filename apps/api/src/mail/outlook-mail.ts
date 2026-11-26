@@ -143,9 +143,7 @@ export async function deliverTransactionalMail(
   );
   const token = (await tokenResponse.json()) as TokenResponse;
   if (!tokenResponse.ok || !token.access_token) {
-    throw new Error(
-      `OAuth HTTP ${tokenResponse.status}`,
-    );
+    throw new Error(`OAuth HTTP ${tokenResponse.status}`);
   }
 
   const sendResponse = await fetch(
