@@ -183,6 +183,96 @@ describe('AuthService', () => {
     expect(response.cookie).not.toHaveBeenCalled();
   });
 
+  it('activates a verified account without creating or changing a user', async () => {
+    const { service, prisma } = setup();
+    prisma.user.findUniqueOrThrow.mockResolvedValue({
+      ...user,
+      role: 'ADMIN',
+      emailVerifiedAt: new Date(),
+      customerProfile: null,
+    });
+    prisma.customer.findUnique.mockResolvedValue(null);
+    await expect(service.activateCustomer(user.id)).resolves.toEqual({
+      success: true,
+    });
+    expect(prisma.customer.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: user.id,
+          email: user.email,
+          marketingConsent: false,
+        }) as unknown,
+      }),
+    );
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { emailVerifiedAt: null },
+    { isActive: false },
+    { deletedAt: new Date() },
+  ])('rejects activation for an ineligible account (%j)', async (override) => {
+    const { service, prisma } = setup();
+    prisma.user.findUniqueOrThrow.mockResolvedValue({
+      ...user,
+      emailVerifiedAt: new Date(),
+      ...override,
+    });
+    await expect(service.activateCustomer(user.id)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(prisma.customer.create).not.toHaveBeenCalled();
+  });
+
+  it('refuses to claim a commercial record based only on email', async () => {
+    const { service, prisma } = setup();
+    prisma.user.findUniqueOrThrow.mockResolvedValue({
+      ...user,
+      emailVerifiedAt: new Date(),
+    });
+    prisma.customer.findFirst.mockResolvedValue({ id: 'existing' });
+    await expect(service.activateCustomer(user.id)).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(prisma.customer.create).not.toHaveBeenCalled();
+    expect(prisma.customer.update).not.toHaveBeenCalled();
+  });
+
+  it('is idempotent for a linked active customer', async () => {
+    const { service, prisma } = setup();
+    prisma.user.findUniqueOrThrow.mockResolvedValue({
+      ...user,
+      emailVerifiedAt: new Date(),
+    });
+    prisma.customer.findUnique.mockResolvedValue({
+      id: 'linked',
+      isActive: true,
+      deletedAt: null,
+    });
+    await expect(service.activateCustomer(user.id)).resolves.toEqual({
+      success: true,
+    });
+    expect(prisma.customer.create).not.toHaveBeenCalled();
+  });
+
+  it('does not reactivate a disabled commercial record', async () => {
+    const { service, prisma } = setup();
+    prisma.user.findUniqueOrThrow.mockResolvedValue({
+      ...user,
+      emailVerifiedAt: new Date(),
+    });
+    prisma.customer.findUnique.mockResolvedValue({
+      id: 'linked',
+      isActive: false,
+      deletedAt: null,
+    });
+    await expect(service.activateCustomer(user.id)).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(prisma.customer.update).not.toHaveBeenCalled();
+  });
+
   it('associa a conta empresarial apenas depois de verificar o email', async () => {
     const { service, prisma } = setup();
     prisma.user.findFirst.mockResolvedValue(user);
