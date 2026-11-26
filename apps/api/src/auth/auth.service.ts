@@ -126,7 +126,7 @@ export class AuthService {
 
     this.mail.sendEmailVerification(user.email, token);
     await this.createSession(user, request, response);
-    return { user };
+    return { user: { ...user, hasCustomer: true } };
   }
 
   async login(dto: LoginDto, request: RequestWithAuth, response: Response) {
@@ -144,7 +144,11 @@ export class AuthService {
       data: { lastLoginAt: new Date() },
     });
     await this.createSession(user, request, response);
-    return { user: this.toPublicUser(user) };
+    const customer = await this.prisma.customer.findUnique({
+      where: { userId: user.id },
+      select: { id: true },
+    });
+    return { user: { ...this.toPublicUser(user), hasCustomer: !!customer } };
   }
 
   async refresh(
@@ -197,8 +201,8 @@ export class AuthService {
     return { success: true };
   }
 
-  me(userId: string) {
-    return this.prisma.user.findUniqueOrThrow({
+  async me(userId: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
       select: {
         ...publicUser,
@@ -207,6 +211,11 @@ export class AuthService {
         },
       },
     });
+    const customer = await this.prisma.customer.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+    return { ...user, hasCustomer: !!customer };
   }
 
   async forgotPassword(email: string) {
