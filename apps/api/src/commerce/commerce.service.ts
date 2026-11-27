@@ -449,7 +449,9 @@ export class CommerceService {
       select: { id: true },
     });
     return this.prisma.order.findMany({
-      where: customer ? { OR: [{ userId }, { customerId: customer.id, userId: null }] } : { userId },
+      where: customer
+        ? { OR: [{ userId }, { customerId: customer.id, userId: null }] }
+        : { userId },
       include: orderInclude,
       orderBy: { createdAt: 'desc' },
     });
@@ -461,7 +463,9 @@ export class CommerceService {
       select: { id: true },
     });
     const order = await this.prisma.order.findFirst({
-      where: customer ? { id, OR: [{ userId }, { customerId: customer.id, userId: null }] } : { id, userId },
+      where: customer
+        ? { id, OR: [{ userId }, { customerId: customer.id, userId: null }] }
+        : { id, userId },
       include: orderInclude,
     });
     if (!order) throw new NotFoundException('Encomenda não encontrada.');
