@@ -155,16 +155,19 @@ describe('AuthService', () => {
     expect(response.cookie).not.toHaveBeenCalled();
   });
 
-  it('does not attach an existing customer by email before verified activation', async () => {
+  it('allows registration without claiming a pre-existing commercial record', async () => {
     const { service, prisma, response } = setup();
     prisma.user.findFirst.mockResolvedValue(null);
+    prisma.user.create.mockResolvedValue(user);
     prisma.customer.findFirst.mockResolvedValue({ id: 'existing-customer' });
-    await expect(
-      service.register(registration, { headers: {} }, response as never),
-    ).rejects.toBeInstanceOf(ConflictException);
-    expect(prisma.user.create).not.toHaveBeenCalled();
+    const result = await service.register(
+      registration, { headers: {} }, response as never,
+    );
+    expect(result.user.hasCustomer).toBe(false);
+    expect(prisma.user.create).toHaveBeenCalledTimes(1);
+    expect(prisma.customer.create).not.toHaveBeenCalled();
     expect(prisma.customer.update).not.toHaveBeenCalled();
-    expect(response.cookie).not.toHaveBeenCalled();
+    expect(response.cookie).toHaveBeenCalledTimes(2);
   });
 
   it('handles a real Prisma uniqueness error from concurrent registration', async () => {
@@ -258,21 +261,18 @@ describe('AuthService', () => {
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
-  it('does not attach an unlinked commercial record via profile editing', async () => {
+  it('allows profile editing without claiming an existing commercial record', async () => {
     const { service, prisma } = setup();
-    prisma.user.findUniqueOrThrow.mockResolvedValue({
-      ...user,
-      emailVerifiedAt: new Date(),
-    });
+    prisma.user.findUniqueOrThrow.mockResolvedValue(user);
+    prisma.user.update.mockResolvedValue(user);
     prisma.customer.findUnique.mockResolvedValue(null);
     prisma.customer.findFirst.mockResolvedValue({ id: 'existing' });
-    await expect(
-      service.updateProfile(user.id, {
-        firstName: 'Ana',
-        lastName: 'Silva',
-      }),
-    ).rejects.toBeInstanceOf(ConflictException);
-    expect(prisma.user.update).not.toHaveBeenCalled();
+    await service.updateProfile(user.id, {
+      firstName: 'Ana',
+      lastName: 'Silva',
+    });
+    expect(prisma.user.update).toHaveBeenCalledTimes(1);
+    expect(prisma.customer.create).not.toHaveBeenCalled();
     expect(prisma.customer.update).not.toHaveBeenCalled();
   });
 
