@@ -213,22 +213,21 @@ describe('AuthService', () => {
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
-  it.each([
-    { role: 'ADMIN' },
-    { isActive: false },
-    { deletedAt: new Date() },
-  ])('rejects activation for an ineligible account (%j)', async (override) => {
-    const { service, prisma } = setup();
-    prisma.user.findUniqueOrThrow.mockResolvedValue({
-      ...user,
-      emailVerifiedAt: new Date(),
-      ...override,
-    });
-    await expect(service.activateCustomer(user.id)).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
-    expect(prisma.customer.create).not.toHaveBeenCalled();
-  });
+  it.each([{ role: 'ADMIN' }, { isActive: false }, { deletedAt: new Date() }])(
+    'rejects activation for an ineligible account (%j)',
+    async (override) => {
+      const { service, prisma } = setup();
+      prisma.user.findUniqueOrThrow.mockResolvedValue({
+        ...user,
+        emailVerifiedAt: new Date(),
+        ...override,
+      });
+      await expect(service.activateCustomer(user.id)).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
+      expect(prisma.customer.create).not.toHaveBeenCalled();
+    },
+  );
 
   it('refuses to claim a commercial record based only on email', async () => {
     const { service, prisma } = setup();
