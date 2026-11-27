@@ -449,7 +449,7 @@ export class CommerceService {
       select: { id: true },
     });
     return this.prisma.order.findMany({
-      where: customer ? { customerId: customer.id } : { userId },
+      where: customer ? { OR: [{ userId }, { customerId: customer.id, userId: null }] } : { userId },
       include: orderInclude,
       orderBy: { createdAt: 'desc' },
     });
@@ -461,7 +461,7 @@ export class CommerceService {
       select: { id: true },
     });
     const order = await this.prisma.order.findFirst({
-      where: customer ? { id, customerId: customer.id } : { id, userId },
+      where: customer ? { id, OR: [{ userId }, { customerId: customer.id, userId: null }] } : { id, userId },
       include: orderInclude,
     });
     if (!order) throw new NotFoundException('Encomenda não encontrada.');
@@ -670,6 +670,7 @@ export class CommerceService {
     const normalizedEmail = body.email.trim().toLowerCase();
     const customer = await this.resolveCustomer(this.prisma, {
       customerId: body.customerId,
+      internalOrder: true,
       email: normalizedEmail,
       name: body.customerName,
       phone: body.phone,
@@ -922,6 +923,7 @@ export class CommerceService {
     client: Prisma.TransactionClient | PrismaService,
     input: {
       customerId?: string;
+      internalOrder?: boolean;
       userId?: string;
       email: string;
       name: string;
@@ -943,32 +945,26 @@ export class CommerceService {
     }
 
     const linked = input.userId
-      ? await client.customer.findFirst({
-          where: { userId: input.userId, deletedAt: null },
-        })
+      ? await client.customer.findUnique({ where: { userId: input.userId } })
       : null;
-    const existing =
-      linked ??
-      (await client.customer.findFirst({
-        where: { email: normalizedEmail, deletedAt: null },
-      }));
+    if (linked) {
+      if (!linked.isActive || linked.deletedAt) {
+        throw new ConflictException('Ficha de cliente indisponível.');
+      }
+      return { id: linked.id, userId: linked.userId };
+    }
 
+    const existing = await client.customer.findFirst({
+      where: { email: { equals: normalizedEmail, mode: 'insensitive' } },
+    });
     if (existing) {
-      const consentAt =
-        input.marketingConsent === true && !existing.marketingConsent
-          ? new Date()
-          : undefined;
-      return client.customer.update({
-        where: { id: existing.id },
-        data: {
-          userId: input.userId && !existing.userId ? input.userId : undefined,
-          name: input.name.trim() || existing.name,
-          phone: input.phone?.trim() || existing.phone,
-          marketingConsent: input.marketingConsent === true ? true : undefined,
-          marketingConsentAt: consentAt,
-        },
-        select: { id: true, userId: true },
-      });
+      // A checkout email is contact information, not proof of ownership.
+      // Keep the order independent instead of modifying or claiming this record.
+      if (!input.internalOrder) return { id: null, userId: null };
+      if (!existing.isActive || existing.deletedAt) {
+        throw new ConflictException('Ficha de cliente indisponível.');
+      }
+      return { id: existing.id, userId: existing.userId };
     }
 
     return client.customer.create({
