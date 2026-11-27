@@ -140,7 +140,7 @@ export class AuthService {
     const valid = user
       ? await argon2.verify(user.passwordHash, dto.password)
       : false;
-    if (!valid || !user?.isActive) {
+    if (!valid || !user?.isActive || user.deletedAt) {
       throw new UnauthorizedException('Email ou password inválidos.');
     }
     await this.prisma.user.update({
@@ -148,11 +148,8 @@ export class AuthService {
       data: { lastLoginAt: new Date() },
     });
     await this.createSession(user, request, response);
-    const customer = await this.prisma.customer.findUnique({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-    return { user: { ...this.toPublicUser(user), hasCustomer: !!customer } };
+    const hasCustomer = await this.ensurePersonalCustomer(user.id, user.role);
+    return { user: { ...this.toPublicUser(user), hasCustomer } };
   }
 
   async refresh(
@@ -215,11 +212,8 @@ export class AuthService {
         },
       },
     });
-    const customer = await this.prisma.customer.findUnique({
-      where: { userId },
-      select: { id: true },
-    });
-    return { ...user, hasCustomer: !!customer };
+    const hasCustomer = await this.ensurePersonalCustomer(userId, user.role);
+    return { ...user, hasCustomer };
   }
 
   async forgotPassword(email: string) {
@@ -312,14 +306,37 @@ export class AuthService {
     return { success: true };
   }
 
+  private async ensurePersonalCustomer(userId: string, role: UserRole) {
+    const linked = await this.prisma.customer.findUnique({
+      where: { userId },
+      select: { id: true, isActive: true, deletedAt: true },
+    });
+    if (linked) return linked.isActive && !linked.deletedAt;
+    if (role !== UserRole.CUSTOMER) return false;
+
+    try {
+      await this.activateCustomer(userId);
+      return true;
+    } catch (error) {
+      if (
+        error instanceof ConflictException ||
+        error instanceof UnauthorizedException
+      ) {
+        // Never claim another commercial record. A conflict must not prevent login.
+        return false;
+      }
+      throw error;
+    }
+  }
+
   async activateCustomer(userId: string) {
     return this.prisma.$transaction(async (tx) => {
       const user = await tx.user.findUniqueOrThrow({
         where: { id: userId },
         include: { customerProfile: true },
       });
-      if (!user.isActive || user.deletedAt || !user.emailVerifiedAt) {
-        throw new UnauthorizedException('Confirme primeiro o seu email.');
+      if (!user.isActive || user.deletedAt || user.role !== UserRole.CUSTOMER) {
+        throw new UnauthorizedException('Conta de cliente indisponível.');
       }
       const linked = await tx.customer.findUnique({ where: { userId } });
       if (linked) {
@@ -373,7 +390,7 @@ export class AuthService {
             email: true,
             isActive: true,
             deletedAt: true,
-            emailVerifiedAt: true,
+            role: true,
           },
         }),
       ]);
@@ -381,10 +398,7 @@ export class AuthService {
       if (!account.isActive || account.deletedAt) {
         throw new UnauthorizedException('Conta indisponível.');
       }
-      if (!linked) {
-        if (!account.emailVerifiedAt) {
-          throw new UnauthorizedException('Confirme primeiro o seu email.');
-        }
+      if (!linked && account.role === UserRole.CUSTOMER) {
         const byEmail = await tx.customer.findFirst({
           where: { email: { equals: account.email, mode: 'insensitive' } },
         });
@@ -446,7 +460,7 @@ export class AuthService {
             marketingConsentAt: consentAt,
           },
         });
-      } else {
+      } else if (account.role === UserRole.CUSTOMER) {
         await tx.customer.create({
           data: {
             userId,
