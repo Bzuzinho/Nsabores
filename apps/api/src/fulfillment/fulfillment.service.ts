@@ -765,7 +765,9 @@ export class FulfillmentService {
       where: { userId, deletedAt: null },
       select: { id: true },
     });
-    return customer ? { customerId: customer.id } : { userId };
+    return customer
+      ? { OR: [{ userId }, { customerId: customer.id, userId: null }] }
+      : { userId };
   }
 
   async addCustomerSupportComment(id: string, body: string, userId: string) {
