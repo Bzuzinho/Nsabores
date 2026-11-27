@@ -161,7 +161,9 @@ describe('AuthService', () => {
     prisma.user.create.mockResolvedValue(user);
     prisma.customer.findFirst.mockResolvedValue({ id: 'existing-customer' });
     const result = await service.register(
-      registration, { headers: {} }, response as never,
+      registration,
+      { headers: {} },
+      response as never,
     );
     expect(result.user.hasCustomer).toBe(false);
     expect(prisma.user.create).toHaveBeenCalledTimes(1);
