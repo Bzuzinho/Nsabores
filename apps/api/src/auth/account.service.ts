@@ -11,8 +11,8 @@ export class AccountService {
     const customer = await this.customerForUser(userId);
     return this.prisma.address.findMany({
       where: customer
-      ? { OR: [{ userId }, { customerId: customer.id, userId: null }] }
-      : { userId },
+        ? { OR: [{ userId }, { customerId: customer.id, userId: null }] }
+        : { userId },
       orderBy: [{ isDefaultShipping: 'desc' }, { createdAt: 'desc' }],
     });
   }
@@ -137,8 +137,8 @@ export class AccountService {
     const customer = await this.customerForUser(userId);
     return this.prisma.$transaction(async (tx) => {
       const where = customer
-      ? { OR: [{ userId }, { customerId: customer.id, userId: null }] }
-      : { userId };
+        ? { OR: [{ userId }, { customerId: customer.id, userId: null }] }
+        : { userId };
       if (data.isDefaultShipping) {
         await tx.address.updateMany({
           where: { ...where, isDefaultShipping: true },
