@@ -52,9 +52,9 @@ export class AuthService {
     const token = this.randomToken();
     let stage = 'check-existing';
     const conflictMessage =
-      'Não foi possível criar a conta. Se já tiver conta, entre ou recupere a password. Se já for cliente sem acesso online, contacte o apoio para ativar o acesso.';
+      'Não foi possível criar a conta. Se já tiver conta, entre ou recupere a password.';
 
-    const user = await this.prisma
+    const registration = await this.prisma
       .$transaction(async (tx) => {
         // A public registration must not take ownership of an existing commercial
         // record or reactivate a disabled account merely by supplying an email.
@@ -68,7 +68,7 @@ export class AuthService {
             select: { id: true },
           }),
         ]);
-        if (existingUser || existingCustomer) {
+        if (existingUser) {
           this.logger.warn(
             'Registration conflict: existing identity; manual activation or recovery required.',
           );
@@ -99,7 +99,7 @@ export class AuthService {
         });
 
         stage = 'create-customer';
-        await tx.customer.create({
+        if (!existingCustomer) await tx.customer.create({
           data: {
             userId: created.id,
             name: `${dto.firstName} ${dto.lastName}`.trim(),
@@ -109,7 +109,7 @@ export class AuthService {
             marketingConsentAt: dto.marketingConsent ? new Date() : null,
           },
         });
-        return created;
+        return { user: created, hasCustomer: !existingCustomer };
       })
       .catch((error: unknown) => {
         if (
@@ -125,12 +125,13 @@ export class AuthService {
         throw error;
       });
 
+    const { user, hasCustomer } = registration;
+    await this.createSession(user, request, response);
     const verificationEmailAccepted = await this.mail.sendEmailVerification(
       user.email,
       token,
     );
-    await this.createSession(user, request, response);
-    return { user: { ...user, hasCustomer: true }, verificationEmailAccepted };
+    return { user: { ...user, hasCustomer }, verificationEmailAccepted };
   }
 
   async login(dto: LoginDto, request: RequestWithAuth, response: Response) {
@@ -398,15 +399,12 @@ export class AuthService {
       if (!account.isActive || account.deletedAt) {
         throw new UnauthorizedException('Conta indisponível.');
       }
-      if (!linked && account.role === UserRole.CUSTOMER) {
+      let canCreateCustomer = !linked && account.role === UserRole.CUSTOMER;
+      if (canCreateCustomer) {
         const byEmail = await tx.customer.findFirst({
           where: { email: { equals: account.email, mode: 'insensitive' } },
         });
-        if (byEmail) {
-          throw new ConflictException(
-            'Contacte o apoio para associar a ficha.',
-          );
-        }
+        if (byEmail) canCreateCustomer = false;
       }
       if (linked && (!linked.isActive || linked.deletedAt)) {
         throw new ConflictException('Contacte o apoio para ativar a ficha.');
@@ -460,7 +458,7 @@ export class AuthService {
             marketingConsentAt: consentAt,
           },
         });
-      } else if (account.role === UserRole.CUSTOMER) {
+      } else if (canCreateCustomer) {
         await tx.customer.create({
           data: {
             userId,
