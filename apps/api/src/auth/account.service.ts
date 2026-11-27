@@ -10,15 +10,21 @@ export class AccountService {
   async addresses(userId: string) {
     const customer = await this.customerForUser(userId);
     return this.prisma.address.findMany({
-      where: customer ? { customerId: customer.id } : { userId },
+      where: customer
+      ? { OR: [{ userId }, { customerId: customer.id, userId: null }] }
+      : { userId },
       orderBy: [{ isDefaultShipping: 'desc' }, { createdAt: 'desc' }],
     });
   }
 
   async dashboard(userId: string) {
     const customer = await this.customerForUser(userId);
-    const orderWhere = customer ? { customerId: customer.id } : { userId };
-    const addressWhere = customer ? { customerId: customer.id } : { userId };
+    const orderWhere = customer
+      ? { OR: [{ userId }, { customerId: customer.id, userId: null }] }
+      : { userId };
+    const addressWhere = customer
+      ? { OR: [{ userId }, { customerId: customer.id, userId: null }] }
+      : { userId };
 
     const [
       totalOrders,
@@ -130,7 +136,9 @@ export class AccountService {
   async createAddress(userId: string, data: AddressDto) {
     const customer = await this.customerForUser(userId);
     return this.prisma.$transaction(async (tx) => {
-      const where = customer ? { customerId: customer.id } : { userId };
+      const where = customer
+      ? { OR: [{ userId }, { customerId: customer.id, userId: null }] }
+      : { userId };
       if (data.isDefaultShipping) {
         await tx.address.updateMany({
           where: { ...where, isDefaultShipping: true },
@@ -155,7 +163,9 @@ export class AccountService {
 
   async updateAddress(userId: string, id: string, data: UpdateAddressDto) {
     const customer = await this.customerForUser(userId);
-    const ownerWhere = customer ? { customerId: customer.id } : { userId };
+    const ownerWhere = customer
+      ? { OR: [{ userId }, { customerId: customer.id, userId: null }] }
+      : { userId };
     const address = await this.prisma.address.findFirst({
       where: { id, ...ownerWhere },
     });
@@ -189,7 +199,9 @@ export class AccountService {
   async deleteAddress(userId: string, id: string) {
     const customer = await this.customerForUser(userId);
     const result = await this.prisma.address.deleteMany({
-      where: customer ? { id, customerId: customer.id } : { id, userId },
+      where: customer
+        ? { id, OR: [{ userId }, { customerId: customer.id, userId: null }] }
+        : { id, userId },
     });
     if (!result.count) throw new NotFoundException('Morada não encontrada.');
     return { success: true };
