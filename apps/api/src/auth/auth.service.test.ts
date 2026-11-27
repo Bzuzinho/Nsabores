@@ -155,7 +155,6 @@ describe('AuthService', () => {
     expect(response.cookie).toHaveBeenCalledTimes(2);
   });
 
-
   it('does not change existing accounts or create a duplicate commercial record', async () => {
     const { service, prisma, response, mail } = setup();
     prisma.user.findFirst.mockResolvedValue({ id: 'existing-user' });
