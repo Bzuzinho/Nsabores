@@ -99,16 +99,18 @@ export class AuthService {
         });
 
         stage = 'create-customer';
-        if (!existingCustomer) await tx.customer.create({
-          data: {
-            userId: created.id,
-            name: `${dto.firstName} ${dto.lastName}`.trim(),
-            email: dto.email,
-            phone: dto.phone,
-            marketingConsent: dto.marketingConsent ?? false,
-            marketingConsentAt: dto.marketingConsent ? new Date() : null,
-          },
-        });
+        if (!existingCustomer) {
+          await tx.customer.create({
+            data: {
+              userId: created.id,
+              name: `${dto.firstName} ${dto.lastName}`.trim(),
+              email: dto.email,
+              phone: dto.phone,
+              marketingConsent: dto.marketingConsent ?? false,
+              marketingConsentAt: dto.marketingConsent ? new Date() : null,
+            },
+          });
+        }
         return { user: created, hasCustomer: !existingCustomer };
       })
       .catch((error: unknown) => {
