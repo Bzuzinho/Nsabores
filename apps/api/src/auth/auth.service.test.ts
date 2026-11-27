@@ -37,7 +37,7 @@ function setup() {
       create: vi.fn(),
       findUnique: vi.fn(),
       findFirst: vi.fn(),
-      findUniqueOrThrow: vi.fn(),
+      findUniqueOrThrow: vi.fn().mockResolvedValue(user),
       update: vi.fn(),
     },
     businessAccount: { findFirst: vi.fn() },
@@ -155,16 +155,21 @@ describe('AuthService', () => {
     expect(response.cookie).not.toHaveBeenCalled();
   });
 
-  it('does not attach an existing customer by email before verified activation', async () => {
+  it('allows registration without claiming a pre-existing commercial record', async () => {
     const { service, prisma, response } = setup();
     prisma.user.findFirst.mockResolvedValue(null);
+    prisma.user.create.mockResolvedValue(user);
     prisma.customer.findFirst.mockResolvedValue({ id: 'existing-customer' });
-    await expect(
-      service.register(registration, { headers: {} }, response as never),
-    ).rejects.toBeInstanceOf(ConflictException);
-    expect(prisma.user.create).not.toHaveBeenCalled();
+    const result = await service.register(
+      registration,
+      { headers: {} },
+      response as never,
+    );
+    expect(result.user.hasCustomer).toBe(false);
+    expect(prisma.user.create).toHaveBeenCalledTimes(1);
+    expect(prisma.customer.create).not.toHaveBeenCalled();
     expect(prisma.customer.update).not.toHaveBeenCalled();
-    expect(response.cookie).not.toHaveBeenCalled();
+    expect(response.cookie).toHaveBeenCalledTimes(2);
   });
 
   it('handles a real Prisma uniqueness error from concurrent registration', async () => {
@@ -183,12 +188,12 @@ describe('AuthService', () => {
     expect(response.cookie).not.toHaveBeenCalled();
   });
 
-  it('activates a verified account without creating or changing a user', async () => {
+  it('creates a customer for an unverified personal account without changing the user', async () => {
     const { service, prisma } = setup();
     prisma.user.findUniqueOrThrow.mockResolvedValue({
       ...user,
-      role: 'ADMIN',
-      emailVerifiedAt: new Date(),
+      role: 'CUSTOMER',
+      emailVerifiedAt: null,
       customerProfile: null,
     });
     prisma.customer.findUnique.mockResolvedValue(null);
@@ -208,22 +213,21 @@ describe('AuthService', () => {
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
-  it.each([
-    { emailVerifiedAt: null },
-    { isActive: false },
-    { deletedAt: new Date() },
-  ])('rejects activation for an ineligible account (%j)', async (override) => {
-    const { service, prisma } = setup();
-    prisma.user.findUniqueOrThrow.mockResolvedValue({
-      ...user,
-      emailVerifiedAt: new Date(),
-      ...override,
-    });
-    await expect(service.activateCustomer(user.id)).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
-    expect(prisma.customer.create).not.toHaveBeenCalled();
-  });
+  it.each([{ role: 'ADMIN' }, { isActive: false }, { deletedAt: new Date() }])(
+    'rejects activation for an ineligible account (%j)',
+    async (override) => {
+      const { service, prisma } = setup();
+      prisma.user.findUniqueOrThrow.mockResolvedValue({
+        ...user,
+        emailVerifiedAt: new Date(),
+        ...override,
+      });
+      await expect(service.activateCustomer(user.id)).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
+      expect(prisma.customer.create).not.toHaveBeenCalled();
+    },
+  );
 
   it('refuses to claim a commercial record based only on email', async () => {
     const { service, prisma } = setup();
@@ -258,21 +262,18 @@ describe('AuthService', () => {
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
-  it('does not attach an unlinked commercial record via profile editing', async () => {
+  it('allows profile editing without claiming an existing commercial record', async () => {
     const { service, prisma } = setup();
-    prisma.user.findUniqueOrThrow.mockResolvedValue({
-      ...user,
-      emailVerifiedAt: new Date(),
-    });
+    prisma.user.findUniqueOrThrow.mockResolvedValue(user);
+    prisma.user.update.mockResolvedValue(user);
     prisma.customer.findUnique.mockResolvedValue(null);
     prisma.customer.findFirst.mockResolvedValue({ id: 'existing' });
-    await expect(
-      service.updateProfile(user.id, {
-        firstName: 'Ana',
-        lastName: 'Silva',
-      }),
-    ).rejects.toBeInstanceOf(ConflictException);
-    expect(prisma.user.update).not.toHaveBeenCalled();
+    await service.updateProfile(user.id, {
+      firstName: 'Ana',
+      lastName: 'Silva',
+    });
+    expect(prisma.user.update).toHaveBeenCalledTimes(1);
+    expect(prisma.customer.create).not.toHaveBeenCalled();
     expect(prisma.customer.update).not.toHaveBeenCalled();
   });
 
@@ -360,6 +361,38 @@ describe('AuthService', () => {
         response as never,
       ),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('automatically provisions a missing personal customer during login', async () => {
+    const { service, prisma, response } = setup();
+    prisma.user.findUnique.mockResolvedValue(user);
+    prisma.user.update.mockResolvedValue(user);
+    prisma.customer.findUnique.mockResolvedValue(null);
+    vi.mocked(argon2.verify).mockResolvedValueOnce(true);
+    const result = await service.login(
+      { email: user.email, password: 'Password123' },
+      { headers: {} },
+      response as never,
+    );
+    expect(result.user.hasCustomer).toBe(true);
+    expect(prisma.customer.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('allows login without claiming an existing customer with the same email', async () => {
+    const { service, prisma, response } = setup();
+    prisma.user.findUnique.mockResolvedValue(user);
+    prisma.user.update.mockResolvedValue(user);
+    prisma.customer.findUnique.mockResolvedValue(null);
+    prisma.customer.findFirst.mockResolvedValue({ id: 'existing' });
+    vi.mocked(argon2.verify).mockResolvedValueOnce(true);
+    const result = await service.login(
+      { email: user.email, password: 'Password123' },
+      { headers: {} },
+      response as never,
+    );
+    expect(result.user.hasCustomer).toBe(false);
+    expect(prisma.customer.create).not.toHaveBeenCalled();
+    expect(prisma.customer.update).not.toHaveBeenCalled();
   });
 
   it('rotates refresh tokens and revokes the previous session', async () => {

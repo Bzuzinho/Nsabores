@@ -52,9 +52,9 @@ export class AuthService {
     const token = this.randomToken();
     let stage = 'check-existing';
     const conflictMessage =
-      'Não foi possível criar a conta. Se já tiver conta, entre ou recupere a password. Se já for cliente sem acesso online, contacte o apoio para ativar o acesso.';
+      'Não foi possível criar a conta. Se já tiver conta, entre ou recupere a password.';
 
-    const user = await this.prisma
+    const registration = await this.prisma
       .$transaction(async (tx) => {
         // A public registration must not take ownership of an existing commercial
         // record or reactivate a disabled account merely by supplying an email.
@@ -68,7 +68,7 @@ export class AuthService {
             select: { id: true },
           }),
         ]);
-        if (existingUser || existingCustomer) {
+        if (existingUser) {
           this.logger.warn(
             'Registration conflict: existing identity; manual activation or recovery required.',
           );
@@ -99,17 +99,19 @@ export class AuthService {
         });
 
         stage = 'create-customer';
-        await tx.customer.create({
-          data: {
-            userId: created.id,
-            name: `${dto.firstName} ${dto.lastName}`.trim(),
-            email: dto.email,
-            phone: dto.phone,
-            marketingConsent: dto.marketingConsent ?? false,
-            marketingConsentAt: dto.marketingConsent ? new Date() : null,
-          },
-        });
-        return created;
+        if (!existingCustomer) {
+          await tx.customer.create({
+            data: {
+              userId: created.id,
+              name: `${dto.firstName} ${dto.lastName}`.trim(),
+              email: dto.email,
+              phone: dto.phone,
+              marketingConsent: dto.marketingConsent ?? false,
+              marketingConsentAt: dto.marketingConsent ? new Date() : null,
+            },
+          });
+        }
+        return { user: created, hasCustomer: !existingCustomer };
       })
       .catch((error: unknown) => {
         if (
@@ -125,12 +127,13 @@ export class AuthService {
         throw error;
       });
 
+    const { user, hasCustomer } = registration;
+    await this.createSession(user, request, response);
     const verificationEmailAccepted = await this.mail.sendEmailVerification(
       user.email,
       token,
     );
-    await this.createSession(user, request, response);
-    return { user: { ...user, hasCustomer: true }, verificationEmailAccepted };
+    return { user: { ...user, hasCustomer }, verificationEmailAccepted };
   }
 
   async login(dto: LoginDto, request: RequestWithAuth, response: Response) {
@@ -140,7 +143,7 @@ export class AuthService {
     const valid = user
       ? await argon2.verify(user.passwordHash, dto.password)
       : false;
-    if (!valid || !user?.isActive) {
+    if (!valid || !user?.isActive || user.deletedAt) {
       throw new UnauthorizedException('Email ou password inválidos.');
     }
     await this.prisma.user.update({
@@ -148,11 +151,8 @@ export class AuthService {
       data: { lastLoginAt: new Date() },
     });
     await this.createSession(user, request, response);
-    const customer = await this.prisma.customer.findUnique({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-    return { user: { ...this.toPublicUser(user), hasCustomer: !!customer } };
+    const hasCustomer = await this.ensurePersonalCustomer(user.id, user.role);
+    return { user: { ...this.toPublicUser(user), hasCustomer } };
   }
 
   async refresh(
@@ -215,11 +215,8 @@ export class AuthService {
         },
       },
     });
-    const customer = await this.prisma.customer.findUnique({
-      where: { userId },
-      select: { id: true },
-    });
-    return { ...user, hasCustomer: !!customer };
+    const hasCustomer = await this.ensurePersonalCustomer(userId, user.role);
+    return { ...user, hasCustomer };
   }
 
   async forgotPassword(email: string) {
@@ -312,14 +309,37 @@ export class AuthService {
     return { success: true };
   }
 
+  private async ensurePersonalCustomer(userId: string, role: UserRole) {
+    const linked = await this.prisma.customer.findUnique({
+      where: { userId },
+      select: { id: true, isActive: true, deletedAt: true },
+    });
+    if (linked) return linked.isActive && !linked.deletedAt;
+    if (role !== UserRole.CUSTOMER) return false;
+
+    try {
+      await this.activateCustomer(userId);
+      return true;
+    } catch (error) {
+      if (
+        error instanceof ConflictException ||
+        error instanceof UnauthorizedException
+      ) {
+        // Never claim another commercial record. A conflict must not prevent login.
+        return false;
+      }
+      throw error;
+    }
+  }
+
   async activateCustomer(userId: string) {
     return this.prisma.$transaction(async (tx) => {
       const user = await tx.user.findUniqueOrThrow({
         where: { id: userId },
         include: { customerProfile: true },
       });
-      if (!user.isActive || user.deletedAt || !user.emailVerifiedAt) {
-        throw new UnauthorizedException('Confirme primeiro o seu email.');
+      if (!user.isActive || user.deletedAt || user.role !== UserRole.CUSTOMER) {
+        throw new UnauthorizedException('Conta de cliente indisponível.');
       }
       const linked = await tx.customer.findUnique({ where: { userId } });
       if (linked) {
@@ -373,7 +393,7 @@ export class AuthService {
             email: true,
             isActive: true,
             deletedAt: true,
-            emailVerifiedAt: true,
+            role: true,
           },
         }),
       ]);
@@ -381,18 +401,12 @@ export class AuthService {
       if (!account.isActive || account.deletedAt) {
         throw new UnauthorizedException('Conta indisponível.');
       }
-      if (!linked) {
-        if (!account.emailVerifiedAt) {
-          throw new UnauthorizedException('Confirme primeiro o seu email.');
-        }
+      let canCreateCustomer = !linked && account.role === UserRole.CUSTOMER;
+      if (canCreateCustomer) {
         const byEmail = await tx.customer.findFirst({
           where: { email: { equals: account.email, mode: 'insensitive' } },
         });
-        if (byEmail) {
-          throw new ConflictException(
-            'Contacte o apoio para associar a ficha.',
-          );
-        }
+        if (byEmail) canCreateCustomer = false;
       }
       if (linked && (!linked.isActive || linked.deletedAt)) {
         throw new ConflictException('Contacte o apoio para ativar a ficha.');
@@ -446,7 +460,7 @@ export class AuthService {
             marketingConsentAt: consentAt,
           },
         });
-      } else {
+      } else if (canCreateCustomer) {
         await tx.customer.create({
           data: {
             userId,

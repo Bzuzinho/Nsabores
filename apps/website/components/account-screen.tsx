@@ -268,7 +268,9 @@ export function AccountScreen({ mode }: { mode: Mode }) {
           ),
         mode === 'forgot'
           ? 'Se a conta existir, receberá instruções.'
-          : 'Operação concluída.',
+          : mode === 'verify'
+            ? 'Email confirmado com sucesso.'
+            : 'Password alterada com sucesso.',
       );
     };
     return (
@@ -319,41 +321,6 @@ export function AccountScreen({ mode }: { mode: Mode }) {
     return (
       <AccountFrame title={`Olá, ${user.firstName}`} wide>
         <CustomerDashboard user={user} />
-        {user.emailVerifiedAt && user.hasCustomer === false && (
-          <section>
-            <h2>Ativar perfil de cliente</h2>
-            <p>Complete a sua ficha comercial sem criar uma nova conta.</p>
-            <button
-              className="button button-primary"
-              onClick={() =>
-                void run(
-                  () => accountApi.post('/v1/auth/activate-customer'),
-                  'Perfil de cliente ativado.',
-                ).then(async (ok) => {
-                  if (ok) await auth.reload();
-                })
-              }
-            >
-              Ativar perfil de cliente
-            </button>
-          </section>
-        )}
-        {!user.emailVerifiedAt && (
-          <section>
-            <p>Confirme o seu email para ativar o perfil de cliente.</p>
-            <button
-              className="text-button"
-              onClick={() =>
-                void run(
-                  () => accountApi.post('/v1/auth/resend-verification'),
-                  'Email de verificação enviado.',
-                )
-              }
-            >
-              Reenviar verificação de email
-            </button>
-          </section>
-        )}
         <button
           className="button button-outline-dark"
           onClick={() => void auth.logout().then(() => router.push('/'))}
@@ -570,6 +537,26 @@ export function AccountScreen({ mode }: { mode: Mode }) {
   };
   return (
     <AccountFrame title="Segurança">
+      {!user.emailVerifiedAt && (
+        <section>
+          <h2>Confirmação de email</h2>
+          <p>
+            Confirme o seu endereço para proteger a sua conta. Pode comprar
+            normalmente sem esta confirmação.
+          </p>
+          <button
+            className="text-button"
+            onClick={() =>
+              void run(
+                () => accountApi.post('/v1/auth/resend-verification'),
+                'Email de verificação enviado.',
+              )
+            }
+          >
+            Reenviar email de confirmação
+          </button>
+        </section>
+      )}
       <form
         className="account-form"
         onSubmit={(event) => void changePassword(event)}
