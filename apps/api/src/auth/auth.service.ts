@@ -129,11 +129,12 @@ export class AuthService {
 
     const { user, hasCustomer } = registration;
     await this.createSession(user, request, response);
-    const verificationEmailAccepted = await this.mail.sendEmailVerification(
-      user.email,
-      token,
-    );
-    return { user: { ...user, hasCustomer }, verificationEmailAccepted };
+    // Email confirmation is optional for normal purchases. Do not delay the
+    // registration response on a remote SMTP connection.
+    void this.mail.sendEmailVerification(user.email, token).catch(() => {
+      this.logger.warn('Não foi possível enviar o email de confirmação.');
+    });
+    return { user: { ...user, hasCustomer } };
   }
 
   async login(dto: LoginDto, request: RequestWithAuth, response: Response) {

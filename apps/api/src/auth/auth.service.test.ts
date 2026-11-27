@@ -78,7 +78,7 @@ function setup() {
   };
   const mail = {
     sendPasswordReset: vi.fn(),
-    sendEmailVerification: vi.fn(),
+    sendEmailVerification: vi.fn().mockResolvedValue(true),
   };
   const response = {
     cookie: vi.fn(),
@@ -141,6 +141,19 @@ describe('AuthService', () => {
     firstName: 'Ana',
     lastName: 'Silva',
   };
+
+  it('does not wait for optional SMTP confirmation to register', async () => {
+    const { service, prisma, response, mail } = setup();
+    prisma.user.create.mockResolvedValue(user);
+    mail.sendEmailVerification.mockReturnValue(new Promise(() => {}));
+    const result = await service.register(
+      registration,
+      { headers: {} },
+      response as never,
+    );
+    expect(result.user.hasCustomer).toBe(true);
+    expect(response.cookie).toHaveBeenCalledTimes(2);
+  });
 
   it('does not change existing accounts or create a duplicate commercial record', async () => {
     const { service, prisma, response, mail } = setup();

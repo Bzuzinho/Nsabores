@@ -166,7 +166,9 @@ export class OrderDocumentsService {
       where: { userId, deletedAt: null },
       select: { id: true },
     });
-    return customer ? { customerId: customer.id } : { userId };
+    return customer
+      ? { OR: [{ userId }, { customerId: customer.id, userId: null }] }
+      : { userId };
   }
 
   private async ensureOrder(orderId: string) {
