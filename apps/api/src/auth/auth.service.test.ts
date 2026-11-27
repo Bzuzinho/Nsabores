@@ -37,7 +37,7 @@ function setup() {
       create: vi.fn(),
       findUnique: vi.fn(),
       findFirst: vi.fn(),
-      findUniqueOrThrow: vi.fn(),
+      findUniqueOrThrow: vi.fn().mockResolvedValue(user),
       update: vi.fn(),
     },
     businessAccount: { findFirst: vi.fn() },
@@ -183,12 +183,12 @@ describe('AuthService', () => {
     expect(response.cookie).not.toHaveBeenCalled();
   });
 
-  it('activates a verified account without creating or changing a user', async () => {
+  it('creates a customer for an unverified personal account without changing the user', async () => {
     const { service, prisma } = setup();
     prisma.user.findUniqueOrThrow.mockResolvedValue({
       ...user,
-      role: 'ADMIN',
-      emailVerifiedAt: new Date(),
+      role: 'CUSTOMER',
+      emailVerifiedAt: null,
       customerProfile: null,
     });
     prisma.customer.findUnique.mockResolvedValue(null);
@@ -209,7 +209,7 @@ describe('AuthService', () => {
   });
 
   it.each([
-    { emailVerifiedAt: null },
+    { role: 'ADMIN' },
     { isActive: false },
     { deletedAt: new Date() },
   ])('rejects activation for an ineligible account (%j)', async (override) => {
@@ -360,6 +360,38 @@ describe('AuthService', () => {
         response as never,
       ),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('automatically provisions a missing personal customer during login', async () => {
+    const { service, prisma, response } = setup();
+    prisma.user.findUnique.mockResolvedValue(user);
+    prisma.user.update.mockResolvedValue(user);
+    prisma.customer.findUnique.mockResolvedValue(null);
+    vi.mocked(argon2.verify).mockResolvedValueOnce(true);
+    const result = await service.login(
+      { email: user.email, password: 'Password123' },
+      { headers: {} },
+      response as never,
+    );
+    expect(result.user.hasCustomer).toBe(true);
+    expect(prisma.customer.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('allows login without claiming an existing customer with the same email', async () => {
+    const { service, prisma, response } = setup();
+    prisma.user.findUnique.mockResolvedValue(user);
+    prisma.user.update.mockResolvedValue(user);
+    prisma.customer.findUnique.mockResolvedValue(null);
+    prisma.customer.findFirst.mockResolvedValue({ id: 'existing' });
+    vi.mocked(argon2.verify).mockResolvedValueOnce(true);
+    const result = await service.login(
+      { email: user.email, password: 'Password123' },
+      { headers: {} },
+      response as never,
+    );
+    expect(result.user.hasCustomer).toBe(false);
+    expect(prisma.customer.create).not.toHaveBeenCalled();
+    expect(prisma.customer.update).not.toHaveBeenCalled();
   });
 
   it('rotates refresh tokens and revokes the previous session', async () => {
